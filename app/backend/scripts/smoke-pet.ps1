@@ -158,6 +158,9 @@ VALUES
 finally {
     if ($null -ne $process -and -not $process.HasExited) {
         Stop-Process -Id $process.Id -Force
+        if (-not $process.WaitForExit(5000)) {
+            throw "API process $($process.Id) did not exit during cleanup"
+        }
     }
     if (Test-Path -LiteralPath $runtime) {
         $resolvedRuntime = (Resolve-Path -LiteralPath $runtime).Path
