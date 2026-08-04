@@ -24,28 +24,12 @@ func (fake fakePetLifecycleUseCase) EnsurePet(ctx context.Context, userID uuid.U
 	return fake.ensureFunc(ctx, userID, now)
 }
 
-type fakePetCareUseCase struct {
-	applyFunc func(context.Context, usecase.ApplyInventoryItemCommand) (usecase.ApplyCareItemResult, error)
-}
-
-func (fake fakePetCareUseCase) ApplyInventoryItem(ctx context.Context, command usecase.ApplyInventoryItemCommand) (usecase.ApplyCareItemResult, error) {
-	return fake.applyFunc(ctx, command)
-}
-
-type fakePetDailySummaryUseCase struct {
-	getFunc func(context.Context, uuid.UUID, time.Time) (model.PetDailySummary, error)
-}
-
-func (fake fakePetDailySummaryUseCase) GetPreviousDay(ctx context.Context, userID uuid.UUID, now time.Time) (model.PetDailySummary, error) {
-	return fake.getFunc(ctx, userID, now)
-}
-
 func TestPetRoutesRequireBearerAuthentication(t *testing.T) {
 	router := newPetTestRouter(RouterDependencies{})
 	for _, request := range []*http.Request{
-		httptest.NewRequest(http.MethodGet, "/api/pet", nil),
-		httptest.NewRequest(http.MethodPost, "/api/pet/items/"+uuid.NewString()+"/use", nil),
-		httptest.NewRequest(http.MethodGet, "/api/pet/daily-summary", nil),
+		httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/pet", nil),
+		httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/api/pet/items/"+uuid.NewString()+"/use", nil),
+		httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/pet/daily-summary", nil),
 	} {
 		recorder := httptest.NewRecorder()
 		router.ServeHTTP(recorder, request)
@@ -85,7 +69,7 @@ func TestGetPetUsesAuthenticatedUserFromJWTContext(t *testing.T) {
 		Now: func() time.Time { return now },
 	}
 	router := newPetTestRouter(deps)
-	request := httptest.NewRequest(http.MethodGet, "/api/pet", nil)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/pet", nil)
 	request.Header.Set("Authorization", "Bearer valid-token")
 	recorder := httptest.NewRecorder()
 
@@ -107,7 +91,7 @@ func TestUsePetItemRejectsInvalidUUID(t *testing.T) {
 			return model.AuthenticatedUser{UserID: userID, SessionID: uuid.New()}, nil
 		}},
 	})
-	request := httptest.NewRequest(http.MethodPost, "/api/pet/items/not-a-uuid/use", nil)
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodPost, "/api/pet/items/not-a-uuid/use", nil)
 	request.Header.Set("Authorization", "Bearer valid-token")
 	recorder := httptest.NewRecorder()
 
