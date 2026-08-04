@@ -26,6 +26,11 @@ linters:
         - name: error-strings
         - name: error-naming
         - name: context-as-argument
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - noctx
 
 formatters:
   enable:
