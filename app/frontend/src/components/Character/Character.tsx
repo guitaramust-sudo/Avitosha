@@ -9,11 +9,14 @@ import { useEffect, useRef } from 'react'
 
 import './Character.scss'
 
-const frameModules = import.meta.glob<string>('../../images/Avitosha/*/*.png', {
-  eager: true,
-  import: 'default',
-  query: '?url',
-})
+const frameModules = import.meta.glob<string>(
+  '../../../images/Avitosha/*/*.png',
+  {
+    eager: true,
+    import: 'default',
+    query: '?url',
+  },
+)
 
 const getAnimationFrames = (animation: string) =>
   Object.entries(frameModules)

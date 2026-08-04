@@ -1,5 +1,8 @@
 import type { ReactNode } from 'react'
 
+import { useAppSelector } from '../../hooks/redux'
+import ProfileMenu from '../ProfileMenu/ProfileMenu'
+
 import './HomeHeader.scss'
 
 interface HeaderStatProps {
@@ -35,6 +38,8 @@ function BrandMark() {
 }
 
 function HomeHeader() {
+  const email = useAppSelector((state) => state.auth.user?.email)
+
   return (
     <header className="home-header">
       <div className="home-header__brand">
@@ -74,6 +79,7 @@ function HomeHeader() {
           <strong>1 450</strong>
           <i aria-hidden="true">⌄</i>
         </button>
+        <ProfileMenu email={email} />
         <button className="icon-button" type="button" aria-label="Уведомления">
           ♧
           <i className="icon-button__notification" />

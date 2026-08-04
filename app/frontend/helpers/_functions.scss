@@ -5,11 +5,6 @@
   @return math.div($value, $base) * 1rem;
 }
 
-// Example: @include rem(width, 320px);
-@mixin rem($property, $value, $base: vars.$font-size-base) {
-  #{$property}: rem($value, $base);
-}
-
 @mixin media-max($breakpoint) {
   @media (max-width: $breakpoint) {
     @content;

@@ -1,0 +1,32 @@
+@use '../../../helpers' as h;
+
+.error-page {
+  display: grid;
+  min-height: 100vh;
+  align-content: center;
+  justify-items: center;
+  gap: h.rem(14px);
+  padding: h.rem(24px);
+  text-align: center;
+
+  h1,
+  p {
+    margin: 0;
+  }
+
+  h1 {
+    color: h.$color-primary;
+    font-size: clamp(h.rem(64px), 12vw, h.rem(120px));
+  }
+
+  p {
+    color: h.$color-text-secondary;
+    font-size: h.rem(18px);
+  }
+
+  a {
+    margin-top: h.rem(10px);
+    color: h.$color-info;
+    font-weight: h.$font-weight-semibold;
+  }
+}

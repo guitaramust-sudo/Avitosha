@@ -1,0 +1,72 @@
+@use '../../../helpers' as h;
+
+.profile-menu {
+  position: relative;
+  flex: 0 0 auto;
+
+  &__trigger {
+    display: grid;
+    width: h.rem(50px);
+    height: h.rem(50px);
+    place-items: center;
+    border: h.rem(3px) solid h.$color-primary-light;
+    border-radius: 50%;
+    color: h.$color-white;
+    background: h.$gradient-brand;
+    box-shadow: h.$shadow-control;
+    font-size: h.rem(18px);
+    font-weight: h.$font-weight-bold;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  &__popup {
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + h.rem(10px));
+    right: 0;
+    display: grid;
+    min-width: h.rem(230px);
+    overflow: hidden;
+    padding: h.rem(8px);
+    border: h.rem(1px) solid h.$color-border;
+    border-radius: h.$radius-medium;
+    background: h.$color-surface;
+    box-shadow: h.$shadow-card;
+  }
+
+  &__email {
+    overflow: hidden;
+    padding: h.rem(9px) h.rem(11px) h.rem(12px);
+    border-bottom: h.rem(1px) solid h.$color-border;
+    color: h.$color-text-secondary;
+    font-size: h.rem(12px);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__logout {
+    display: flex;
+    min-height: h.rem(42px);
+    align-items: center;
+    gap: h.rem(10px);
+    margin-top: h.rem(6px);
+    padding: 0 h.rem(11px);
+    border: 0;
+    border-radius: h.$radius-small;
+    color: h.$color-danger;
+    background: transparent;
+    font-size: h.rem(13px);
+    font-weight: h.$font-weight-semibold;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      background: h.$color-danger-light;
+    }
+
+    &:disabled {
+      cursor: wait;
+      opacity: 0.6;
+    }
+  }
+}

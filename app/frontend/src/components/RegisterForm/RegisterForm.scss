@@ -1,0 +1,127 @@
+@use '../../../helpers' as h;
+
+.register-form {
+  display: grid;
+  gap: h.rem(20px);
+
+  &__heading {
+    display: grid;
+    gap: h.rem(9px);
+    margin-bottom: h.rem(4px);
+
+    span {
+      color: h.$color-primary;
+      font-size: h.rem(13px);
+      font-weight: h.$font-weight-bold;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: clamp(h.rem(28px), 4vw, h.rem(40px));
+      line-height: 1.1;
+      letter-spacing: -0.035em;
+    }
+
+    p {
+      color: h.$color-text-secondary;
+      font-size: h.rem(14px);
+      line-height: 1.5;
+    }
+  }
+
+  &__server-error {
+    padding: h.rem(12px) h.rem(14px);
+    border: h.rem(1px) solid h.$color-danger;
+    border-radius: h.$radius-medium;
+    color: h.$color-danger;
+    background: h.$color-danger-light;
+    font-size: h.rem(13px);
+    line-height: 1.45;
+  }
+
+  &__submit {
+    min-height: h.rem(52px);
+    border: 0;
+    border-radius: h.$radius-medium;
+    color: h.$color-white;
+    background: h.$gradient-brand;
+    box-shadow: 0 h.rem(10px) h.rem(24px) rgb(101 75 238 / 24%);
+    font-weight: h.$font-weight-semibold;
+    cursor: pointer;
+    transition:
+      transform 160ms ease,
+      opacity 160ms ease;
+
+    &:hover:not(:disabled) {
+      transform: translateY(h.rem(-1px));
+    }
+
+    &:disabled {
+      cursor: wait;
+      opacity: 0.65;
+    }
+  }
+
+  &__login {
+    margin: 0;
+    color: h.$color-text-secondary;
+    font-size: h.rem(14px);
+    text-align: center;
+
+    a {
+      color: h.$color-info;
+      font-weight: h.$font-weight-semibold;
+      text-decoration: none;
+    }
+  }
+}
+
+.form-field {
+  display: grid;
+  gap: h.rem(8px);
+
+  label {
+    font-size: h.rem(13px);
+    font-weight: h.$font-weight-semibold;
+  }
+
+  input {
+    width: 100%;
+    min-height: h.rem(50px);
+    padding: 0 h.rem(15px);
+    border: h.rem(1px) solid h.$color-border-strong;
+    border-radius: h.$radius-medium;
+    outline: none;
+    color: h.$color-text;
+    background: h.$color-surface-soft;
+    transition:
+      border-color 160ms ease,
+      box-shadow 160ms ease,
+      background 160ms ease;
+
+    &::placeholder {
+      color: h.$color-text-muted;
+    }
+
+    &:focus {
+      border-color: h.$color-primary;
+      background: h.$color-surface;
+      box-shadow: 0 0 0 h.rem(3px) rgb(139 63 242 / 12%);
+    }
+
+    &[aria-invalid='true'] {
+      border-color: h.$color-danger;
+    }
+  }
+
+  > span {
+    color: h.$color-danger;
+    font-size: h.rem(12px);
+  }
+}

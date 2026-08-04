@@ -1,7 +1,7 @@
-import AchievementsPanel from '../components/AchievementsPanel/AchievementsPanel'
-import HomeHeader from '../components/HomeHeader/HomeHeader'
-import RoomCollection from '../components/RoomCollection/RoomCollection'
-import RoomStage from '../components/RoomStage/RoomStage'
+import AchievementsPanel from '../../components/AchievementsPanel/AchievementsPanel'
+import HomeHeader from '../../components/HomeHeader/HomeHeader'
+import RoomCollection from '../../components/RoomCollection/RoomCollection'
+import RoomStage from '../../components/RoomStage/RoomStage'
 
 import './HomePage.scss'
 
