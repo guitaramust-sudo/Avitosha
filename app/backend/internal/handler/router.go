@@ -1,33 +1,81 @@
 package handler
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
+
+	"github.com/guitaramust-sudo/Avitosha/app/backend/internal/model"
+	"github.com/guitaramust-sudo/Avitosha/app/backend/internal/usecase"
 )
 
-func NewRouter(logger *slog.Logger, db DatabasePinger) *chi.Mux {
+type AuthService interface {
+	Register(ctx context.Context, params usecase.RegisterParams) (usecase.AuthenticationResult, error)
+	Login(ctx context.Context, params usecase.LoginParams) (usecase.AuthenticationResult, error)
+	Refresh(ctx context.Context, params usecase.RefreshParams) (usecase.RefreshResult, error)
+	Logout(ctx context.Context, params usecase.LogoutParams) error
+	GetCurrentUser(ctx context.Context, params usecase.GetCurrentUserParams) (model.User, error)
+}
+
+type AccessTokenVerifier interface {
+	VerifyAccessToken(token string) (model.AuthenticatedUser, error)
+}
+
+type RouterDependencies struct {
+	Logger              *slog.Logger
+	DB                  DatabasePinger
+	AuthService         AuthService
+	AccessTokenVerifier AccessTokenVerifier
+	FrontendOrigin      string
+	RefreshTokenTTL     time.Duration
+	SecureRefreshCookie bool
+}
+
+func NewRouter(deps RouterDependencies) *chi.Mux {
+	logger := deps.Logger
+	if logger == nil {
+		logger = slog.Default()
+	}
+
 	r := chi.NewRouter()
 	swaggerUI := NewSwaggerUIHandler("/api/openapi.yaml")
 
+	r.Use(RequestID)
+	r.Use(StructuredRequestLogger(logger))
+	r.Use(Recovery(logger))
+	r.Use(CORS(deps.FrontendOrigin))
+
 	r.Get("/health/live", Live)
-	r.Method("GET", "/health/ready", NewReadyHandler(db))
+	r.Method("GET", "/health/ready", NewReadyHandler(deps.DB))
 	r.Get("/swagger", func(w http.ResponseWriter, req *http.Request) {
 		http.Redirect(w, req, "/swagger/", http.StatusMovedPermanently)
 	})
 	r.Handle("/swagger/*", http.StripPrefix("/swagger", swaggerUI))
 	r.Get("/api/openapi.yaml", OpenAPISpec)
 
-	mountAPIRoutes(r, logger)
+	mountAPIRoutes(r, logger, deps)
 
 	return r
 }
 
-func mountAPIRoutes(r chi.Router, logger *slog.Logger) {
-	_ = logger
-
+func mountAPIRoutes(r chi.Router, logger *slog.Logger, deps RouterDependencies) {
+	authHandler := NewAuthHandler(AuthHandlerDependencies{
+		Logger:              logger,
+		AuthService:         deps.AuthService,
+		RefreshTokenTTL:     deps.RefreshTokenTTL,
+		SecureRefreshCookie: deps.SecureRefreshCookie,
+	})
 	r.Route("/api", func(r chi.Router) {
-		_ = r
+		r.Route("/auth", func(r chi.Router) {
+			r.Post("/register", authHandler.Register)
+			r.Post("/login", authHandler.Login)
+			r.Post("/refresh", authHandler.Refresh)
+			r.Post("/logout", authHandler.Logout)
+		})
+
+		r.With(BearerAuth(logger, deps.AccessTokenVerifier)).Get("/me", authHandler.Me)
 	})
 }
