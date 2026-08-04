@@ -1,10 +1,9 @@
 openapi: 3.0.3
 info:
-  title: Avitosha Auth API
+  title: Avitosha API
   version: 1.0.0
   description: |
-    Authentication contract for the Avitosha MVP backend.
-    This document defines the public auth API before handler implementation.
+    Authentication and virtual pet contract for the Avitosha MVP backend.
 servers:
   - url: http://localhost:8080
     description: Local development
@@ -13,6 +12,8 @@ tags:
     description: Registration, login, session refresh, logout
   - name: user
     description: Current authenticated user
+  - name: pet
+    description: Avitosha state, care items, growth, and daily summary
 paths:
   /api/auth/register:
     post:
@@ -156,6 +157,87 @@ paths:
                       email: user@example.com
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/pet:
+    get:
+      tags: [pet]
+      summary: Get or create the authenticated user's Avitosha
+      operationId: getPet
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current pet and today's UTC state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PetSnapshotResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/pet/items/{item_id}/use:
+    post:
+      tags: [pet]
+      summary: Consume an inventory item and update Avitosha atomically
+      operationId: usePetItem
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: item_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Updated pet, daily state, and emitted domain events
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PetCareResponse'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Pet or inventory item was not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Inventory item is already used, expired, or otherwise unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/pet/daily-summary:
+    get:
+      tags: [pet]
+      summary: Get the previous completed UTC day's pet summary
+      operationId: getPetDailySummary
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Previous UTC day summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PetDailySummaryResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: No pet daily state exists for the previous UTC day
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
           $ref: '#/components/responses/InternalError'
 components:
@@ -342,6 +424,186 @@ components:
       properties:
         user:
           $ref: '#/components/schemas/User'
+    Pet:
+      type: object
+      additionalProperties: false
+      required: [id, name, level, growth_xp, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: Авитоша
+        level:
+          type: integer
+          minimum: 1
+          maximum: 5
+        growth_xp:
+          type: integer
+          minimum: 0
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    PetDailyState:
+      type: object
+      additionalProperties: false
+      required: [id, date, satiety, mood, curiosity, state, happy_xp_granted, ecstatic_xp_granted, created_at, updated_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        satiety:
+          type: integer
+          minimum: 0
+          maximum: 100
+        mood:
+          type: integer
+          minimum: 0
+          maximum: 100
+        curiosity:
+          type: integer
+          minimum: 0
+          maximum: 100
+        state:
+          type: string
+          enum: [CURIOUS, HUNGRY, BORED, CONTENT, HAPPY, ECSTATIC]
+        happy_xp_granted:
+          type: boolean
+        ecstatic_xp_granted:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    PetSnapshot:
+      type: object
+      additionalProperties: false
+      required: [pet, daily_state]
+      properties:
+        pet:
+          $ref: '#/components/schemas/Pet'
+        daily_state:
+          $ref: '#/components/schemas/PetDailyState'
+    PetSnapshotResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/PetSnapshot'
+    PetEvent:
+      type: object
+      additionalProperties: false
+      required: [type, occurred_at, previous_state, new_state, previous_level, new_level, xp_delta]
+      properties:
+        type:
+          type: string
+          enum: [PET_STATE_CHANGED, PET_BECAME_HAPPY, PET_BECAME_ECSTATIC, PET_LEVEL_UP]
+        occurred_at:
+          type: string
+          format: date-time
+        previous_state:
+          type: string
+          enum: [CURIOUS, HUNGRY, BORED, CONTENT, HAPPY, ECSTATIC]
+        new_state:
+          type: string
+          enum: [CURIOUS, HUNGRY, BORED, CONTENT, HAPPY, ECSTATIC]
+        previous_level:
+          type: integer
+          minimum: 1
+          maximum: 5
+        new_level:
+          type: integer
+          minimum: 1
+          maximum: 5
+        xp_delta:
+          type: integer
+          minimum: 0
+    PetCareResult:
+      allOf:
+        - $ref: '#/components/schemas/PetSnapshot'
+        - type: object
+          required: [events]
+          properties:
+            events:
+              type: array
+              items:
+                $ref: '#/components/schemas/PetEvent'
+    PetCareResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/PetCareResult'
+    PetNeedChange:
+      type: object
+      additionalProperties: false
+      required: [type, starting_value, ending_value, delta]
+      properties:
+        type:
+          type: string
+          enum: [SATIETY, MOOD, CURIOSITY]
+        starting_value:
+          type: integer
+        ending_value:
+          type: integer
+        delta:
+          type: integer
+    PetDailySummary:
+      type: object
+      additionalProperties: false
+      required: [date, pet_id, pet_name, starting_state, ending_state, need_changes, starting_growth_xp, earned_growth_xp, ending_growth_xp, starting_level, ending_level, achievements]
+      properties:
+        date:
+          type: string
+          format: date
+        pet_id:
+          type: string
+          format: uuid
+        pet_name:
+          type: string
+        starting_state:
+          type: string
+          enum: [CURIOUS, HUNGRY, BORED, CONTENT, HAPPY, ECSTATIC]
+        ending_state:
+          type: string
+          enum: [CURIOUS, HUNGRY, BORED, CONTENT, HAPPY, ECSTATIC]
+        need_changes:
+          type: array
+          items:
+            $ref: '#/components/schemas/PetNeedChange'
+        starting_growth_xp:
+          type: integer
+        earned_growth_xp:
+          type: integer
+        ending_growth_xp:
+          type: integer
+        starting_level:
+          type: integer
+        ending_level:
+          type: integer
+        achievements:
+          type: array
+          items:
+            type: string
+            enum: [BECAME_HAPPY, BECAME_ECSTATIC, LEVEL_UP]
+    PetDailySummaryResponse:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data:
+          $ref: '#/components/schemas/PetDailySummary'
     ErrorDetail:
       type: object
       additionalProperties: false
@@ -357,6 +619,10 @@ components:
             - unauthorized
             - email_already_exists
             - session_expired
+            - pet_not_found
+            - pet_day_not_found
+            - item_not_found
+            - item_unavailable
             - internal_error
         message:
           type: string

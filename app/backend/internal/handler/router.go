@@ -32,6 +32,10 @@ type RouterDependencies struct {
 	FrontendOrigin      string
 	RefreshTokenTTL     time.Duration
 	SecureRefreshCookie bool
+	PetLifecycle        PetLifecycleUseCase
+	PetCare             PetCareUseCase
+	PetDailySummary     PetDailySummaryUseCase
+	Now                 func() time.Time
 }
 
 func NewRouter(deps RouterDependencies) *chi.Mux {
@@ -76,6 +80,18 @@ func mountAPIRoutes(r chi.Router, logger *slog.Logger, deps RouterDependencies) 
 			r.Post("/logout", authHandler.Logout)
 		})
 
-		r.With(BearerAuth(logger, deps.AccessTokenVerifier)).Get("/me", authHandler.Me)
+		authenticated := BearerAuth(logger, deps.AccessTokenVerifier)
+		r.With(authenticated).Get("/me", authHandler.Me)
+
+		petHandler := NewPetHandler(PetHandlerDependencies{
+			Logger: logger, Lifecycle: deps.PetLifecycle, Care: deps.PetCare,
+			DailySummary: deps.PetDailySummary, Now: deps.Now,
+		})
+		r.Route("/pet", func(r chi.Router) {
+			r.Use(authenticated)
+			r.Get("/", petHandler.Get)
+			r.Post("/items/{item_id}/use", petHandler.UseItem)
+			r.Get("/daily-summary", petHandler.DailySummary)
+		})
 	})
 }
