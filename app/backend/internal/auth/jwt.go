@@ -4,14 +4,20 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+
+	"github.com/guitaramust-sudo/Avitosha/app/backend/internal/model"
 )
 
 const refreshTokenEntropyBytes = 32
+
+var ErrInvalidAccessToken = errors.New("invalid access token")
 
 type JWTTokenProviderConfig struct {
 	SigningKey []byte
@@ -93,4 +99,44 @@ func (p *JWTTokenProvider) HashRefreshToken(token string) []byte {
 	hashedToken := make([]byte, sha256.Size)
 	copy(hashedToken, hashSum[:])
 	return hashedToken
+}
+
+func (p *JWTTokenProvider) VerifyAccessToken(token string) (model.AuthenticatedUser, error) {
+	if strings.TrimSpace(token) == "" {
+		return model.AuthenticatedUser{}, ErrInvalidAccessToken
+	}
+
+	var claims accessTokenClaims
+	parsedToken, err := jwt.ParseWithClaims(token, &claims, func(parsedToken *jwt.Token) (any, error) {
+		return p.signingKey, nil
+	},
+		jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}),
+		jwt.WithIssuer(p.issuer),
+		jwt.WithAudience(p.audience),
+		jwt.WithExpirationRequired(),
+	)
+	if err != nil {
+		return model.AuthenticatedUser{}, errors.Join(ErrInvalidAccessToken, fmt.Errorf("parse jwt access token: %w", err))
+	}
+	if !parsedToken.Valid {
+		return model.AuthenticatedUser{}, ErrInvalidAccessToken
+	}
+	if claims.IssuedAt == nil || claims.ExpiresAt == nil {
+		return model.AuthenticatedUser{}, ErrInvalidAccessToken
+	}
+
+	userID, err := uuid.Parse(claims.Subject)
+	if err != nil {
+		return model.AuthenticatedUser{}, errors.Join(ErrInvalidAccessToken, fmt.Errorf("parse subject uuid: %w", err))
+	}
+
+	sessionID, err := uuid.Parse(claims.SessionID)
+	if err != nil {
+		return model.AuthenticatedUser{}, errors.Join(ErrInvalidAccessToken, fmt.Errorf("parse session id uuid: %w", err))
+	}
+
+	return model.AuthenticatedUser{
+		UserID:    userID,
+		SessionID: sessionID,
+	}, nil
 }

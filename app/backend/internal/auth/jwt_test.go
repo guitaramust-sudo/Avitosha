@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -105,5 +106,62 @@ func TestJWTTokenProviderCreateRefreshTokenReturnsOpaqueValue(t *testing.T) {
 	}
 	if string(refreshTokenHash) == refreshToken {
 		t.Fatal("HashRefreshToken() returned raw refresh token")
+	}
+}
+
+func TestJWTTokenProviderVerifyAccessToken(t *testing.T) {
+	provider, err := NewJWTTokenProvider(JWTTokenProviderConfig{
+		SigningKey: []byte("test-signing-key"),
+		Issuer:     "avitosha",
+		Audience:   "avitosha-web",
+	})
+	if err != nil {
+		t.Fatalf("NewJWTTokenProvider() error = %v", err)
+	}
+
+	userID := uuid.MustParse("8f0ed065-aefa-4f56-87d0-e2ef2ef43f0d")
+	sessionID := uuid.MustParse("8f0ed065-aefa-4f56-87d0-e2ef2ef43f0e")
+	now := time.Now().UTC()
+
+	accessToken, err := provider.CreateAccessToken(userID, sessionID, now.Add(-time.Minute), now.Add(time.Minute))
+	if err != nil {
+		t.Fatalf("CreateAccessToken() error = %v", err)
+	}
+
+	authenticatedUser, err := provider.VerifyAccessToken(accessToken)
+	if err != nil {
+		t.Fatalf("VerifyAccessToken() error = %v", err)
+	}
+	if authenticatedUser.UserID != userID {
+		t.Fatalf("UserID = %s, want %s", authenticatedUser.UserID, userID)
+	}
+	if authenticatedUser.SessionID != sessionID {
+		t.Fatalf("SessionID = %s, want %s", authenticatedUser.SessionID, sessionID)
+	}
+}
+
+func TestJWTTokenProviderVerifyAccessTokenRejectsExpiredToken(t *testing.T) {
+	provider, err := NewJWTTokenProvider(JWTTokenProviderConfig{
+		SigningKey: []byte("test-signing-key"),
+		Issuer:     "avitosha",
+		Audience:   "avitosha-web",
+	})
+	if err != nil {
+		t.Fatalf("NewJWTTokenProvider() error = %v", err)
+	}
+
+	accessToken, err := provider.CreateAccessToken(
+		uuid.MustParse("8f0ed065-aefa-4f56-87d0-e2ef2ef43f0d"),
+		uuid.MustParse("8f0ed065-aefa-4f56-87d0-e2ef2ef43f0e"),
+		time.Now().UTC().Add(-2*time.Minute),
+		time.Now().UTC().Add(-time.Minute),
+	)
+	if err != nil {
+		t.Fatalf("CreateAccessToken() error = %v", err)
+	}
+
+	_, err = provider.VerifyAccessToken(accessToken)
+	if !errors.Is(err, ErrInvalidAccessToken) {
+		t.Fatalf("VerifyAccessToken() error = %v, want ErrInvalidAccessToken", err)
 	}
 }

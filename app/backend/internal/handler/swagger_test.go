@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -11,7 +10,7 @@ import (
 func TestOpenAPISpecEndpoint(t *testing.T) {
 	t.Parallel()
 
-	router := NewRouter(slog.Default(), fakeDatabasePinger{})
+	router := newTestRouter(t, testRouterConfig{})
 	req := httptest.NewRequest(http.MethodGet, "/api/openapi.yaml", nil)
 	rec := httptest.NewRecorder()
 
@@ -42,7 +41,7 @@ func TestOpenAPISpecEndpoint(t *testing.T) {
 func TestSwaggerUIEndpoint(t *testing.T) {
 	t.Parallel()
 
-	router := NewRouter(slog.Default(), fakeDatabasePinger{})
+	router := newTestRouter(t, testRouterConfig{})
 	req := httptest.NewRequest(http.MethodGet, "/swagger/", nil)
 	rec := httptest.NewRecorder()
 
@@ -74,7 +73,7 @@ func TestSwaggerUIEndpoint(t *testing.T) {
 func TestSwaggerUIRedirect(t *testing.T) {
 	t.Parallel()
 
-	router := NewRouter(slog.Default(), fakeDatabasePinger{})
+	router := newTestRouter(t, testRouterConfig{})
 	req := httptest.NewRequest(http.MethodGet, "/swagger", nil)
 	rec := httptest.NewRecorder()
 
@@ -91,7 +90,7 @@ func TestSwaggerUIRedirect(t *testing.T) {
 func TestSwaggerUIAssetsServedLocally(t *testing.T) {
 	t.Parallel()
 
-	router := NewRouter(slog.Default(), fakeDatabasePinger{})
+	router := newTestRouter(t, testRouterConfig{})
 	req := httptest.NewRequest(http.MethodGet, "/swagger/swagger-ui-bundle.js", nil)
 	rec := httptest.NewRecorder()
 

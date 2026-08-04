@@ -11,9 +11,11 @@ import (
 	"syscall"
 	"time"
 
+	backendauth "github.com/guitaramust-sudo/Avitosha/app/backend/internal/auth"
 	"github.com/guitaramust-sudo/Avitosha/app/backend/internal/config"
 	"github.com/guitaramust-sudo/Avitosha/app/backend/internal/handler"
 	"github.com/guitaramust-sudo/Avitosha/app/backend/internal/repository/postgres"
+	"github.com/guitaramust-sudo/Avitosha/app/backend/internal/usecase"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -44,7 +46,43 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, err
 		return nil, fmt.Errorf("ping database: %w", err)
 	}
 
-	router := handler.NewRouter(logger, pool)
+	passwordHasher, err := backendauth.NewBcryptPasswordHasher(0)
+	if err != nil {
+		return nil, fmt.Errorf("create password hasher: %w", err)
+	}
+
+	tokenProvider, err := backendauth.NewJWTTokenProvider(backendauth.JWTTokenProviderConfig{
+		SigningKey: []byte(cfg.JWTSigningKey),
+		Issuer:     cfg.JWTIssuer,
+		Audience:   cfg.JWTAudience,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("create token provider: %w", err)
+	}
+
+	authService, err := usecase.NewAuthService(usecase.AuthConfig{
+		AccessTokenTTL:  cfg.AccessTokenTTL,
+		RefreshTokenTTL: cfg.RefreshTokenTTL,
+	}, usecase.AuthDependencies{
+		PasswordHasher:    passwordHasher,
+		TokenProvider:     tokenProvider,
+		UserRepository:    postgres.NewUserRepository(pool),
+		SessionRepository: postgres.NewSessionRepository(pool),
+		TxManager:         postgres.NewTxManager(pool),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("create auth service: %w", err)
+	}
+
+	router := handler.NewRouter(handler.RouterDependencies{
+		Logger:              logger,
+		DB:                  pool,
+		AuthService:         authService,
+		AccessTokenVerifier: tokenProvider,
+		FrontendOrigin:      cfg.FrontendOrigin,
+		RefreshTokenTTL:     cfg.RefreshTokenTTL,
+		SecureRefreshCookie: cfg.AppEnv == config.AppEnvProd,
+	})
 	server := &http.Server{
 		Addr:         cfg.HTTPAddr,
 		Handler:      router,
