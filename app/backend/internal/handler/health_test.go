@@ -44,8 +44,8 @@ func TestHealthEndpoints(t *testing.T) {
 			if rec.Code != tt.wantStatus {
 				t.Fatalf("status = %d, want %d", rec.Code, tt.wantStatus)
 			}
-			if contentType := rec.Header().Get("Content-Type"); contentType != "application/json" {
-				t.Fatalf("Content-Type = %q, want application/json", contentType)
+			if contentType := rec.Header().Get("Content-Type"); contentType != jsonContentType {
+				t.Fatalf("Content-Type = %q, want %s", contentType, jsonContentType)
 			}
 			if body := rec.Body.String(); body != tt.wantBody {
 				t.Fatalf("body = %q", body)

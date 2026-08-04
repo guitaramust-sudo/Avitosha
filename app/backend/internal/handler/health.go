@@ -40,7 +40,7 @@ func (h ReadyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func writeHealthResponse(w http.ResponseWriter, statusCode int, status string) {
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", jsonContentType)
 	w.WriteHeader(statusCode)
 	_ = json.NewEncoder(w).Encode(healthResponse{Status: status})
 }
