@@ -9,22 +9,42 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/guitaramust-sudo/Avitosha/app/backend/internal/config"
 	"github.com/guitaramust-sudo/Avitosha/app/backend/internal/handler"
+	"github.com/guitaramust-sudo/Avitosha/app/backend/internal/repository/postgres"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func Run(ctx context.Context) error {
-	cfg, err := config.Load()
+const startupDatabasePingTimeout = 5 * time.Second
+
+type App struct {
+	logger          *slog.Logger
+	server          *http.Server
+	db              *pgxpool.Pool
+	shutdownTimeout time.Duration
+}
+
+func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, error) {
+	pool, err := postgres.NewPool(ctx, cfg.DatabaseURL)
 	if err != nil {
-		return fmt.Errorf("load config: %w", err)
+		return nil, fmt.Errorf("open database: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			pool.Close()
+		}
+	}()
+
+	pingCtx, cancelDatabasePing := context.WithTimeout(ctx, startupDatabasePingTimeout)
+	defer cancelDatabasePing()
+
+	if err := pool.Ping(pingCtx); err != nil {
+		return nil, fmt.Errorf("ping database: %w", err)
 	}
 
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		Level: cfg.LogLevel.Level(),
-	}))
-
-	router := handler.NewRouter(logger)
+	router := handler.NewRouter(logger, pool)
 	server := &http.Server{
 		Addr:         cfg.HTTPAddr,
 		Handler:      router,
@@ -33,13 +53,31 @@ func Run(ctx context.Context) error {
 		IdleTimeout:  cfg.HTTPIdleTimeout,
 	}
 
+	return newApp(logger, server, pool, cfg.ShutdownTimeout), nil
+}
+
+func newApp(logger *slog.Logger, server *http.Server, db *pgxpool.Pool, shutdownTimeout time.Duration) *App {
+	return &App{
+		logger:          logger,
+		server:          server,
+		db:              db,
+		shutdownTimeout: shutdownTimeout,
+	}
+}
+
+func (a *App) Run(ctx context.Context) error {
 	runCtx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
 	defer stop()
+	defer func() {
+		if a.db != nil {
+			a.db.Close()
+		}
+	}()
 
 	errCh := make(chan error, 1)
 	go func() {
-		logger.Info("api server started", "addr", cfg.HTTPAddr, "env", cfg.AppEnv)
-		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		a.logger.Info("api server started", "addr", a.server.Addr)
+		if err := a.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			errCh <- err
 			return
 		}
@@ -55,11 +93,11 @@ func Run(ctx context.Context) error {
 	case <-runCtx.Done():
 	}
 
-	shutdownCtx, cancel := context.WithTimeout(context.Background(), cfg.ShutdownTimeout)
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), a.shutdownTimeout)
 	defer cancel()
 
-	logger.Info("api server stopping")
-	if err := server.Shutdown(shutdownCtx); err != nil {
+	a.logger.Info("api server stopping")
+	if err := a.server.Shutdown(shutdownCtx); err != nil {
 		return fmt.Errorf("shutdown http server: %w", err)
 	}
 
@@ -67,6 +105,6 @@ func Run(ctx context.Context) error {
 		return fmt.Errorf("serve http: %w", err)
 	}
 
-	logger.Info("api server stopped")
+	a.logger.Info("api server stopped")
 	return nil
 }

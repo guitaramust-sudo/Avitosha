@@ -24,6 +24,7 @@ const (
 type Config struct {
 	AppEnv           string
 	HTTPAddr         string
+	DatabaseURL      string
 	LogLevel         LogLevel
 	ShutdownTimeout  time.Duration
 	HTTPReadTimeout  time.Duration
@@ -39,6 +40,7 @@ func LoadFromEnv(getenv func(string) string) (Config, error) {
 	cfg := Config{
 		AppEnv:           envOrDefault(getenv, "APP_ENV", AppEnvDev),
 		HTTPAddr:         strings.TrimSpace(getenv("HTTP_ADDR")),
+		DatabaseURL:      strings.TrimSpace(getenv("DATABASE_URL")),
 		LogLevel:         LogLevel(envOrDefault(getenv, "LOG_LEVEL", string(LogLevelInfo))),
 		ShutdownTimeout:  5 * time.Second,
 		HTTPReadTimeout:  5 * time.Second,
@@ -64,6 +66,9 @@ func LoadFromEnv(getenv func(string) string) (Config, error) {
 func (cfg Config) Validate() error {
 	if cfg.HTTPAddr == "" {
 		return fmt.Errorf("HTTP_ADDR is required")
+	}
+	if cfg.DatabaseURL == "" {
+		return fmt.Errorf("DATABASE_URL is required")
 	}
 
 	switch cfg.AppEnv {

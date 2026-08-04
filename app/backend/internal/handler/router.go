@@ -6,11 +6,11 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func NewRouter(logger *slog.Logger) *chi.Mux {
+func NewRouter(logger *slog.Logger, db DatabasePinger) *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Get("/health/live", Live)
-	r.Get("/health/ready", Ready)
+	r.Method("GET", "/health/ready", NewReadyHandler(db))
 
 	mountAPIRoutes(r, logger)
 
