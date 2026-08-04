@@ -1,0 +1,370 @@
+openapi: 3.0.3
+info:
+  title: Avitosha Auth API
+  version: 1.0.0
+  description: |
+    Authentication contract for the Avitosha MVP backend.
+    This document defines the public auth API before handler implementation.
+servers:
+  - url: http://localhost:8080
+    description: Local development
+tags:
+  - name: auth
+    description: Registration, login, session refresh, logout
+  - name: user
+    description: Current authenticated user
+paths:
+  /api/auth/register:
+    post:
+      tags: [auth]
+      summary: Register a new user
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthCredentialsRequest'
+            examples:
+              default:
+                value:
+                  email: user@example.com
+                  password: password123
+      responses:
+        '201':
+          description: User registered successfully
+          headers:
+            Set-Cookie:
+              $ref: '#/components/headers/RefreshTokenSetCookie'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+              examples:
+                default:
+                  value:
+                    access_token: <JWT_ACCESS_TOKEN>
+                    user:
+                      id: 8f0ed065-aefa-4f56-87d0-e2ef2ef43f0d
+                      email: user@example.com
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '409':
+          $ref: '#/components/responses/EmailAlreadyExists'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/auth/login:
+    post:
+      tags: [auth]
+      summary: Log in with email and password
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthCredentialsRequest'
+            examples:
+              default:
+                value:
+                  email: user@example.com
+                  password: password123
+      responses:
+        '200':
+          description: Login successful
+          headers:
+            Set-Cookie:
+              $ref: '#/components/headers/RefreshTokenSetCookie'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+              examples:
+                default:
+                  value:
+                    access_token: <JWT_ACCESS_TOKEN>
+                    user:
+                      id: 8f0ed065-aefa-4f56-87d0-e2ef2ef43f0d
+                      email: user@example.com
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '401':
+          $ref: '#/components/responses/InvalidCredentials'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/auth/refresh:
+    post:
+      tags: [auth]
+      summary: Rotate refresh token and issue a new access token
+      operationId: refreshSession
+      security:
+        - refreshTokenCookie: []
+      responses:
+        '200':
+          description: Token pair rotated successfully
+          headers:
+            Set-Cookie:
+              $ref: '#/components/headers/RefreshTokenSetCookie'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshResponse'
+              examples:
+                default:
+                  value:
+                    access_token: <JWT_ACCESS_TOKEN>
+        '401':
+          $ref: '#/components/responses/RefreshUnauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/auth/logout:
+    post:
+      tags: [auth]
+      summary: Revoke the current session and clear refresh cookie
+      operationId: logout
+      security:
+        - refreshTokenCookie: []
+      responses:
+        '204':
+          description: Logout successful
+          headers:
+            Set-Cookie:
+              $ref: '#/components/headers/RefreshTokenClearedCookie'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/me:
+    get:
+      tags: [user]
+      summary: Get the current authenticated user
+      operationId: getCurrentUser
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current authenticated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+              examples:
+                default:
+                  value:
+                    user:
+                      id: 8f0ed065-aefa-4f56-87d0-e2ef2ef43f0d
+                      email: user@example.com
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access token sent in the Authorization header.
+    refreshTokenCookie:
+      type: apiKey
+      in: cookie
+      name: refresh_token
+      description: HttpOnly refresh token cookie scoped to /api/auth.
+  headers:
+    RefreshTokenSetCookie:
+      description: |
+        HttpOnly refresh token cookie. In production it must also include Secure.
+        Path is /api/auth and SameSite is Lax.
+      schema:
+        type: string
+        example: refresh_token=<OPAQUE_REFRESH_TOKEN>; Path=/api/auth; HttpOnly; SameSite=Lax; Max-Age=2592000
+    RefreshTokenClearedCookie:
+      description: Clears the refresh token cookie for the current client.
+      schema:
+        type: string
+        example: refresh_token=; Path=/api/auth; HttpOnly; SameSite=Lax; Max-Age=0
+  responses:
+    InvalidRequest:
+      description: Malformed or semantically invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            invalid_email:
+              value:
+                error:
+                  code: invalid_request
+                  message: Email must be a valid email address
+    InvalidCredentials:
+      description: Invalid email or password
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            invalid_credentials:
+              value:
+                error:
+                  code: invalid_credentials
+                  message: Invalid email or password
+    EmailAlreadyExists:
+      description: Email is already registered
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            duplicate_email:
+              value:
+                error:
+                  code: email_already_exists
+                  message: Email already exists
+    Unauthorized:
+      description: Missing or invalid authentication
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            unauthorized:
+              value:
+                error:
+                  code: unauthorized
+                  message: Authentication is required
+    RefreshUnauthorized:
+      description: Missing refresh cookie or invalid, expired, revoked refresh session
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            missing_refresh_cookie:
+              value:
+                error:
+                  code: unauthorized
+                  message: Authentication is required
+            expired_session:
+              value:
+                error:
+                  code: session_expired
+                  message: Session has expired or is no longer valid
+    SessionExpired:
+      description: Refresh session is expired, revoked, or invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            expired_session:
+              value:
+                error:
+                  code: session_expired
+                  message: Session has expired or is no longer valid
+    InternalError:
+      description: Unexpected internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            internal_error:
+              value:
+                error:
+                  code: internal_error
+                  message: Internal server error
+  schemas:
+    AuthCredentialsRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 3
+          maxLength: 320
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 128
+          example: password123
+      description: |
+        Registration and login credentials.
+        The auth contract intentionally does not include display_name.
+    User:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - email
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 8f0ed065-aefa-4f56-87d0-e2ef2ef43f0d
+        email:
+          type: string
+          format: email
+          example: user@example.com
+    AuthResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - access_token
+        - user
+      properties:
+        access_token:
+          type: string
+          description: JWT access token returned in JSON response body.
+          example: <JWT_ACCESS_TOKEN>
+        user:
+          $ref: '#/components/schemas/User'
+    RefreshResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - access_token
+      properties:
+        access_token:
+          type: string
+          description: Newly issued JWT access token.
+          example: <JWT_ACCESS_TOKEN>
+    UserResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - user
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+    ErrorDetail:
+      type: object
+      additionalProperties: false
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          enum:
+            - invalid_request
+            - invalid_credentials
+            - unauthorized
+            - email_already_exists
+            - session_expired
+            - internal_error
+        message:
+          type: string
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - error
+      properties:
+        error:
+          $ref: '#/components/schemas/ErrorDetail'
