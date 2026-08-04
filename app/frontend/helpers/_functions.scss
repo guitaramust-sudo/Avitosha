@@ -1,0 +1,47 @@
+@use 'sass:math';
+@use 'variables' as vars;
+
+@function rem($value, $base: vars.$font-size-base) {
+  @return math.div($value, $base) * 1rem;
+}
+
+// Example: @include rem(width, 320px);
+@mixin rem($property, $value, $base: vars.$font-size-base) {
+  #{$property}: rem($value, $base);
+}
+
+@mixin media-max($breakpoint) {
+  @media (max-width: $breakpoint) {
+    @content;
+  }
+}
+
+@mixin laptop {
+  @include media-max(vars.$breakpoint-laptop) {
+    @content;
+  }
+}
+
+@mixin laptop-small {
+  @include media-max(vars.$breakpoint-laptop-small) {
+    @content;
+  }
+}
+
+@mixin tablet {
+  @include media-max(vars.$breakpoint-tablet) {
+    @content;
+  }
+}
+
+@mixin mobile {
+  @include media-max(vars.$breakpoint-mobile) {
+    @content;
+  }
+}
+
+@mixin mobile-small {
+  @include media-max(vars.$breakpoint-mobile-small) {
+    @content;
+  }
+}

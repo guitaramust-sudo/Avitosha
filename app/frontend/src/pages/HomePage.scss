@@ -1,0 +1,73 @@
+@use '../../helpers' as h;
+
+.home-page {
+  min-height: 100vh;
+  padding: h.rem(14px);
+  background:
+    radial-gradient(circle at 18% 0%, rgb(255 255 255 / 90%), transparent 30%),
+    h.$color-page;
+
+  &__shell {
+    width: min(100%, h.rem(1500px));
+    min-height: calc(100vh - h.rem(28px));
+    overflow: hidden;
+    margin: 0 auto;
+    border: h.rem(1px) solid rgb(255 255 255 / 80%);
+    border-radius: h.$radius-shell;
+    background: h.$color-surface;
+    box-shadow: h.$shadow-shell;
+  }
+}
+
+.home-dashboard {
+  display: grid;
+  grid-template-columns: h.rem(285px) minmax(0, 1fr);
+  gap: h.rem(14px);
+  padding: h.rem(14px);
+
+  &__content {
+    display: grid;
+    min-width: 0;
+    align-content: start;
+    gap: h.rem(14px);
+  }
+}
+
+@include h.laptop-small {
+  .home-dashboard {
+    grid-template-columns: h.rem(270px) minmax(0, 1fr);
+  }
+}
+
+@include h.tablet {
+  .home-dashboard {
+    grid-template-areas:
+      'content'
+      'achievements';
+    grid-template-columns: minmax(0, 1fr);
+
+    > .achievements-panel {
+      grid-area: achievements;
+    }
+
+    &__content {
+      grid-area: content;
+    }
+  }
+}
+
+@include h.mobile {
+  .home-page {
+    padding: 0;
+
+    &__shell {
+      min-height: 100vh;
+      border: 0;
+      border-radius: 0;
+    }
+  }
+
+  .home-dashboard {
+    padding: h.rem(10px);
+  }
+}

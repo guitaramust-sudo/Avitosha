@@ -1,0 +1,70 @@
+// Palette extracted from the Avito Tamagotchi reference.
+$color-white: #ffffff;
+$color-background: #f7f8fa;
+$color-page: #eef0f3;
+$color-surface: #ffffff;
+$color-surface-muted: #f1f3f7;
+$color-surface-soft: #fafbfc;
+$color-text: #0d0e12;
+$color-text-secondary: #646872;
+$color-text-muted: #9297a1;
+$color-border: #e2e5ea;
+$color-border-strong: #d5d9df;
+
+$color-primary: #8b3ff2;
+$color-primary-light: #eee5ff;
+$color-info: #2f80ed;
+$color-info-bright: #00a5f5;
+$color-info-light: #e7f1ff;
+$color-success: #22bd68;
+$color-success-bright: #4bd559;
+$color-success-dark: #328d47;
+$color-success-light: #e4f8ec;
+$color-success-soft: #a9e7a8;
+$color-danger: #ff4d5a;
+$color-danger-light: #ffe9eb;
+$color-warning: #f3aa24;
+$color-warning-dark: #a86624;
+$color-warning-light: #fff4d9;
+$color-money: #8ac640;
+$color-room: #e9e2dc;
+$color-room-accent: #d8cec5;
+
+$gradient-brand: linear-gradient(
+  90deg,
+  $color-primary 0%,
+  $color-info 48%,
+  $color-success 100%
+);
+
+// Typography.
+$font-family-base:
+  Inter,
+  -apple-system,
+  BlinkMacSystemFont,
+  'Segoe UI',
+  sans-serif;
+$font-size-base: 16px;
+$font-weight-regular: 400;
+$font-weight-medium: 500;
+$font-weight-semibold: 600;
+$font-weight-bold: 700;
+$font-weight-extrabold: 800;
+
+// Shape and elevation.
+$radius-small: 8px;
+$radius-medium: 12px;
+$radius-large: 20px;
+$radius-xlarge: 28px;
+$radius-shell: 34px;
+$radius-round: 999px;
+$shadow-card: 0 8px 30px rgb(20 25 35 / 10%);
+$shadow-control: 0 4px 14px rgb(20 25 35 / 8%);
+$shadow-shell: 0 18px 60px rgb(29 36 50 / 10%);
+
+// Adaptive breakpoints.
+$breakpoint-laptop: 1440px;
+$breakpoint-laptop-small: 1200px;
+$breakpoint-tablet: 1024px;
+$breakpoint-mobile: 768px;
+$breakpoint-mobile-small: 480px;

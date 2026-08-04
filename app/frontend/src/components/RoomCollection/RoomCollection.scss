@@ -1,0 +1,99 @@
+@use '../../../helpers' as h;
+
+.room-collection {
+  padding: h.rem(20px);
+  border: h.rem(1px) solid h.$color-border;
+  border-radius: h.$radius-large;
+  background: rgb(255 255 255 / 96%);
+  box-shadow: h.$shadow-card;
+
+  h2 {
+    margin: 0 0 h.rem(16px);
+    font-size: h.rem(16px);
+    font-weight: h.$font-weight-semibold;
+  }
+
+  &__items {
+    display: grid;
+    grid-template-columns: repeat(9, minmax(h.rem(86px), 1fr));
+    gap: h.rem(12px);
+    overflow-x: auto;
+    padding-bottom: h.rem(3px);
+    scrollbar-width: thin;
+  }
+}
+
+.collection-item {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  min-height: h.rem(118px);
+  grid-template-rows: 1fr auto;
+  gap: h.rem(8px);
+  padding: h.rem(12px) h.rem(8px) h.rem(10px);
+  border: h.rem(1px) solid h.$color-border;
+  border-radius: h.$radius-medium;
+  background: h.$color-surface;
+  cursor: pointer;
+
+  &:disabled {
+    color: h.$color-text-secondary;
+    cursor: not-allowed;
+    opacity: 0.72;
+  }
+
+  &__state {
+    position: absolute;
+    z-index: 1;
+    top: h.rem(8px);
+    right: h.rem(8px);
+    display: grid;
+    width: h.rem(20px);
+    height: h.rem(20px);
+    place-items: center;
+    border-radius: 50%;
+    color: h.$color-white;
+    background: h.$color-success;
+    font-size: h.rem(11px);
+    font-weight: h.$font-weight-bold;
+  }
+
+  &:disabled &__state {
+    color: h.$color-text-secondary;
+    background: h.$color-surface-muted;
+  }
+
+  &__placeholder {
+    display: block;
+    width: 70%;
+    height: h.rem(55px);
+    align-self: end;
+    justify-self: center;
+    border: h.rem(1px) dashed h.$color-border-strong;
+    border-radius: h.$radius-small;
+    background: linear-gradient(
+      145deg,
+      h.$color-surface-soft,
+      h.$color-surface-muted
+    );
+  }
+
+  &__name {
+    overflow: hidden;
+    font-size: h.rem(11px);
+    font-weight: h.$font-weight-medium;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@include h.mobile {
+  .room-collection {
+    padding: h.rem(16px);
+
+    &__items {
+      grid-template-columns: repeat(9, h.rem(94px));
+    }
+  }
+}
