@@ -90,3 +90,17 @@
     right: h.rem(16px);
   }
 }
+
+@include h.mobile-small {
+  .toast {
+    top: h.rem(10px);
+    right: h.rem(10px);
+    width: calc(100vw - h.rem(20px));
+    gap: h.rem(8px);
+    padding: h.rem(11px);
+
+    &__message {
+      font-size: h.rem(12px);
+    }
+  }
+}

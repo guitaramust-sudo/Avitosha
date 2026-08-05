@@ -85,7 +85,11 @@ function HomeHeader() {
 
         <HeaderStat icon="◎" label="Цель" tone="blue">
           <div className="goal-progress">
-            <strong>Обустроить комнату</strong>
+            <strong>
+              Обустроить
+              <br />
+              комнату
+            </strong>
             <span>{room?.progress ?? '0/6'} предметов</span>
           </div>
         </HeaderStat>

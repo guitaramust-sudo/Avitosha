@@ -108,6 +108,17 @@
   }
 
   .home-dashboard {
+    gap: h.rem(10px);
     padding: h.rem(10px);
+
+    &__content {
+      gap: h.rem(10px);
+    }
+  }
+}
+
+@include h.mobile-small {
+  .home-dashboard {
+    padding: h.rem(8px);
   }
 }

@@ -18,3 +18,10 @@
     object-fit: contain;
   }
 }
+
+@include h.mobile {
+  .room-drag-overlay {
+    width: h.rem(82px);
+    height: h.rem(82px);
+  }
+}

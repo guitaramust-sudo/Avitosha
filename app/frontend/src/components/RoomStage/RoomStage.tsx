@@ -33,6 +33,8 @@ interface RoomObjectProps {
 }
 
 type RoomObjectStyle = CSSProperties & {
+  '--room-item-x': string
+  '--room-item-y': string
   '--room-item-width': string
 }
 
@@ -49,9 +51,9 @@ function RoomObject({
       data: { code: item.code, source: 'stage' },
     })
   const style: RoomObjectStyle = {
+    '--room-item-x': `${position.x}%`,
+    '--room-item-y': `${position.y}%`,
     '--room-item-width': `${roomItemStageWidths[item.code]}px`,
-    left: `${position.x}%`,
-    top: `${position.y}%`,
     ...(transform
       ? {
           transform: `translate3d(calc(-50% + ${transform.x}px), calc(-50% + ${transform.y}px), 0) scaleX(${transform.scaleX}) scaleY(${transform.scaleY})`,

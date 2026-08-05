@@ -125,3 +125,13 @@
     font-size: h.rem(12px);
   }
 }
+
+@include h.mobile-small {
+  .login-form {
+    gap: h.rem(16px);
+
+    &__heading h1 {
+      font-size: h.rem(28px);
+    }
+  }
+}

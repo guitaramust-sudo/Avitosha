@@ -70,3 +70,21 @@
     }
   }
 }
+
+@include h.mobile-small {
+  .profile-menu {
+    &__trigger {
+      width: h.rem(42px);
+      height: h.rem(42px);
+      font-size: h.rem(15px);
+    }
+
+    &__popup {
+      position: fixed;
+      top: h.rem(66px);
+      right: h.rem(10px);
+      left: h.rem(10px);
+      min-width: 0;
+    }
+  }
+}

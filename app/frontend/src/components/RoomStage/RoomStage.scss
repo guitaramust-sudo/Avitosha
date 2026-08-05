@@ -111,6 +111,8 @@
 .room-object {
   position: absolute;
   z-index: 4;
+  top: clamp(10%, var(--room-item-y), 90%);
+  left: clamp(8%, var(--room-item-x), 92%);
   display: grid;
   width: var(--room-item-width);
   max-width: 24%;
@@ -190,23 +192,110 @@
   }
 }
 
-@include h.mobile {
+@include h.tablet {
   .room-stage {
-    min-height: h.rem(440px);
+    min-height: 0;
+    aspect-ratio: 1672 / 941;
 
     &__character {
-      min-width: h.rem(190px);
+      width: min(28%, h.rem(210px));
+      min-width: h.rem(160px);
+      transform: translateX(-54.5%);
+    }
+  }
+
+  .room-object {
+    left: clamp(11%, var(--room-item-x), 89%);
+    max-width: 22%;
+
+    &--poster {
+      width: h.rem(66px);
+    }
+  }
+}
+
+@include h.mobile {
+  .room-stage {
+    min-height: 0;
+    aspect-ratio: 4 / 3;
+    border-radius: h.$radius-medium;
+    background-position: center;
+    background-size: 100% 100%;
+
+    &__character {
+      bottom: 2%;
+      width: min(42%, h.rem(155px));
+      min-width: h.rem(130px);
+      transform: translateX(-54.5%);
+    }
+  }
+
+  .room-stage__story {
+    top: h.rem(10px);
+    left: h.rem(10px);
+    max-width: calc(58% - h.rem(10px));
+    padding: h.rem(8px) h.rem(10px);
+
+    span {
+      display: none;
+    }
+  }
+
+  .room-stage__speech {
+    display: none;
+  }
+
+  .room-stage__edit-hint {
+    display: none;
+  }
+
+  .room-stage__placed-count {
+    display: none;
+  }
+
+  .room-object {
+    top: clamp(12%, var(--room-item-y), 88%);
+    left: clamp(12%, var(--room-item-x), 88%);
+    max-width: 22%;
+
+    &--poster {
+      width: h.rem(50px);
+      max-width: 16%;
     }
   }
 }
 
 @include h.mobile-small {
   .room-stage {
-    min-height: h.rem(410px);
+    aspect-ratio: 4 / 3;
 
     &__character {
-      bottom: h.rem(16px);
-      min-width: h.rem(175px);
+      bottom: 1%;
+      width: 40%;
+      min-width: h.rem(120px);
+    }
+  }
+
+  .room-stage__story {
+    max-width: 62%;
+
+    small {
+      font-size: h.rem(9px);
+    }
+
+    strong {
+      font-size: h.rem(11px);
+    }
+  }
+
+  .room-object {
+    top: clamp(14%, var(--room-item-y), 86%);
+    left: clamp(14%, var(--room-item-x), 86%);
+    max-width: 24%;
+
+    &--poster {
+      width: h.rem(44px);
+      max-width: 15%;
     }
   }
 }

@@ -128,8 +128,16 @@
 }
 
 @include h.mobile-small {
+  .task-dialog-backdrop {
+    align-items: end;
+    padding: 0;
+  }
+
   .task-dialog {
-    padding: h.rem(22px);
+    width: 100%;
+    max-height: 92vh;
+    padding: h.rem(22px) h.rem(16px);
+    border-radius: h.$radius-large h.$radius-large 0 0;
 
     &__facts {
       grid-template-columns: 1fr;
