@@ -55,7 +55,7 @@ func TestRefreshUnauthorizedContract(t *testing.T) {
 	}
 }
 
-func TestPetAPIContract(t *testing.T) {
+func TestGameAPIContract(t *testing.T) {
 	t.Parallel()
 
 	loader := openapi3.NewLoader()
@@ -68,9 +68,16 @@ func TestPetAPIContract(t *testing.T) {
 		path   string
 		method string
 	}{
-		{path: "/api/pet", method: "GET"},
-		{path: "/api/pet/items/{item_id}/use", method: "POST"},
-		{path: "/api/pet/daily-summary", method: "GET"},
+		{path: "/api/v1/pet", method: "GET"},
+		{path: "/api/v1/tasks", method: "GET"},
+		{path: "/api/v1/tasks/{task_id}", method: "GET"},
+		{path: "/api/v1/actions", method: "POST"},
+		{path: "/api/v1/room", method: "GET"},
+		{path: "/api/v1/story", method: "GET"},
+		{path: "/api/v1/daily-summary", method: "GET"},
+		{path: "/api/v1/leaderboard", method: "GET"},
+		{path: "/api/v1/achievements", method: "GET"},
+		{path: "/api/v1/ws", method: "GET"},
 	}
 	for _, tt := range tests {
 		path := doc.Paths.Find(tt.path)
@@ -83,12 +90,15 @@ func TestPetAPIContract(t *testing.T) {
 			t.Errorf("%s %s operation is missing", tt.method, tt.path)
 			continue
 		}
-		if operation.Security == nil || len(*operation.Security) == 0 {
-			t.Errorf("%s %s must require bearer authentication", tt.method, tt.path)
+		if operation.Security == nil || len(*operation.Security) != 2 {
+			t.Errorf("%s %s must support bearer and X-User-ID authentication", tt.method, tt.path)
 		}
 	}
 
-	for _, schema := range []string{"PetSnapshotResponse", "PetCareResponse", "PetDailySummaryResponse"} {
+	for _, schema := range []string{
+		"PetProfile", "TaskProgress", "ActionRequest", "ActionResult", "RoomResponse",
+		"StoryResponse", "DailySummary", "LeaderboardResponse", "Achievement",
+	} {
 		if _, ok := doc.Components.Schemas[schema]; !ok {
 			t.Errorf("schema %s is missing", schema)
 		}
