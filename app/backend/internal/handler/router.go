@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/guitaramust-sudo/Avitosha/app/backend/internal/model"
+	"github.com/guitaramust-sudo/Avitosha/app/backend/internal/realtime"
 	"github.com/guitaramust-sudo/Avitosha/app/backend/internal/usecase"
 )
 
@@ -33,6 +34,7 @@ type RouterDependencies struct {
 	RefreshTokenTTL     time.Duration
 	SecureRefreshCookie bool
 	GameService         GameUseCase
+	EventHub            *realtime.Hub
 	Now                 func() time.Time
 }
 
@@ -85,6 +87,7 @@ func mountAPIRoutes(r chi.Router, logger *slog.Logger, deps RouterDependencies) 
 	})
 
 	gameHandler := NewGameHandler(logger, deps.GameService, deps.Now)
+	webSocketHandler := NewGameWebSocketHandler(logger, deps.EventHub, deps.FrontendOrigin)
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Use(GameIdentity(logger, deps.AccessTokenVerifier))
 		r.Get("/pet", gameHandler.GetPet)
@@ -93,5 +96,6 @@ func mountAPIRoutes(r chi.Router, logger *slog.Logger, deps RouterDependencies) 
 		r.Post("/actions", gameHandler.ProcessAction)
 		r.Get("/room", gameHandler.GetRoom)
 		r.Get("/story", gameHandler.GetStory)
+		r.Get("/ws", webSocketHandler.ServeHTTP)
 	})
 }

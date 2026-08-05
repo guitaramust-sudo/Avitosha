@@ -15,6 +15,7 @@ import (
 	backendauth "github.com/guitaramust-sudo/Avitosha/app/backend/internal/auth"
 	"github.com/guitaramust-sudo/Avitosha/app/backend/internal/config"
 	"github.com/guitaramust-sudo/Avitosha/app/backend/internal/handler"
+	"github.com/guitaramust-sudo/Avitosha/app/backend/internal/realtime"
 	"github.com/guitaramust-sudo/Avitosha/app/backend/internal/repository/postgres"
 	"github.com/guitaramust-sudo/Avitosha/app/backend/internal/usecase"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -75,7 +76,8 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, err
 	if err != nil {
 		return nil, fmt.Errorf("create auth service: %w", err)
 	}
-	game := newGameService(pool, txManager, nil)
+	eventHub := realtime.NewHub(realtime.DefaultBufferSize)
+	game := newGameService(pool, txManager, eventHub)
 
 	router := handler.NewRouter(handler.RouterDependencies{
 		Logger:              logger,
@@ -86,6 +88,7 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, err
 		RefreshTokenTTL:     cfg.RefreshTokenTTL,
 		SecureRefreshCookie: cfg.AppEnv == config.AppEnvProd,
 		GameService:         game,
+		EventHub:            eventHub,
 	})
 	server := &http.Server{
 		Addr:         cfg.HTTPAddr,

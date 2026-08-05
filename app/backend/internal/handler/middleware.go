@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"bufio"
 	"log/slog"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -147,6 +149,14 @@ func (r *responseRecorder) Status() int {
 	}
 
 	return r.status
+}
+
+func (r *responseRecorder) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	hijacker, ok := r.ResponseWriter.(http.Hijacker)
+	if !ok {
+		return nil, nil, http.ErrNotSupported
+	}
+	return hijacker.Hijack()
 }
 
 func bearerToken(authorizationHeader string) (string, error) {
