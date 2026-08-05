@@ -12,16 +12,26 @@ import (
 )
 
 type gamePetDTO struct {
-	ID                uuid.UUID           `json:"id"`
-	Name              string              `json:"name"`
-	Level             int                 `json:"level"`
-	GrowthXP          int                 `json:"growthXp"`
-	NextLevelXP       *int                `json:"nextLevelXp"`
-	Mood              model.PetMood       `json:"mood"`
-	Character         *model.PetCharacter `json:"character"`
-	CharacterProgress int                 `json:"characterProgress"`
-	CharacterTarget   int                 `json:"characterTarget"`
-	CurrentStory      currentStoryDTO     `json:"currentStory"`
+	ID               uuid.UUID           `json:"id"`
+	Name             string              `json:"name"`
+	Level            int                 `json:"level"`
+	GrowthXP         int                 `json:"growthXp"`
+	NextLevelXP      *int                `json:"nextLevelXp"`
+	Mood             model.PetMood       `json:"mood"`
+	Character        *model.PetCharacter `json:"character"`
+	CharacterProfile characterProfileDTO `json:"characterProfile"`
+	CurrentStory     currentStoryDTO     `json:"currentStory"`
+}
+
+type characterProfileDTO struct {
+	Code         model.PetCharacter `json:"code"`
+	Name         string             `json:"name"`
+	Description  string             `json:"description"`
+	IconKey      string             `json:"iconKey"`
+	VisualDetail string             `json:"visualDetail"`
+	Progress     int                `json:"progress"`
+	Target       int                `json:"target"`
+	Unlocked     bool               `json:"unlocked"`
 }
 
 type currentStoryDTO struct {
@@ -37,7 +47,12 @@ func newGamePetDTO(profile usecase.GameProfile) gamePetDTO {
 		ID: profile.Pet.ID, Name: profile.Pet.Name, Level: profile.Pet.Level,
 		GrowthXP: profile.Pet.GrowthXP, NextLevelXP: profile.NextLevelXP,
 		Mood: profile.Pet.Mood, Character: profile.Pet.Character,
-		CharacterProgress: profile.CharacterProgress, CharacterTarget: usecase.CharacterUnlockTarget,
+		CharacterProfile: characterProfileDTO{
+			Code: profile.Character.Code, Name: profile.Character.Name,
+			Description: profile.Character.Description, IconKey: profile.Character.IconKey,
+			VisualDetail: profile.Character.VisualDetail, Progress: profile.Character.Progress,
+			Target: profile.Character.Target, Unlocked: profile.Character.Unlocked,
+		},
 		CurrentStory: currentStoryDTO{
 			Code: profile.Story.Story.Code, Title: profile.Story.Story.Title,
 			CurrentStage: profile.Story.Progress.CurrentStage,
@@ -180,4 +195,91 @@ func newStoryDTO(snapshot model.StorySnapshot) storyDTO {
 		}
 	}
 	return result
+}
+
+type dailySummaryDTO struct {
+	Date              string        `json:"date"`
+	ActionsCount      int           `json:"actionsCount"`
+	CompletedTasks    int           `json:"completedTasks"`
+	EarnedXP          int           `json:"earnedXp"`
+	LevelBefore       int           `json:"levelBefore"`
+	LevelAfter        int           `json:"levelAfter"`
+	UnlockedRoomItems []string      `json:"unlockedRoomItems"`
+	StoryStageBefore  int           `json:"storyStageBefore"`
+	StoryStageAfter   int           `json:"storyStageAfter"`
+	WeeklyScoreDelta  int           `json:"weeklyScoreDelta"`
+	WeeklyPosition    *int          `json:"weeklyPosition"`
+	PetMood           model.PetMood `json:"petMood"`
+}
+
+func newDailySummaryDTO(summary usecase.DailySummary) dailySummaryDTO {
+	return dailySummaryDTO{
+		Date:         summary.Progress.Date.UTC().Format(time.DateOnly),
+		ActionsCount: summary.Progress.ActionsCount, CompletedTasks: summary.Progress.CompletedTasks,
+		EarnedXP: summary.Progress.EarnedXP, LevelBefore: summary.Progress.LevelBefore,
+		LevelAfter:        summary.Progress.LevelAfter,
+		UnlockedRoomItems: append([]string(nil), summary.Progress.UnlockedRoomItems...),
+		StoryStageBefore:  summary.Progress.StoryStageBefore,
+		StoryStageAfter:   summary.Progress.StoryStageAfter,
+		WeeklyScoreDelta:  summary.Progress.WeeklyScoreDelta,
+		WeeklyPosition:    summary.WeeklyPosition, PetMood: summary.Progress.PetMood,
+	}
+}
+
+type leaderboardDTO struct {
+	WeekStart   string                `json:"weekStart"`
+	Leaders     []leaderboardEntryDTO `json:"leaders"`
+	CurrentUser leaderboardEntryDTO   `json:"currentUser"`
+}
+
+type leaderboardEntryDTO struct {
+	Position       int       `json:"position"`
+	UserID         uuid.UUID `json:"userId"`
+	PetName        string    `json:"petName"`
+	Level          int       `json:"level"`
+	Score          int       `json:"score"`
+	CompletedTasks int       `json:"completedTasks"`
+}
+
+func newLeaderboardDTO(leaderboard usecase.Leaderboard) leaderboardDTO {
+	leaders := make([]leaderboardEntryDTO, len(leaderboard.Leaders))
+	for index, entry := range leaderboard.Leaders {
+		leaders[index] = newLeaderboardEntryDTO(entry)
+	}
+	return leaderboardDTO{
+		WeekStart: leaderboard.WeekStart.UTC().Format(time.DateOnly), Leaders: leaders,
+		CurrentUser: newLeaderboardEntryDTO(leaderboard.CurrentUser),
+	}
+}
+
+func newLeaderboardEntryDTO(entry model.LeaderboardEntry) leaderboardEntryDTO {
+	return leaderboardEntryDTO{
+		Position: entry.Position, UserID: entry.UserID, PetName: entry.PetName,
+		Level: entry.Level, Score: entry.Score, CompletedTasks: entry.CompletedTasks,
+	}
+}
+
+type achievementsDTO struct {
+	Achievements []achievementDTO `json:"achievements"`
+}
+
+type achievementDTO struct {
+	Code        string     `json:"code"`
+	Title       string     `json:"title"`
+	Description string     `json:"description"`
+	IconKey     string     `json:"iconKey"`
+	Unlocked    bool       `json:"unlocked"`
+	UnlockedAt  *time.Time `json:"unlockedAt"`
+}
+
+func newAchievementsDTO(items []model.AchievementProgress) achievementsDTO {
+	result := make([]achievementDTO, len(items))
+	for index, item := range items {
+		result[index] = achievementDTO{
+			Code: item.Achievement.Code, Title: item.Achievement.Title,
+			Description: item.Achievement.Description, IconKey: item.Achievement.IconKey,
+			Unlocked: item.UnlockedAt != nil, UnlockedAt: item.UnlockedAt,
+		}
+	}
+	return achievementsDTO{Achievements: result}
 }

@@ -93,11 +93,63 @@ func ActivityDelta(actionType model.ActionType, category *string) ActivityScoreD
 }
 
 func CharacterFromScores(scores model.ActivityScores) (*model.PetCharacter, int) {
-	type candidate struct {
+	character, score := leadingCharacter(scores)
+	if score < CharacterUnlockTarget {
+		return nil, score
+	}
+	return &character, score
+}
+
+func BuildCharacterProfile(pet model.Pet, scores model.ActivityScores) CharacterProfile {
+	candidate, progress := leadingCharacter(scores)
+	unlocked := pet.Character != nil
+	if unlocked {
+		candidate = *pet.Character
+	}
+	profile := CharacterProfile{
+		Code: candidate, Progress: min(progress, CharacterUnlockTarget),
+		Target: CharacterUnlockTarget, Unlocked: unlocked,
+	}
+	switch candidate {
+	case model.PetCharacterEntrepreneur:
+		profile.Name = "Предприниматель"
+		profile.Description = "Любит создавать объявления и находить вещам новых хозяев"
+		profile.IconKey = "character.entrepreneur"
+		profile.VisualDetail = "notebook"
+	case model.PetCharacterMechanic:
+		profile.Name = "Механик"
+		profile.Description = "Интересуется автомобилями и всем, что движется"
+		profile.IconKey = "character.mechanic"
+		profile.VisualDetail = "toy-wrench"
+	case model.PetCharacterTraveler:
+		profile.Name = "Путешественник"
+		profile.Description = "Собирает идеи для новых поездок"
+		profile.IconKey = "character.traveler"
+		profile.VisualDetail = "suitcase-badge"
+	case model.PetCharacterArchitect:
+		profile.Name = "Архитектор"
+		profile.Description = "Продумывает пространство и будущий дом"
+		profile.IconKey = "character.architect"
+		profile.VisualDetail = "blueprint"
+	case model.PetCharacterCraftsperson:
+		profile.Name = "Мастер"
+		profile.Description = "Ценит полезные услуги и умелые руки"
+		profile.IconKey = "character.craftsperson"
+		profile.VisualDetail = "tool-badge"
+	default:
+		profile.Name = "Исследователь"
+		profile.Description = "Любит искать, сравнивать и сохранять интересные находки"
+		profile.IconKey = "character.explorer"
+		profile.VisualDetail = "magnifier"
+	}
+	return profile
+}
+
+func leadingCharacter(scores model.ActivityScores) (model.PetCharacter, int) {
+	candidates := []struct {
 		character model.PetCharacter
 		score     int
-	}
-	candidates := []candidate{
+	}{
 		{model.PetCharacterExplorer, scores.BuyerScore},
 		{model.PetCharacterEntrepreneur, scores.SellerScore},
 		{model.PetCharacterMechanic, scores.AutoScore},
@@ -105,17 +157,13 @@ func CharacterFromScores(scores model.ActivityScores) (*model.PetCharacter, int)
 		{model.PetCharacterArchitect, scores.RealEstateScore},
 		{model.PetCharacterCraftsperson, scores.ServicesScore},
 	}
-
 	best := candidates[0]
 	for _, item := range candidates[1:] {
 		if item.score > best.score {
 			best = item
 		}
 	}
-	if best.score < CharacterUnlockTarget {
-		return nil, best.score
-	}
-	return &best.character, best.score
+	return best.character, best.score
 }
 
 func AchievementCodesForTask(taskCode string, unlockedItem, storyCompleted bool) []string {

@@ -26,6 +26,9 @@ type GameUseCase interface {
 	GetTask(context.Context, uuid.UUID, uuid.UUID, time.Time) (model.TaskProgress, error)
 	GetRoom(context.Context, uuid.UUID, time.Time) ([]model.RoomItemProgress, error)
 	GetStory(context.Context, uuid.UUID, time.Time) (model.StorySnapshot, error)
+	GetDailySummary(context.Context, uuid.UUID, time.Time) (usecase.DailySummary, error)
+	GetLeaderboard(context.Context, uuid.UUID, int, time.Time) (usecase.Leaderboard, error)
+	GetAchievements(context.Context, uuid.UUID, time.Time) ([]model.AchievementProgress, error)
 	ProcessAction(context.Context, usecase.ProcessActionCommand) (usecase.ProcessActionResult, error)
 }
 
@@ -135,6 +138,54 @@ func (handler GameHandler) GetStory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, newStoryDTO(story))
+}
+
+func (handler GameHandler) GetDailySummary(w http.ResponseWriter, r *http.Request) {
+	userID, ok := handler.requireUser(w, r)
+	if !ok {
+		return
+	}
+	summary, err := handler.service.GetDailySummary(r.Context(), userID, handler.now())
+	if err != nil {
+		handler.writeError(w, r, "get_daily_summary", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, newDailySummaryDTO(summary))
+}
+
+func (handler GameHandler) GetLeaderboard(w http.ResponseWriter, r *http.Request) {
+	userID, ok := handler.requireUser(w, r)
+	if !ok {
+		return
+	}
+	if period := strings.TrimSpace(r.URL.Query().Get("period")); period != "" && period != "weekly" {
+		writeErrorResponse(w, http.StatusBadRequest, invalidRequestCode, "period must be weekly")
+		return
+	}
+	limit, err := parseLeaderboardLimit(r)
+	if err != nil {
+		writeErrorResponse(w, http.StatusBadRequest, invalidRequestCode, err.Error())
+		return
+	}
+	leaderboard, err := handler.service.GetLeaderboard(r.Context(), userID, limit, handler.now())
+	if err != nil {
+		handler.writeError(w, r, "get_leaderboard", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, newLeaderboardDTO(leaderboard))
+}
+
+func (handler GameHandler) GetAchievements(w http.ResponseWriter, r *http.Request) {
+	userID, ok := handler.requireUser(w, r)
+	if !ok {
+		return
+	}
+	achievements, err := handler.service.GetAchievements(r.Context(), userID, handler.now())
+	if err != nil {
+		handler.writeError(w, r, "get_achievements", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, newAchievementsDTO(achievements))
 }
 
 func (handler GameHandler) requireUser(w http.ResponseWriter, r *http.Request) (uuid.UUID, bool) {

@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -36,11 +37,33 @@ type GameService struct {
 }
 
 type GameProfile struct {
-	Pet               model.Pet
-	Story             model.StorySnapshot
-	ActivityScores    model.ActivityScores
-	CharacterProgress int
-	NextLevelXP       *int
+	Pet            model.Pet
+	Story          model.StorySnapshot
+	ActivityScores model.ActivityScores
+	Character      CharacterProfile
+	NextLevelXP    *int
+}
+
+type CharacterProfile struct {
+	Code         model.PetCharacter
+	Name         string
+	Description  string
+	IconKey      string
+	VisualDetail string
+	Progress     int
+	Target       int
+	Unlocked     bool
+}
+
+type DailySummary struct {
+	Progress       model.DailyProgress
+	WeeklyPosition *int
+}
+
+type Leaderboard struct {
+	WeekStart   time.Time
+	Leaders     []model.LeaderboardEntry
+	CurrentUser model.LeaderboardEntry
 }
 
 type ProcessActionCommand struct {
@@ -120,11 +143,86 @@ func (service *GameService) EnsureProfile(ctx context.Context, userID uuid.UUID,
 	if err != nil {
 		return GameProfile{}, fmt.Errorf("get game profile story: %w", err)
 	}
-	_, characterProgress := CharacterFromScores(profile.ActivityScores)
 	profile.Story = story
-	profile.CharacterProgress = characterProgress
+	profile.Character = BuildCharacterProfile(profile.Pet, profile.ActivityScores)
 	profile.NextLevelXP = NextLevelXP(profile.Pet.Level)
 	return profile, nil
+}
+
+func (service *GameService) GetDailySummary(
+	ctx context.Context,
+	userID uuid.UUID,
+	now time.Time,
+) (DailySummary, error) {
+	profile, err := service.EnsureProfile(ctx, userID, now)
+	if err != nil {
+		return DailySummary{}, err
+	}
+	date := utcDate(now)
+	progress, err := service.repository.GetDailyProgress(ctx, userID, date)
+	if errors.Is(err, ErrDailyProgressNotFound) {
+		progress = model.DailyProgress{
+			Date: date, UserID: userID, LevelBefore: profile.Pet.Level, LevelAfter: profile.Pet.Level,
+			StoryStageBefore: profile.Story.Progress.CurrentStage,
+			StoryStageAfter:  profile.Story.Progress.CurrentStage, PetMood: profile.Pet.Mood,
+			UnlockedRoomItems: []string{},
+		}
+	} else if err != nil {
+		return DailySummary{}, fmt.Errorf("get daily progress: %w", err)
+	}
+
+	result := DailySummary{Progress: progress}
+	position, err := service.repository.GetWeeklyPosition(ctx, userID, WeekStart(now))
+	if err == nil {
+		result.WeeklyPosition = &position.Position
+	} else if !errors.Is(err, ErrLeaderboardEntryNotFound) {
+		return DailySummary{}, fmt.Errorf("get daily leaderboard position: %w", err)
+	}
+	return result, nil
+}
+
+func (service *GameService) GetLeaderboard(
+	ctx context.Context,
+	userID uuid.UUID,
+	limit int,
+	now time.Time,
+) (Leaderboard, error) {
+	if limit < 1 || limit > 100 {
+		return Leaderboard{}, ErrInvalidAction
+	}
+	if _, err := service.EnsureProfile(ctx, userID, now); err != nil {
+		return Leaderboard{}, err
+	}
+	weekStart := WeekStart(now)
+	if _, err := service.repository.UpdateWeeklyProgress(
+		ctx, userID, weekStart, WeeklyProgressDelta{}, now.UTC(),
+	); err != nil {
+		return Leaderboard{}, fmt.Errorf("ensure weekly leaderboard entry: %w", err)
+	}
+	leaders, err := service.repository.ListWeeklyLeaders(ctx, weekStart, limit)
+	if err != nil {
+		return Leaderboard{}, fmt.Errorf("list weekly leaders: %w", err)
+	}
+	current, err := service.repository.GetWeeklyPosition(ctx, userID, weekStart)
+	if err != nil {
+		return Leaderboard{}, fmt.Errorf("get current weekly position: %w", err)
+	}
+	return Leaderboard{WeekStart: weekStart, Leaders: leaders, CurrentUser: current}, nil
+}
+
+func (service *GameService) GetAchievements(
+	ctx context.Context,
+	userID uuid.UUID,
+	now time.Time,
+) ([]model.AchievementProgress, error) {
+	if _, err := service.EnsureProfile(ctx, userID, now); err != nil {
+		return nil, err
+	}
+	items, err := service.repository.ListAchievements(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("list achievements: %w", err)
+	}
+	return items, nil
 }
 
 func (service *GameService) ListTasks(ctx context.Context, userID uuid.UUID, now time.Time) ([]model.TaskProgress, error) {

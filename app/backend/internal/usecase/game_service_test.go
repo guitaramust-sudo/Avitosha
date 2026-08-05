@@ -280,6 +280,43 @@ func (repository *gameTestRepository) UpdateDailyProgress(
 	return repository.daily, nil
 }
 
+func (repository *gameTestRepository) GetDailyProgress(
+	_ context.Context,
+	_ uuid.UUID,
+	_ time.Time,
+) (model.DailyProgress, error) {
+	if repository.daily.ActionsCount == 0 {
+		return model.DailyProgress{}, ErrDailyProgressNotFound
+	}
+	return repository.daily, nil
+}
+
+func (repository *gameTestRepository) ListWeeklyLeaders(
+	_ context.Context,
+	_ time.Time,
+	limit int,
+) ([]model.LeaderboardEntry, error) {
+	entry, err := repository.GetWeeklyPosition(context.Background(), repository.pet.UserID, repository.weekly.WeekStart)
+	if err != nil || limit == 0 {
+		return nil, err
+	}
+	return []model.LeaderboardEntry{entry}, nil
+}
+
+func (repository *gameTestRepository) GetWeeklyPosition(
+	_ context.Context,
+	userID uuid.UUID,
+	_ time.Time,
+) (model.LeaderboardEntry, error) {
+	if repository.weekly.UserID == uuid.Nil {
+		return model.LeaderboardEntry{}, ErrLeaderboardEntryNotFound
+	}
+	return model.LeaderboardEntry{
+		Position: 1, UserID: userID, PetName: repository.pet.Name, Level: repository.pet.Level,
+		Score: repository.weekly.Score, CompletedTasks: repository.weekly.CompletedTasks,
+	}, nil
+}
+
 func (repository *gameTestRepository) UpdateActivityScores(
 	_ context.Context,
 	_ uuid.UUID,
@@ -312,6 +349,20 @@ func (repository *gameTestRepository) UnlockAchievements(
 		}
 		repository.achievements[code] = achievement
 		result = append(result, achievement)
+	}
+	return result, nil
+}
+
+func (repository *gameTestRepository) ListAchievements(
+	_ context.Context,
+	_ uuid.UUID,
+) ([]model.AchievementProgress, error) {
+	result := make([]model.AchievementProgress, 0, len(repository.achievements))
+	for code, unlocked := range repository.achievements {
+		unlockedAt := unlocked.UnlockedAt
+		result = append(result, model.AchievementProgress{
+			Achievement: model.Achievement{Code: code, Title: code}, UnlockedAt: &unlockedAt,
+		})
 	}
 	return result, nil
 }
@@ -454,6 +505,18 @@ func TestEndToEndCompletesFirstRoom(t *testing.T) {
 		if _, ok := repository.achievements[code]; !ok {
 			t.Errorf("achievement %s is missing", code)
 		}
+	}
+	summary, err := service.GetDailySummary(context.Background(), userID, last.Now)
+	if err != nil || summary.Progress.EarnedXP != 230 || summary.WeeklyPosition == nil || *summary.WeeklyPosition != 1 {
+		t.Fatalf("daily summary = %+v, error = %v", summary, err)
+	}
+	leaderboard, err := service.GetLeaderboard(context.Background(), userID, 10, last.Now)
+	if err != nil || leaderboard.CurrentUser.Score != 580 || len(leaderboard.Leaders) != 1 {
+		t.Fatalf("leaderboard = %+v, error = %v", leaderboard, err)
+	}
+	achievements, err := service.GetAchievements(context.Background(), userID, last.Now)
+	if err != nil || len(achievements) != 6 {
+		t.Fatalf("achievements = %+v, error = %v", achievements, err)
 	}
 
 	duplicate, err := service.ProcessAction(context.Background(), last)

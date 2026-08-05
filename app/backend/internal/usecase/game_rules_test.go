@@ -62,3 +62,19 @@ func TestCharacterUnlockUsesStableHighestScore(t *testing.T) {
 		t.Fatalf("unlocked character = %v, progress = %d", unlocked, progress)
 	}
 }
+
+func TestBuildCharacterProfileDescribesLockedAndUnlockedState(t *testing.T) {
+	locked := BuildCharacterProfile(model.Pet{}, model.ActivityScores{SellerScore: 3})
+	if locked.Code != model.PetCharacterEntrepreneur || locked.Name != "Предприниматель" ||
+		locked.Progress != 3 || locked.Unlocked {
+		t.Fatalf("locked profile = %+v", locked)
+	}
+	character := model.PetCharacterTraveler
+	unlocked := BuildCharacterProfile(
+		model.Pet{Character: &character},
+		model.ActivityScores{BuyerScore: 8, TravelScore: 5},
+	)
+	if unlocked.Code != model.PetCharacterTraveler || unlocked.VisualDetail != "suitcase-badge" || !unlocked.Unlocked {
+		t.Fatalf("unlocked profile = %+v", unlocked)
+	}
+}

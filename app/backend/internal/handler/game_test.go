@@ -18,12 +18,15 @@ import (
 )
 
 type fakeGameUseCase struct {
-	ensureProfileFunc func(context.Context, uuid.UUID, time.Time) (usecase.GameProfile, error)
-	listTasksFunc     func(context.Context, uuid.UUID, time.Time) ([]model.TaskProgress, error)
-	getTaskFunc       func(context.Context, uuid.UUID, uuid.UUID, time.Time) (model.TaskProgress, error)
-	getRoomFunc       func(context.Context, uuid.UUID, time.Time) ([]model.RoomItemProgress, error)
-	getStoryFunc      func(context.Context, uuid.UUID, time.Time) (model.StorySnapshot, error)
-	processActionFunc func(context.Context, usecase.ProcessActionCommand) (usecase.ProcessActionResult, error)
+	ensureProfileFunc   func(context.Context, uuid.UUID, time.Time) (usecase.GameProfile, error)
+	listTasksFunc       func(context.Context, uuid.UUID, time.Time) ([]model.TaskProgress, error)
+	getTaskFunc         func(context.Context, uuid.UUID, uuid.UUID, time.Time) (model.TaskProgress, error)
+	getRoomFunc         func(context.Context, uuid.UUID, time.Time) ([]model.RoomItemProgress, error)
+	getStoryFunc        func(context.Context, uuid.UUID, time.Time) (model.StorySnapshot, error)
+	getDailyFunc        func(context.Context, uuid.UUID, time.Time) (usecase.DailySummary, error)
+	getLeaderboardFunc  func(context.Context, uuid.UUID, int, time.Time) (usecase.Leaderboard, error)
+	getAchievementsFunc func(context.Context, uuid.UUID, time.Time) ([]model.AchievementProgress, error)
+	processActionFunc   func(context.Context, usecase.ProcessActionCommand) (usecase.ProcessActionResult, error)
 }
 
 func (fake fakeGameUseCase) EnsureProfile(ctx context.Context, userID uuid.UUID, now time.Time) (usecase.GameProfile, error) {
@@ -46,6 +49,18 @@ func (fake fakeGameUseCase) GetStory(ctx context.Context, userID uuid.UUID, now 
 	return fake.getStoryFunc(ctx, userID, now)
 }
 
+func (fake fakeGameUseCase) GetDailySummary(ctx context.Context, userID uuid.UUID, now time.Time) (usecase.DailySummary, error) {
+	return fake.getDailyFunc(ctx, userID, now)
+}
+
+func (fake fakeGameUseCase) GetLeaderboard(ctx context.Context, userID uuid.UUID, limit int, now time.Time) (usecase.Leaderboard, error) {
+	return fake.getLeaderboardFunc(ctx, userID, limit, now)
+}
+
+func (fake fakeGameUseCase) GetAchievements(ctx context.Context, userID uuid.UUID, now time.Time) ([]model.AchievementProgress, error) {
+	return fake.getAchievementsFunc(ctx, userID, now)
+}
+
 func (fake fakeGameUseCase) ProcessAction(ctx context.Context, command usecase.ProcessActionCommand) (usecase.ProcessActionResult, error) {
 	return fake.processActionFunc(ctx, command)
 }
@@ -61,6 +76,9 @@ func TestGameRoutesRequireIdentity(t *testing.T) {
 		{http.MethodPost, "/api/v1/actions"},
 		{http.MethodGet, "/api/v1/room"},
 		{http.MethodGet, "/api/v1/story"},
+		{http.MethodGet, "/api/v1/daily-summary"},
+		{http.MethodGet, "/api/v1/leaderboard"},
+		{http.MethodGet, "/api/v1/achievements"},
 	} {
 		request := httptest.NewRequestWithContext(context.Background(), route.method, route.path, nil)
 		recorder := httptest.NewRecorder()
@@ -192,6 +210,60 @@ func TestProcessActionRejectsMalformedBody(t *testing.T) {
 	}
 }
 
+func TestProgressRoutesReturnDailyLeaderboardAndAchievements(t *testing.T) {
+	userID := uuid.New()
+	now := time.Date(2026, 8, 5, 12, 0, 0, 0, time.UTC)
+	service := completeFakeGameUseCase()
+	service.getDailyFunc = func(context.Context, uuid.UUID, time.Time) (usecase.DailySummary, error) {
+		return usecase.DailySummary{Progress: model.DailyProgress{
+			Date: now, ActionsCount: 7, CompletedTasks: 2, EarnedXP: 60,
+			LevelBefore: 1, LevelAfter: 2, UnlockedRoomItems: []string{"DESK", "LAMP"},
+			StoryStageBefore: 0, StoryStageAfter: 2, WeeklyScoreDelta: 200, PetMood: model.PetMoodProud,
+		}, WeeklyPosition: gameIntPointer(14)}, nil
+	}
+	service.getLeaderboardFunc = func(_ context.Context, gotUserID uuid.UUID, limit int, _ time.Time) (usecase.Leaderboard, error) {
+		if gotUserID != userID || limit != 10 {
+			t.Fatalf("leaderboard user = %s, limit = %d", gotUserID, limit)
+		}
+		entry := model.LeaderboardEntry{Position: 1, UserID: userID, PetName: "Авитоша", Level: 2, Score: 200}
+		return usecase.Leaderboard{WeekStart: time.Date(2026, 8, 3, 0, 0, 0, 0, time.UTC), Leaders: []model.LeaderboardEntry{entry}, CurrentUser: entry}, nil
+	}
+	service.getAchievementsFunc = func(context.Context, uuid.UUID, time.Time) ([]model.AchievementProgress, error) {
+		unlockedAt := now
+		return []model.AchievementProgress{{
+			Achievement: model.Achievement{Code: "FIRST_STEP", Title: "Первый шаг"}, UnlockedAt: &unlockedAt,
+		}}, nil
+	}
+	router := newGameTestRouter(RouterDependencies{GameService: service, Now: func() time.Time { return now }})
+
+	for _, path := range []string{
+		"/api/v1/daily-summary", "/api/v1/leaderboard?period=weekly&limit=10", "/api/v1/achievements",
+	} {
+		request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, path, nil)
+		request.Header.Set("X-User-ID", userID.String())
+		recorder := httptest.NewRecorder()
+		router.ServeHTTP(recorder, request)
+		if recorder.Code != http.StatusOK {
+			t.Fatalf("GET %s status = %d, body = %s", path, recorder.Code, recorder.Body.String())
+		}
+	}
+}
+
+func TestLeaderboardRejectsUnsupportedPeriodAndLimit(t *testing.T) {
+	router := newGameTestRouter(RouterDependencies{GameService: completeFakeGameUseCase()})
+	for _, path := range []string{
+		"/api/v1/leaderboard?period=all-time", "/api/v1/leaderboard?limit=101",
+	} {
+		request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, path, nil)
+		request.Header.Set("X-User-ID", uuid.NewString())
+		recorder := httptest.NewRecorder()
+		router.ServeHTTP(recorder, request)
+		if recorder.Code != http.StatusBadRequest {
+			t.Fatalf("GET %s status = %d, body = %s", path, recorder.Code, recorder.Body.String())
+		}
+	}
+}
+
 func completeFakeGameUseCase() fakeGameUseCase {
 	return fakeGameUseCase{
 		ensureProfileFunc: func(context.Context, uuid.UUID, time.Time) (usecase.GameProfile, error) {
@@ -207,6 +279,15 @@ func completeFakeGameUseCase() fakeGameUseCase {
 		},
 		processActionFunc: func(context.Context, usecase.ProcessActionCommand) (usecase.ProcessActionResult, error) {
 			return usecase.ProcessActionResult{}, nil
+		},
+		getDailyFunc: func(context.Context, uuid.UUID, time.Time) (usecase.DailySummary, error) {
+			return usecase.DailySummary{}, nil
+		},
+		getLeaderboardFunc: func(context.Context, uuid.UUID, int, time.Time) (usecase.Leaderboard, error) {
+			return usecase.Leaderboard{}, nil
+		},
+		getAchievementsFunc: func(context.Context, uuid.UUID, time.Time) ([]model.AchievementProgress, error) {
+			return nil, nil
 		},
 	}
 }
