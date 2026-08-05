@@ -50,10 +50,13 @@ type gameTestRepository struct {
 	scores       model.ActivityScores
 	achievements map[string]model.UserAchievement
 	events       []model.DomainEvent
+	balances     map[string]model.RewardBalance
+	rewarded     map[string]struct{}
 }
 
 func newGameTestRepository(userID uuid.UUID) *gameTestRepository {
 	category := "FURNITURE"
+	avitoBonus := DefaultRewardType
 	storyCode := FirstRoomStoryCode
 	stageOne := 1
 	stageTwo := 2
@@ -70,35 +73,85 @@ func newGameTestRepository(userID uuid.UUID) *gameTestRepository {
 			1: {
 				ID: uuid.New(), Code: "VIEW_FURNITURE_ADS", Title: "Стол",
 				ActionType: model.ActionTypeAdViewed, Category: &category,
-				TargetValue: 5, XPReward: 30, RoomItemCode: &desk,
-				StoryCode: &storyCode, StoryStage: &stageOne, IsActive: true,
+				TargetValue: 5, XPReward: 30, AvitoRewardType: &avitoBonus, AvitoRewardAmount: 10,
+				RoomItemCode: &desk,
+				StoryCode:    &storyCode, StoryStage: &stageOne, IsActive: true,
 			},
 			2: {
 				ID: uuid.New(), Code: "FAVORITE_FURNITURE_AD", Title: "Лампа",
 				ActionType: model.ActionTypeAdFavorited, Category: &category,
-				TargetValue: 1, XPReward: 30, RoomItemCode: &lamp,
-				StoryCode: &storyCode, StoryStage: &stageTwo, IsActive: true,
+				TargetValue: 1, XPReward: 30, AvitoRewardType: &avitoBonus, AvitoRewardAmount: 10,
+				RoomItemCode: &lamp,
+				StoryCode:    &storyCode, StoryStage: &stageTwo, IsActive: true,
 			},
 			3: {
 				ID: uuid.New(), Code: "MESSAGE_SELLER", Title: "Кресло",
 				ActionType: model.ActionTypeMessageSent, TargetValue: 1, XPReward: 40,
+				AvitoRewardType: &avitoBonus, AvitoRewardAmount: 15,
 				RoomItemCode: &chair, StoryCode: &storyCode, StoryStage: &stageThree, IsActive: true,
 			},
 			4: {
 				ID: uuid.New(), Code: "CREATE_FIRST_AD", Title: "Растение",
 				ActionType: model.ActionTypeAdCreated, TargetValue: 1, XPReward: 50,
+				AvitoRewardType: &avitoBonus, AvitoRewardAmount: 20,
 				RoomItemCode: &plant, StoryCode: &storyCode, StoryStage: &stageFour, IsActive: true,
 			},
 			5: {
 				ID: uuid.New(), Code: "USE_DELIVERY", Title: "Постер",
 				ActionType: model.ActionTypeDeliveryUsed, TargetValue: 1, XPReward: 80,
+				AvitoRewardType: &avitoBonus, AvitoRewardAmount: 25,
 				RoomItemCode: &poster, StoryCode: &storyCode, StoryStage: &stageFive, IsActive: true,
 			},
 		},
 		userTasks: make(map[uuid.UUID]model.UserTask), actions: make(map[uuid.UUID]model.UserAction),
 		roomItems: make(map[string]model.UserRoomItem), achievements: make(map[string]model.UserAchievement),
+		balances: make(map[string]model.RewardBalance), rewarded: make(map[string]struct{}),
 		scores: model.ActivityScores{UserID: userID},
 	}
+}
+
+func (repository *gameTestRepository) EnsureRewardBalance(
+	_ context.Context,
+	userID uuid.UUID,
+	rewardType string,
+	now time.Time,
+) (model.RewardBalance, error) {
+	balance, exists := repository.balances[rewardType]
+	if !exists {
+		balance = model.RewardBalance{
+			UserID: userID, RewardType: rewardType, CreatedAt: now, UpdatedAt: now,
+		}
+		repository.balances[rewardType] = balance
+	}
+	return balance, nil
+}
+
+func (repository *gameTestRepository) CreditReward(
+	_ context.Context,
+	credit model.RewardCredit,
+) (model.RewardBalance, bool, error) {
+	key := credit.ActionID.String() + ":" + credit.TaskID.String() + ":" + credit.RewardType
+	if _, exists := repository.rewarded[key]; exists {
+		return repository.balances[credit.RewardType], false, nil
+	}
+	repository.rewarded[key] = struct{}{}
+	balance := repository.balances[credit.RewardType]
+	balance.Balance += int64(credit.Amount)
+	balance.EarnedTotal += int64(credit.Amount)
+	balance.UpdatedAt = credit.CreatedAt
+	repository.balances[credit.RewardType] = balance
+	return balance, true, nil
+}
+
+func (repository *gameTestRepository) ListRewardBalances(
+	_ context.Context,
+	_ uuid.UUID,
+) ([]model.RewardBalance, error) {
+	balances := make([]model.RewardBalance, 0, len(repository.balances))
+	for _, balance := range repository.balances {
+		balances = append(balances, balance)
+	}
+	return balances, nil
 }
 
 func (repository *gameTestRepository) GetOrCreateGamePet(_ context.Context, candidate model.Pet) (model.Pet, error) {
@@ -444,6 +497,19 @@ func TestProcessActionCompletesFirstRoomStageAndIsIdempotent(t *testing.T) {
 	if repository.daily.ActionsCount != 5 || repository.daily.CompletedTasks != 1 {
 		t.Fatalf("daily progress = %+v", repository.daily)
 	}
+	if balance := repository.balances[DefaultRewardType]; balance.Balance != 10 || balance.EarnedTotal != 10 {
+		t.Fatalf("reward balance = %+v", balance)
+	}
+	rewardEventFound := false
+	for _, event := range repository.events {
+		if event.Type == model.DomainEventAvitoRewardEarned {
+			rewardEventFound = true
+			break
+		}
+	}
+	if !rewardEventFound {
+		t.Fatal("AVITO_REWARD_EARNED event was not created")
+	}
 	if publisher.insideTx || len(publisher.batches) != 5 {
 		t.Fatalf("publisher insideTx = %v, batches = %d", publisher.insideTx, len(publisher.batches))
 	}
@@ -452,7 +518,8 @@ func TestProcessActionCompletesFirstRoomStageAndIsIdempotent(t *testing.T) {
 	if err != nil || !duplicate.Duplicate {
 		t.Fatalf("duplicate result = %+v, error = %v", duplicate, err)
 	}
-	if repository.pet.GrowthXP != 30 || repository.weekly.Score != 100 || repository.daily.ActionsCount != 5 {
+	if repository.pet.GrowthXP != 30 || repository.weekly.Score != 100 || repository.daily.ActionsCount != 5 ||
+		repository.balances[DefaultRewardType].Balance != 10 {
 		t.Fatal("duplicate action changed rewards or aggregates")
 	}
 	if len(publisher.batches) != 5 {
@@ -521,6 +588,9 @@ func TestEndToEndCompletesFirstRoom(t *testing.T) {
 		repository.daily.EarnedXP != 230 || repository.daily.StoryStageAfter != 5 {
 		t.Fatalf("daily = %+v", repository.daily)
 	}
+	if balance := repository.balances[DefaultRewardType]; balance.Balance != 80 || balance.EarnedTotal != 80 {
+		t.Fatalf("reward balance = %+v, want 80", balance)
+	}
 	for _, code := range []string{"FIRST_STEP", "HOUSEWARMING", "EXPLORER", "IN_TOUCH", "FIRST_AD", "ROOM_COMPLETE"} {
 		if _, ok := repository.achievements[code]; !ok {
 			t.Errorf("achievement %s is missing", code)
@@ -538,12 +608,17 @@ func TestEndToEndCompletesFirstRoom(t *testing.T) {
 	if err != nil || len(achievements) != 6 {
 		t.Fatalf("achievements = %+v, error = %v", achievements, err)
 	}
+	balances, err := service.GetRewardBalances(context.Background(), userID, last.Now)
+	if err != nil || len(balances) != 1 || balances[0].Balance != 80 {
+		t.Fatalf("reward balances = %+v, error = %v", balances, err)
+	}
 
 	duplicate, err := service.ProcessAction(context.Background(), last)
 	if err != nil || !duplicate.Duplicate {
 		t.Fatalf("duplicate = %+v, error = %v", duplicate, err)
 	}
-	if repository.weekly.Score != 580 || repository.pet.GrowthXP != 230 || repository.daily.ActionsCount != 9 {
+	if repository.weekly.Score != 580 || repository.pet.GrowthXP != 230 || repository.daily.ActionsCount != 9 ||
+		repository.balances[DefaultRewardType].Balance != 80 {
 		t.Fatal("duplicate final action changed completed room state")
 	}
 }

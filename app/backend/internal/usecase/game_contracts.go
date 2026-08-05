@@ -72,4 +72,8 @@ type GameRepository interface {
 	GetActivityScores(context.Context, uuid.UUID) (model.ActivityScores, error)
 	UnlockAchievements(context.Context, uuid.UUID, []string, time.Time) ([]model.UserAchievement, error)
 	ListAchievements(context.Context, uuid.UUID) ([]model.AchievementProgress, error)
+
+	EnsureRewardBalance(context.Context, uuid.UUID, string, time.Time) (model.RewardBalance, error)
+	CreditReward(context.Context, model.RewardCredit) (model.RewardBalance, bool, error)
+	ListRewardBalances(context.Context, uuid.UUID) ([]model.RewardBalance, error)
 }

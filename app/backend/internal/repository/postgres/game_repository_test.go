@@ -261,8 +261,20 @@ func TestConcurrentTaskCompletionRewardsOnce(t *testing.T) {
 	if err != nil {
 		t.Fatalf("get weekly progress: %v", err)
 	}
-	if pet.GrowthXP != 30 || story.Progress.CurrentStage != 1 || weekly.Score != 100 || weekly.CompletedTasks != 1 {
-		t.Fatalf("pet XP = %d, story = %d, weekly = %+v", pet.GrowthXP, story.Progress.CurrentStage, weekly)
+	balances, err := repository.ListRewardBalances(context.Background(), user.ID)
+	if err != nil {
+		t.Fatalf("list reward balances: %v", err)
+	}
+	var rewardTransactions int
+	if err := pool.QueryRow(context.Background(), `
+SELECT COUNT(*) FROM reward_transactions WHERE user_id = $1
+`, user.ID).Scan(&rewardTransactions); err != nil {
+		t.Fatalf("count reward transactions: %v", err)
+	}
+	if pet.GrowthXP != 30 || story.Progress.CurrentStage != 1 || weekly.Score != 100 || weekly.CompletedTasks != 1 ||
+		len(balances) != 1 || balances[0].Balance != 10 || balances[0].EarnedTotal != 10 || rewardTransactions != 1 {
+		t.Fatalf("pet XP = %d, story = %d, weekly = %+v, balances = %+v, reward transactions = %d",
+			pet.GrowthXP, story.Progress.CurrentStage, weekly, balances, rewardTransactions)
 	}
 }
 

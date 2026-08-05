@@ -340,6 +340,24 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Achievement'
+  /api/v1/rewards/balance:
+    get:
+      tags: [game]
+      operationId: getRewardBalances
+      summary: Get the current user's reward balances
+      description: Returns balances actually credited for completed tasks. AVITO_BONUS is created with a zero balance on first profile access.
+      security:
+        - bearerAuth: []
+        - userIdHeader: []
+      responses:
+        '200':
+          description: Current and lifetime reward totals
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RewardBalanceResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /api/v1/ws:
     get:
       tags: [realtime]
@@ -765,3 +783,29 @@ components:
           type: string
           format: date-time
           nullable: true
+    RewardBalance:
+      type: object
+      required: [type, balance, earnedTotal, updatedAt]
+      properties:
+        type:
+          type: string
+          example: AVITO_BONUS
+        balance:
+          type: integer
+          format: int64
+          minimum: 0
+        earnedTotal:
+          type: integer
+          format: int64
+          minimum: 0
+        updatedAt:
+          type: string
+          format: date-time
+    RewardBalanceResponse:
+      type: object
+      required: [balances]
+      properties:
+        balances:
+          type: array
+          items:
+            $ref: '#/components/schemas/RewardBalance'

@@ -276,6 +276,28 @@ type achievementDTO struct {
 	UnlockedAt  *time.Time `json:"unlockedAt"`
 }
 
+type rewardBalanceListDTO struct {
+	Balances []rewardBalanceDTO `json:"balances"`
+}
+
+type rewardBalanceDTO struct {
+	Type        string    `json:"type"`
+	Balance     int64     `json:"balance"`
+	EarnedTotal int64     `json:"earnedTotal"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+}
+
+func newRewardBalanceDTOs(balances []model.RewardBalance) []rewardBalanceDTO {
+	result := make([]rewardBalanceDTO, len(balances))
+	for index, balance := range balances {
+		result[index] = rewardBalanceDTO{
+			Type: balance.RewardType, Balance: balance.Balance,
+			EarnedTotal: balance.EarnedTotal, UpdatedAt: balance.UpdatedAt,
+		}
+	}
+	return result
+}
+
 func newAchievementsDTO(items []model.AchievementProgress) achievementsDTO {
 	result := make([]achievementDTO, len(items))
 	for index, item := range items {

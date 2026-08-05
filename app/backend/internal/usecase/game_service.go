@@ -18,7 +18,10 @@ type DomainEventPublisher interface {
 	Publish(uuid.UUID, []model.DomainEvent)
 }
 
-const DefaultPetName = "Авитоша"
+const (
+	DefaultPetName    = "Авитоша"
+	DefaultRewardType = "AVITO_BONUS"
+)
 
 type IDGenerator func() uuid.UUID
 
@@ -130,6 +133,9 @@ func (service *GameService) EnsureProfile(ctx context.Context, userID uuid.UUID,
 		scores, err := service.repository.UpdateActivityScores(txCtx, userID, ActivityScoreDelta{}, now)
 		if err != nil {
 			return fmt.Errorf("ensure activity scores: %w", err)
+		}
+		if _, err = service.repository.EnsureRewardBalance(txCtx, userID, DefaultRewardType, now); err != nil {
+			return fmt.Errorf("ensure reward balance: %w", err)
 		}
 		profile.Pet = pet
 		profile.ActivityScores = scores
@@ -253,6 +259,21 @@ func (service *GameService) GetAchievements(
 		return nil, fmt.Errorf("list achievements: %w", err)
 	}
 	return items, nil
+}
+
+func (service *GameService) GetRewardBalances(
+	ctx context.Context,
+	userID uuid.UUID,
+	now time.Time,
+) ([]model.RewardBalance, error) {
+	if _, err := service.EnsureProfile(ctx, userID, now); err != nil {
+		return nil, err
+	}
+	balances, err := service.repository.ListRewardBalances(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("list reward balances: %w", err)
+	}
+	return balances, nil
 }
 
 func (service *GameService) ListTasks(ctx context.Context, userID uuid.UUID, now time.Time) ([]model.TaskProgress, error) {
@@ -497,6 +518,23 @@ func (service *GameService) rewardCompletedTask(
 	result.Events = append(result.Events, service.event(actionID, userID, model.DomainEventXPEarned, now, map[string]any{
 		"amount": task.XPReward, "totalXp": result.Pet.GrowthXP,
 	}))
+	if task.AvitoRewardType != nil && task.AvitoRewardAmount > 0 {
+		balance, credited, creditErr := service.repository.CreditReward(ctx, model.RewardCredit{
+			ID: service.idGenerator(), UserID: userID, ActionID: actionID, TaskID: task.ID,
+			RewardType: *task.AvitoRewardType, Amount: task.AvitoRewardAmount, CreatedAt: now,
+		})
+		if creditErr != nil {
+			return taskRewardResult{}, fmt.Errorf("credit task reward: %w", creditErr)
+		}
+		if credited {
+			result.Events = append(result.Events, service.event(
+				actionID, userID, model.DomainEventAvitoRewardEarned, now, map[string]any{
+					"rewardType": balance.RewardType, "amount": task.AvitoRewardAmount,
+					"balance": balance.Balance,
+				},
+			))
+		}
+	}
 	if result.Pet.Level > previousLevel {
 		result.Events = append(result.Events, service.event(actionID, userID, model.DomainEventPetLevelUp, now, map[string]any{
 			"previousLevel": previousLevel, "level": result.Pet.Level,

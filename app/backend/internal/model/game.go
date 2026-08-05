@@ -221,3 +221,22 @@ type AchievementProgress struct {
 	Achievement Achievement
 	UnlockedAt  *time.Time
 }
+
+type RewardBalance struct {
+	UserID      uuid.UUID
+	RewardType  string
+	Balance     int64
+	EarnedTotal int64
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+type RewardCredit struct {
+	ID         uuid.UUID
+	UserID     uuid.UUID
+	ActionID   uuid.UUID
+	TaskID     uuid.UUID
+	RewardType string
+	Amount     int
+	CreatedAt  time.Time
+}

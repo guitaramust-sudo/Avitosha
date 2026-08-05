@@ -100,6 +100,7 @@ func mountAPIRoutes(r chi.Router, logger *slog.Logger, deps RouterDependencies) 
 		r.Get("/daily-summary", gameHandler.GetDailySummary)
 		r.Get("/leaderboard", gameHandler.GetLeaderboard)
 		r.Get("/achievements", gameHandler.GetAchievements)
+		r.Get("/rewards/balance", gameHandler.GetRewardBalances)
 		r.Get("/ws", webSocketHandler.ServeHTTP)
 	})
 }

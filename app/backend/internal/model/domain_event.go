@@ -21,6 +21,7 @@ const (
 	DomainEventLeaderboardScoreUpdated DomainEventType = "LEADERBOARD_SCORE_UPDATED"
 	DomainEventAchievementUnlocked     DomainEventType = "ACHIEVEMENT_UNLOCKED"
 	DomainEventPetCharacterUnlocked    DomainEventType = "PET_CHARACTER_UNLOCKED"
+	DomainEventAvitoRewardEarned       DomainEventType = "AVITO_REWARD_EARNED"
 )
 
 type DomainEvent struct {

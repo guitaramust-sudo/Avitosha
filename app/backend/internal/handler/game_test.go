@@ -18,16 +18,17 @@ import (
 )
 
 type fakeGameUseCase struct {
-	ensureProfileFunc   func(context.Context, uuid.UUID, time.Time) (usecase.GameProfile, error)
-	renamePetFunc       func(context.Context, uuid.UUID, string, time.Time) (usecase.GameProfile, error)
-	listTasksFunc       func(context.Context, uuid.UUID, time.Time) ([]model.TaskProgress, error)
-	getTaskFunc         func(context.Context, uuid.UUID, uuid.UUID, time.Time) (model.TaskProgress, error)
-	getRoomFunc         func(context.Context, uuid.UUID, time.Time) ([]model.RoomItemProgress, error)
-	getStoryFunc        func(context.Context, uuid.UUID, time.Time) (model.StorySnapshot, error)
-	getDailyFunc        func(context.Context, uuid.UUID, time.Time) (usecase.DailySummary, error)
-	getLeaderboardFunc  func(context.Context, uuid.UUID, int, time.Time) (usecase.Leaderboard, error)
-	getAchievementsFunc func(context.Context, uuid.UUID, time.Time) ([]model.AchievementProgress, error)
-	processActionFunc   func(context.Context, usecase.ProcessActionCommand) (usecase.ProcessActionResult, error)
+	ensureProfileFunc     func(context.Context, uuid.UUID, time.Time) (usecase.GameProfile, error)
+	renamePetFunc         func(context.Context, uuid.UUID, string, time.Time) (usecase.GameProfile, error)
+	listTasksFunc         func(context.Context, uuid.UUID, time.Time) ([]model.TaskProgress, error)
+	getTaskFunc           func(context.Context, uuid.UUID, uuid.UUID, time.Time) (model.TaskProgress, error)
+	getRoomFunc           func(context.Context, uuid.UUID, time.Time) ([]model.RoomItemProgress, error)
+	getStoryFunc          func(context.Context, uuid.UUID, time.Time) (model.StorySnapshot, error)
+	getDailyFunc          func(context.Context, uuid.UUID, time.Time) (usecase.DailySummary, error)
+	getLeaderboardFunc    func(context.Context, uuid.UUID, int, time.Time) (usecase.Leaderboard, error)
+	getAchievementsFunc   func(context.Context, uuid.UUID, time.Time) ([]model.AchievementProgress, error)
+	getRewardBalancesFunc func(context.Context, uuid.UUID, time.Time) ([]model.RewardBalance, error)
+	processActionFunc     func(context.Context, usecase.ProcessActionCommand) (usecase.ProcessActionResult, error)
 }
 
 func (fake fakeGameUseCase) EnsureProfile(ctx context.Context, userID uuid.UUID, now time.Time) (usecase.GameProfile, error) {
@@ -66,6 +67,10 @@ func (fake fakeGameUseCase) GetAchievements(ctx context.Context, userID uuid.UUI
 	return fake.getAchievementsFunc(ctx, userID, now)
 }
 
+func (fake fakeGameUseCase) GetRewardBalances(ctx context.Context, userID uuid.UUID, now time.Time) ([]model.RewardBalance, error) {
+	return fake.getRewardBalancesFunc(ctx, userID, now)
+}
+
 func (fake fakeGameUseCase) ProcessAction(ctx context.Context, command usecase.ProcessActionCommand) (usecase.ProcessActionResult, error) {
 	return fake.processActionFunc(ctx, command)
 }
@@ -85,6 +90,7 @@ func TestGameRoutesRequireIdentity(t *testing.T) {
 		{http.MethodGet, "/api/v1/daily-summary"},
 		{http.MethodGet, "/api/v1/leaderboard"},
 		{http.MethodGet, "/api/v1/achievements"},
+		{http.MethodGet, "/api/v1/rewards/balance"},
 	} {
 		request := httptest.NewRequestWithContext(context.Background(), route.method, route.path, nil)
 		recorder := httptest.NewRecorder()
@@ -229,6 +235,40 @@ func TestGameReadRoutesReturnTasksRoomAndStory(t *testing.T) {
 		if recorder.Code != http.StatusOK {
 			t.Fatalf("GET %s status = %d, body = %s", path, recorder.Code, recorder.Body.String())
 		}
+	}
+}
+
+func TestGetRewardBalancesReturnsCurrentAndLifetimeAmounts(t *testing.T) {
+	userID := uuid.New()
+	now := time.Date(2026, 8, 5, 12, 0, 0, 0, time.UTC)
+	service := completeFakeGameUseCase()
+	service.getRewardBalancesFunc = func(_ context.Context, gotUserID uuid.UUID, gotNow time.Time) ([]model.RewardBalance, error) {
+		if gotUserID != userID || !gotNow.Equal(now) {
+			t.Fatalf("GetRewardBalances(%s, %v)", gotUserID, gotNow)
+		}
+		return []model.RewardBalance{{
+			UserID: userID, RewardType: usecase.DefaultRewardType,
+			Balance: 30, EarnedTotal: 30, UpdatedAt: now,
+		}}, nil
+	}
+	router := newGameTestRouter(RouterDependencies{GameService: service, Now: func() time.Time { return now }})
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/v1/rewards/balance", nil)
+	request.Header.Set("X-User-ID", userID.String())
+	recorder := httptest.NewRecorder()
+
+	router.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", recorder.Code, recorder.Body.String())
+	}
+	var body struct {
+		Balances []rewardBalanceDTO `json:"balances"`
+	}
+	if err := json.Unmarshal(recorder.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if len(body.Balances) != 1 || body.Balances[0].Type != usecase.DefaultRewardType || body.Balances[0].Balance != 30 {
+		t.Fatalf("body = %+v", body)
 	}
 }
 
@@ -381,6 +421,9 @@ func completeFakeGameUseCase() fakeGameUseCase {
 			return usecase.Leaderboard{}, nil
 		},
 		getAchievementsFunc: func(context.Context, uuid.UUID, time.Time) ([]model.AchievementProgress, error) {
+			return nil, nil
+		},
+		getRewardBalancesFunc: func(context.Context, uuid.UUID, time.Time) ([]model.RewardBalance, error) {
 			return nil, nil
 		},
 	}
