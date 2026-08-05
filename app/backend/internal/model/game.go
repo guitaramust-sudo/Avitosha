@@ -194,3 +194,30 @@ type ActivityScores struct {
 	ServicesScore   int
 	UpdatedAt       time.Time
 }
+
+type RoomItemProgress struct {
+	Item           RoomItem
+	Status         RoomItemStatus
+	SourceTaskCode *string
+	UnlockedAt     *time.Time
+}
+
+type StorySnapshot struct {
+	Story    Story
+	Progress UserStoryProgress
+	NextTask *Task
+}
+
+type LeaderboardEntry struct {
+	Position       int
+	UserID         uuid.UUID
+	PetName        string
+	Level          int
+	Score          int
+	CompletedTasks int
+}
+
+type AchievementProgress struct {
+	Achievement Achievement
+	UnlockedAt  *time.Time
+}
