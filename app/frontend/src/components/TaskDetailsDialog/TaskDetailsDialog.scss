@@ -1,0 +1,138 @@
+@use '../../../helpers' as h;
+
+.task-dialog-backdrop {
+  position: fixed;
+  z-index: 50;
+  inset: 0;
+  display: grid;
+  padding: h.rem(20px);
+  background: rgb(13 14 18 / 48%);
+  place-items: center;
+}
+
+.task-dialog {
+  position: relative;
+  width: min(100%, h.rem(480px));
+  max-height: calc(100vh - h.rem(40px));
+  overflow-y: auto;
+  padding: h.rem(28px);
+  border: h.rem(1px) solid h.$color-border;
+  border-radius: h.$radius-large;
+  background: h.$color-surface;
+  box-shadow: h.$shadow-shell;
+
+  h2,
+  p,
+  blockquote {
+    margin: 0;
+  }
+
+  h2 {
+    max-width: calc(100% - h.rem(42px));
+    margin: h.rem(10px) 0;
+    font-size: h.rem(24px);
+  }
+
+  > p {
+    color: h.$color-text-secondary;
+    line-height: 1.55;
+  }
+
+  blockquote {
+    margin-top: h.rem(18px);
+    padding: h.rem(14px);
+    border-left: h.rem(3px) solid h.$color-primary;
+    border-radius: 0 h.$radius-medium h.$radius-medium 0;
+    background: h.$color-primary-light;
+    font-size: h.rem(13px);
+    line-height: 1.5;
+  }
+
+  &__close {
+    position: absolute;
+    top: h.rem(18px);
+    right: h.rem(18px);
+    display: grid;
+    width: h.rem(36px);
+    height: h.rem(36px);
+    padding: 0;
+    border: h.rem(1px) solid h.$color-border;
+    border-radius: 50%;
+    background: h.$color-surface;
+    cursor: pointer;
+    font-size: h.rem(22px);
+    place-items: center;
+  }
+
+  &__status {
+    display: inline-flex;
+    padding: h.rem(5px) h.rem(9px);
+    border-radius: h.$radius-round;
+    color: h.$color-primary;
+    background: h.$color-primary-light;
+    font-size: h.rem(10px);
+    font-weight: h.$font-weight-bold;
+  }
+
+  &__facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: h.rem(10px);
+    margin: h.rem(20px) 0 0;
+
+    div {
+      padding: h.rem(12px);
+      border: h.rem(1px) solid h.$color-border;
+      border-radius: h.$radius-medium;
+    }
+
+    dt,
+    dd {
+      margin: 0;
+    }
+
+    dt {
+      margin-bottom: h.rem(5px);
+      color: h.$color-text-muted;
+      font-size: h.rem(10px);
+    }
+
+    dd {
+      font-size: h.rem(13px);
+      font-weight: h.$font-weight-semibold;
+    }
+  }
+
+  &__state {
+    display: grid;
+    min-height: h.rem(180px);
+    place-content: center;
+    justify-items: center;
+    gap: h.rem(12px);
+    text-align: center;
+
+    p {
+      margin: 0;
+    }
+
+    button {
+      min-height: h.rem(38px);
+      padding: 0 h.rem(16px);
+      border: 0;
+      border-radius: h.$radius-medium;
+      color: h.$color-white;
+      background: h.$color-primary;
+      cursor: pointer;
+    }
+  }
+}
+
+@include h.mobile-small {
+  .task-dialog {
+    padding: h.rem(22px);
+
+    &__facts {
+      grid-template-columns: 1fr;
+    }
+  }
+}

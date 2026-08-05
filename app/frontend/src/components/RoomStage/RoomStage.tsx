@@ -1,69 +1,165 @@
-import type { PetProfile, RoomItem, StoryResponse } from '../../types/game'
+import { useDraggable, useDroppable } from '@dnd-kit/core'
+import type { CSSProperties, KeyboardEvent, MouseEvent } from 'react'
+
+import { useAppSelector } from '../../hooks/redux'
+import {
+  ROOM_DROP_ID,
+  useRoomItemControls,
+} from '../../hooks/useRoomDragAndDrop'
+import {
+  selectGamePet,
+  selectGameRoom,
+  selectGameStory,
+} from '../../store/gameSlice'
+import type { RoomItem, RoomItemCode } from '../../types/game'
+import {
+  getDefaultRoomPosition,
+  roomItemIcons,
+  type RoomPosition,
+} from '../../utils/roomLayout'
 import Character from '../Character/Character'
 
 import './RoomStage.scss'
 
-const itemIcons: Record<string, string> = {
-  BOX: '▣',
-  DESK: '▰',
-  LAMP: '◉',
-  CHAIR: '♨',
-  PLANT: '♣',
-  POSTER: '▤',
-  PIGGY_BANK: '◍',
-  TOY_CAR: '▱',
-  SUITCASE: '▥',
+const emptyRoomItems: RoomItem[] = []
+
+interface RoomObjectProps {
+  isSelected: boolean
+  item: RoomItem
+  onNudge: (code: RoomItemCode, key: string) => boolean
+  onSelect: (code: RoomItemCode) => void
+  position: RoomPosition
 }
 
-interface RoomStageProps {
-  pet: PetProfile
-  items: RoomItem[]
-  story: StoryResponse
+function RoomObject({
+  isSelected,
+  item,
+  onNudge,
+  onSelect,
+  position,
+}: RoomObjectProps) {
+  const { attributes, isDragging, listeners, setNodeRef, transform } =
+    useDraggable({
+      id: `stage:${item.code}`,
+      data: { code: item.code, source: 'stage' },
+    })
+  const style: CSSProperties = {
+    left: `${position.x}%`,
+    top: `${position.y}%`,
+    ...(transform
+      ? {
+          transform: `translate3d(calc(-50% + ${transform.x}px), calc(-50% + ${transform.y}px), 0) scaleX(${transform.scaleX}) scaleY(${transform.scaleY})`,
+        }
+      : {}),
+  }
+  const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (!isDragging && onNudge(item.code, event.key)) {
+      event.preventDefault()
+      return
+    }
+
+    listeners?.onKeyDown?.(event)
+  }
+
+  return (
+    <button
+      ref={setNodeRef}
+      className={`room-object ${item.status === 'PLACED' ? 'is-placed' : 'is-unlocked'} ${isSelected ? 'is-selected' : ''} ${isDragging ? 'is-dragging' : ''}`}
+      style={style}
+      type="button"
+      data-asset-key={item.assetKey}
+      data-room-object={item.code}
+      title={`${item.description}. Предмет можно перемещать локально.`}
+      onClick={(event) => {
+        event.stopPropagation()
+        onSelect(item.code)
+      }}
+      {...attributes}
+      {...listeners}
+      onKeyDown={handleKeyDown}
+    >
+      <span aria-hidden="true">{roomItemIcons[item.code] ?? '◇'}</span>
+      <small>{item.name}</small>
+    </button>
+  )
 }
 
-function RoomStage({ pet, items, story }: RoomStageProps) {
-  const firstRoomCodes = new Set([
-    'BOX',
-    'DESK',
-    'LAMP',
-    'CHAIR',
-    'PLANT',
-    'POSTER',
-  ])
-  const storyItems = items.filter((item) => firstRoomCodes.has(item.code))
-  const placedItems = storyItems.filter((item) => item.status === 'PLACED')
+function RoomStage() {
+  const pet = useAppSelector(selectGamePet)
+  const room = useAppSelector(selectGameRoom)
+  const story = useAppSelector(selectGameStory)
+  const items = room?.items ?? emptyRoomItems
+  const { isOver, setNodeRef } = useDroppable({ id: ROOM_DROP_ID })
+  const { nudgeItem, placeAtPoint, placements, selectedItemCode, selectItem } =
+    useRoomItemControls(items)
+
+  if (!pet || !room || !story) {
+    return null
+  }
+
+  const visibleItems = items.filter(
+    (item) => item.status === 'PLACED' || placements[item.code],
+  )
   const phrase =
     story.status === 'COMPLETED'
-      ? 'Комната готова! Теперь я чувствую себя как дома.'
+      ? null
       : story.nextTask
         ? `Следующая цель: ${story.nextTask.title}`
         : 'Давай обустроим нашу первую комнату!'
+  const selectedItem = items.find(
+    (item) => item.code === selectedItemCode && item.status !== 'LOCKED',
+  )
+  const handleRoomClick = (event: MouseEvent<HTMLElement>) => {
+    if (!selectedItem || event.target !== event.currentTarget) {
+      return
+    }
+
+    placeAtPoint(
+      selectedItem.code,
+      event,
+      event.currentTarget.getBoundingClientRect(),
+    )
+  }
 
   return (
-    <section className="room-stage" aria-label="Комната Авитоши">
+    <section
+      ref={setNodeRef}
+      className={`room-stage ${isOver ? 'is-drop-target' : ''}`}
+      aria-label="Комната Авитоши. Перетаскивайте открытые предметы для размещения."
+      onClick={handleRoomClick}
+    >
       <div className="room-stage__story">
-        <small>{story.title}</small>
+        <small>Обустроить комнату</small>
         <strong>
           {story.currentStage}/{story.totalStages} этапов
         </strong>
+        <span>{story.description}</span>
       </div>
 
-      {items.map((item) => (
-        <div
-          className={`room-object room-object--${item.positionKey} ${item.status === 'PLACED' ? 'is-placed' : 'is-locked'}`}
-          key={item.code}
-          title={
-            item.status === 'PLACED'
-              ? item.description
-              : `Откроется после задания ${item.unlockTaskCode ?? ''}`
-          }
-        >
-          <span aria-hidden="true">{itemIcons[item.code] ?? '◇'}</span>
-          <small>{item.name}</small>
-        </div>
-      ))}
+      {visibleItems.map((item) => {
+        const itemIndex = items.findIndex(({ code }) => code === item.code)
 
-      <div className="room-stage__speech">{phrase}</div>
+        return (
+          <RoomObject
+            key={item.code}
+            item={item}
+            position={
+              placements[item.code] ??
+              getDefaultRoomPosition(item.positionKey, itemIndex)
+            }
+            isSelected={selectedItemCode === item.code}
+            onNudge={nudgeItem}
+            onSelect={selectItem}
+          />
+        )
+      })}
+
+      {phrase && <div className="room-stage__speech">{phrase}</div>}
+      {selectedItem && (
+        <div className="room-stage__edit-hint">
+          Выбран: {selectedItem.name}. Нажмите на свободное место.
+        </div>
+      )}
       <div className="room-stage__character" data-mood={pet.mood}>
         <Character />
         {pet.characterProfile.unlocked && (
@@ -73,7 +169,7 @@ function RoomStage({ pet, items, story }: RoomStageProps) {
         )}
       </div>
       <span className="room-stage__placed-count">
-        {placedItems.length}/{storyItems.length} предметов
+        {room.progress} предметов
       </span>
     </section>
   )

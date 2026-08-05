@@ -1,34 +1,94 @@
-import type { RoomItem } from '../../types/game'
+import { useDraggable } from '@dnd-kit/core'
+
+import { useAppSelector } from '../../hooks/redux'
+import { useRoomItemControls } from '../../hooks/useRoomDragAndDrop'
+import { selectGameRoom } from '../../store/gameSlice'
+import type { RoomItem, RoomItemCode } from '../../types/game'
+import { roomItemIcons } from '../../utils/roomLayout'
 
 import './RoomCollection.scss'
 
-interface RoomCollectionProps {
-  items: RoomItem[]
+const emptyRoomItems: RoomItem[] = []
+
+interface CollectionItemProps {
+  isSelected: boolean
+  item: RoomItem
+  onSelect: (code: RoomItemCode) => void
 }
 
-function RoomCollection({ items }: RoomCollectionProps) {
+function CollectionItem({ isSelected, item, onSelect }: CollectionItemProps) {
+  const isLocked = item.status === 'LOCKED'
+  const isPlaced = item.status === 'PLACED'
+  const { attributes, isDragging, listeners, setNodeRef } = useDraggable({
+    id: `collection:${item.code}`,
+    data: { code: item.code, source: 'collection' },
+    disabled: isLocked,
+  })
+
+  return (
+    <button
+      ref={setNodeRef}
+      className={`collection-item ${isSelected ? 'is-selected' : ''} ${isDragging ? 'is-dragging' : ''}`}
+      type="button"
+      disabled={isLocked}
+      data-asset-key={item.assetKey}
+      title={
+        isLocked
+          ? `Откроется после ${item.unlockTaskCode ?? 'будущего задания'}`
+          : `${item.description}. ${
+              isPlaced
+                ? 'Предмет уже в комнате — его можно переместить.'
+                : 'Перетащите предмет в комнату.'
+            }`
+      }
+      onClick={() => onSelect(item.code)}
+      {...attributes}
+      {...listeners}
+      aria-pressed={isSelected}
+    >
+      <span className="collection-item__state" aria-hidden="true">
+        {isLocked ? '▣' : isSelected ? '●' : isPlaced ? '✓' : '↕'}
+      </span>
+      <span className="collection-item__placeholder" aria-hidden="true">
+        {roomItemIcons[item.code] ?? '◇'}
+      </span>
+      <span className="collection-item__name">{item.name}</span>
+    </button>
+  )
+}
+
+function RoomCollection() {
+  const room = useAppSelector(selectGameRoom)
+  const items = room?.items ?? emptyRoomItems
+  const { hasLayoutChanges, resetLayout, selectedItemCode, selectItem } =
+    useRoomItemControls(items)
+
   return (
     <section className="room-collection">
-      <h2>Коллекция комнаты</h2>
+      <div className="room-collection__heading">
+        <div>
+          <h2>Коллекция комнаты</h2>
+          <p>
+            Перетащите открытый предмет или выберите его и нажмите в комнате.
+            Расположение меняется только локально.
+          </p>
+        </div>
+        <button
+          type="button"
+          disabled={!hasLayoutChanges}
+          onClick={resetLayout}
+        >
+          Сбросить расположение
+        </button>
+      </div>
       <div className="room-collection__items">
         {items.map((item) => (
-          <button
-            className="collection-item"
-            type="button"
-            disabled={item.status === 'LOCKED'}
-            title={
-              item.status === 'LOCKED'
-                ? `Откроется после ${item.unlockTaskCode ?? 'будущего задания'}`
-                : item.description
-            }
+          <CollectionItem
             key={item.code}
-          >
-            <span className="collection-item__state" aria-hidden="true">
-              {item.status === 'LOCKED' ? '▣' : '✓'}
-            </span>
-            <span className="collection-item__placeholder" aria-hidden="true" />
-            <span className="collection-item__name">{item.name}</span>
-          </button>
+            item={item}
+            isSelected={selectedItemCode === item.code}
+            onSelect={selectItem}
+          />
         ))}
       </div>
     </section>

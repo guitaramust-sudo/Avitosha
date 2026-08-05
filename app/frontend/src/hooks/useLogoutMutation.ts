@@ -15,6 +15,7 @@ export const useLogoutMutation = () => {
 
   const finishLogout = () => {
     queryClient.removeQueries({ queryKey: currentUserQueryKey })
+    queryClient.removeQueries({ queryKey: ['game'] })
     dispatch(clearUser())
     dispatch(showToast({ message: 'Вы вышли из аккаунта.' }))
     void navigate('/register', { replace: true })

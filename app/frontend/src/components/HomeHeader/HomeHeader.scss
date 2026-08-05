@@ -182,57 +182,6 @@
   }
 }
 
-.balance-button,
-.icon-button {
-  height: h.rem(50px);
-  border: h.rem(1px) solid h.$color-border;
-  border-radius: h.$radius-medium;
-  background: h.$color-surface;
-  box-shadow: h.$shadow-control;
-  cursor: pointer;
-}
-
-.balance-button {
-  display: flex;
-  min-width: h.rem(132px);
-  align-items: center;
-  justify-content: center;
-  gap: h.rem(10px);
-
-  span {
-    display: grid;
-    width: h.rem(25px);
-    height: h.rem(25px);
-    place-items: center;
-    border-radius: 50%;
-    color: h.$color-white;
-    background: h.$color-money;
-    font-weight: h.$font-weight-bold;
-  }
-
-  i {
-    font-style: normal;
-  }
-}
-
-.icon-button {
-  position: relative;
-  width: h.rem(50px);
-  padding: 0;
-  font-size: h.rem(22px);
-
-  &__notification {
-    position: absolute;
-    top: h.rem(12px);
-    right: h.rem(13px);
-    width: h.rem(7px);
-    height: h.rem(7px);
-    border: h.rem(2px) solid h.$color-white;
-    border-radius: 50%;
-    background: h.$color-danger;
-  }
-}
-
 @include h.laptop-small {
   .home-header {
     &__brand {
@@ -318,24 +267,10 @@
       font-size: h.rem(20px);
     }
   }
-
-  .balance-button {
-    min-width: auto;
-    width: h.rem(50px);
-
-    strong,
-    i {
-      display: none;
-    }
-  }
 }
 
 @include h.mobile-small {
   .home-header__brand .brand-mark {
-    display: none;
-  }
-
-  .home-header__actions .icon-button:first-of-type {
     display: none;
   }
 }

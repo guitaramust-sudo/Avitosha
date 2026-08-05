@@ -1,10 +1,15 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 
+import { acceptGameEvents } from '../store/gameSlice'
 import { showToast } from '../store/toastSlice'
 import type { GameEvent } from '../types/game'
+import { getGameEventMessage } from '../utils/gamePresentation'
 import { useAppDispatch } from './redux'
-import { gameQueryKey } from './useGameDashboard'
+import {
+  gameQueryKey,
+  invalidateGameQueriesForEvents,
+} from './useGameDashboard'
 
 const apiBaseUrl = (
   import.meta.env.VITE_API_URL ?? window.location.origin
@@ -12,43 +17,61 @@ const apiBaseUrl = (
 
 const socketBaseUrl = apiBaseUrl.replace(/^http/, 'ws')
 
-const eventMessage = (events: GameEvent[]) => {
-  const item = events.find((event) => event.type === 'ROOM_ITEM_UNLOCKED')
-  if (item) return `Новый предмет в комнате: ${String(item.itemCode)}`
-  const level = events.find((event) => event.type === 'PET_LEVEL_UP')
-  if (level) return `Новый уровень Авитоши: ${String(level.level)}`
-  const completed = events.find((event) => event.type === 'TASK_COMPLETED')
-  if (completed) return 'Задание выполнено — Авитоша радуется!'
-  return 'Прогресс Авитоши обновлён'
-}
-
-export const useGameSocket = (accessToken: string | null) => {
+export const useGameSocket = (
+  accessToken: string | null,
+  userId: string | undefined,
+) => {
   const queryClient = useQueryClient()
   const dispatch = useAppDispatch()
 
   useEffect(() => {
-    if (!accessToken) return
+    if (!accessToken || !userId) return
 
     let socket: WebSocket | null = null
     let reconnectTimer: number | undefined
     let disposed = false
+    let hasConnected = false
+    let reconnectAttempts = 0
 
     const connect = () => {
       socket = new WebSocket(
         `${socketBaseUrl}/api/v1/ws?access_token=${encodeURIComponent(accessToken)}`,
       )
+      socket.onopen = () => {
+        reconnectAttempts = 0
+        if (hasConnected) {
+          void queryClient.invalidateQueries({ queryKey: gameQueryKey(userId) })
+        }
+        hasConnected = true
+      }
       socket.onmessage = (message) => {
         try {
           const payload = JSON.parse(message.data) as { events?: GameEvent[] }
           if (!payload.events?.length) return
-          void queryClient.invalidateQueries({ queryKey: gameQueryKey })
-          dispatch(showToast({ message: eventMessage(payload.events) }))
+          const acceptedEvents = dispatch(acceptGameEvents(payload.events))
+
+          if (acceptedEvents.length === 0) {
+            return
+          }
+
+          void invalidateGameQueriesForEvents(
+            queryClient,
+            userId,
+            acceptedEvents,
+          )
+          dispatch(showToast({ message: getGameEventMessage(acceptedEvents) }))
         } catch {
           // Ignore malformed realtime payloads and keep the connection alive.
         }
       }
-      socket.onclose = () => {
-        if (!disposed) reconnectTimer = window.setTimeout(connect, 2000)
+      socket.onclose = (event) => {
+        if (disposed || event.code === 1008) {
+          return
+        }
+
+        const reconnectDelay = Math.min(30_000, 2_000 * 2 ** reconnectAttempts)
+        reconnectAttempts += 1
+        reconnectTimer = window.setTimeout(connect, reconnectDelay)
       }
     }
 
@@ -58,5 +81,5 @@ export const useGameSocket = (accessToken: string | null) => {
       if (reconnectTimer !== undefined) window.clearTimeout(reconnectTimer)
       socket?.close()
     }
-  }, [accessToken, dispatch, queryClient])
+  }, [accessToken, dispatch, queryClient, userId])
 }

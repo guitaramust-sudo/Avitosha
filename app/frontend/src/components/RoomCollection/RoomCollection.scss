@@ -7,8 +7,53 @@
   background: rgb(255 255 255 / 96%);
   box-shadow: h.$shadow-card;
 
+  &__heading {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: h.rem(18px);
+    margin-bottom: h.rem(16px);
+
+    h2,
+    p {
+      margin: 0;
+    }
+
+    h2 {
+      margin-bottom: h.rem(5px);
+    }
+
+    p {
+      color: h.$color-text-secondary;
+      font-size: h.rem(11px);
+      line-height: 1.4;
+    }
+
+    > button {
+      min-height: h.rem(34px);
+      flex: 0 0 auto;
+      padding: 0 h.rem(12px);
+      border: h.rem(1px) solid h.$color-border;
+      border-radius: h.$radius-small;
+      color: h.$color-text-secondary;
+      background: h.$color-surface;
+      font-size: h.rem(11px);
+      font-weight: h.$font-weight-medium;
+      cursor: pointer;
+
+      &:hover:not(:disabled) {
+        color: h.$color-primary;
+        border-color: h.$color-primary;
+      }
+
+      &:disabled {
+        cursor: not-allowed;
+        opacity: 0.45;
+      }
+    }
+  }
+
   h2 {
-    margin: 0 0 h.rem(16px);
     font-size: h.rem(16px);
     font-weight: h.$font-weight-semibold;
   }
@@ -34,7 +79,23 @@
   border: h.rem(1px) solid h.$color-border;
   border-radius: h.$radius-medium;
   background: h.$color-surface;
-  cursor: pointer;
+  cursor: grab;
+  touch-action: none;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    opacity 160ms ease;
+
+  &:hover:not(:disabled),
+  &.is-selected {
+    border-color: h.$color-primary;
+    box-shadow: 0 0 0 h.rem(2px) rgb(139 63 242 / 10%);
+  }
+
+  &.is-dragging {
+    opacity: 0.35;
+    cursor: grabbing;
+  }
 
   &:disabled {
     color: h.$color-text-secondary;
@@ -64,11 +125,12 @@
   }
 
   &__placeholder {
-    display: block;
+    display: grid;
     width: 70%;
     height: h.rem(55px);
     align-self: end;
     justify-self: center;
+    place-items: center;
     border: h.rem(1px) dashed h.$color-border-strong;
     border-radius: h.$radius-small;
     background: linear-gradient(
@@ -76,6 +138,8 @@
       h.$color-surface-soft,
       h.$color-surface-muted
     );
+    color: h.$color-primary;
+    font-size: h.rem(25px);
   }
 
   &__name {
@@ -94,6 +158,15 @@
 
     &__items {
       grid-template-columns: repeat(9, h.rem(94px));
+    }
+
+    &__heading {
+      align-items: stretch;
+      flex-direction: column;
+
+      > button {
+        align-self: start;
+      }
     }
   }
 }

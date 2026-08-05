@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react'
 
 import { useAppSelector } from '../../hooks/redux'
-import type { PetProfile } from '../../types/game'
+import { selectGamePet, selectGameRoom } from '../../store/gameSlice'
+import { getLevelXpFloor, moodLabels } from '../../utils/gamePresentation'
 import ProfileMenu from '../ProfileMenu/ProfileMenu'
 
 import './HomeHeader.scss'
@@ -38,35 +39,20 @@ function BrandMark() {
   )
 }
 
-const moodLabels = {
-  CALM: 'Спокоен',
-  CURIOUS: 'Заинтересован',
-  HAPPY: 'Рад',
-  EXCITED: 'В восторге',
-  PROUD: 'Гордится',
-  SLEEPING: 'Отдыхает',
-}
-
-interface HomeHeaderProps {
-  pet?: PetProfile
-}
-
-function HomeHeader({ pet }: HomeHeaderProps) {
+function HomeHeader() {
   const email = useAppSelector((state) => state.auth.user?.email)
-  const currentXpFloor =
-    pet?.level === 2
-      ? 100
-      : pet?.level === 3
-        ? 250
-        : pet?.level === 4
-          ? 450
-          : pet?.level === 5
-            ? 700
-            : 0
+  const pet = useAppSelector(selectGamePet)
+  const room = useAppSelector(selectGameRoom)
+  const currentXpFloor = pet ? getLevelXpFloor(pet.level) : 0
   const levelSpan = pet?.nextLevelXp ? pet.nextLevelXp - currentXpFloor : 1
-  const levelProgress = pet
-    ? Math.min(100, ((pet.growthXp - currentXpFloor) / levelSpan) * 100)
-    : 0
+  const levelProgress = !pet
+    ? 0
+    : pet.nextLevelXp === null
+      ? 100
+      : Math.min(
+          100,
+          Math.max(0, ((pet.growthXp - currentXpFloor) / levelSpan) * 100),
+        )
 
   return (
     <header className="home-header">
@@ -99,29 +85,14 @@ function HomeHeader({ pet }: HomeHeaderProps) {
 
         <HeaderStat icon="◎" label="Цель" tone="blue">
           <div className="goal-progress">
-            <strong>{pet?.currentStory.title ?? 'Обустроить комнату'}</strong>
-            <span>
-              {pet?.currentStory.currentStage ?? 0} /{' '}
-              {pet?.currentStory.totalStages ?? 5} этапов
-            </span>
+            <strong>Обустроить комнату</strong>
+            <span>{room?.progress ?? '0/6'} предметов</span>
           </div>
         </HeaderStat>
       </div>
 
       <div className="home-header__actions">
-        <button className="balance-button" type="button">
-          <span aria-hidden="true">$</span>
-          <strong>1 450</strong>
-          <i aria-hidden="true">⌄</i>
-        </button>
         <ProfileMenu email={email} />
-        <button className="icon-button" type="button" aria-label="Уведомления">
-          ♧
-          <i className="icon-button__notification" />
-        </button>
-        <button className="icon-button" type="button" aria-label="Открыть меню">
-          ☰
-        </button>
       </div>
     </header>
   )

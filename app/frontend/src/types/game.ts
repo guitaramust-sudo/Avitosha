@@ -18,6 +18,52 @@ export type ActionType =
   | 'REVIEW_LEFT'
   | 'BOOKING_CREATED'
 
+export const gameTaskCodes = [
+  'VIEW_FURNITURE_ADS',
+  'FAVORITE_FURNITURE_AD',
+  'MESSAGE_SELLER',
+  'CREATE_FIRST_AD',
+  'USE_DELIVERY',
+] as const
+
+export type GameTaskCode = (typeof gameTaskCodes)[number]
+
+export const isGameTaskCode = (value: string): value is GameTaskCode =>
+  gameTaskCodes.some((code) => code === value)
+
+export const achievementCodes = [
+  'FIRST_STEP',
+  'HOUSEWARMING',
+  'EXPLORER',
+  'IN_TOUCH',
+  'FIRST_AD',
+  'ROOM_COMPLETE',
+] as const
+
+export type AchievementCode = (typeof achievementCodes)[number]
+
+export const isAchievementCode = (value: string): value is AchievementCode =>
+  achievementCodes.some((code) => code === value)
+
+export type StoryCode = 'FIRST_ROOM'
+
+export const roomItemCodes = [
+  'BOX',
+  'DESK',
+  'LAMP',
+  'CHAIR',
+  'PLANT',
+  'POSTER',
+  'PIGGY_BANK',
+  'TOY_CAR',
+  'SUITCASE',
+] as const
+
+export type RoomItemCode = (typeof roomItemCodes)[number]
+
+export const isRoomItemCode = (value: string): value is RoomItemCode =>
+  roomItemCodes.some((code) => code === value)
+
 export interface CharacterProfile {
   code: PetCharacter
   name: string
@@ -39,7 +85,7 @@ export interface PetProfile {
   character: PetCharacter | null
   characterProfile: CharacterProfile
   currentStory: {
-    code: string
+    code: StoryCode
     title: string
     currentStage: number
     totalStages: number
@@ -49,7 +95,7 @@ export interface PetProfile {
 
 export interface GameTask {
   id: string
-  code: string
+  code: GameTaskCode
   title: string
   description: string
   petPhrase: string
@@ -59,30 +105,30 @@ export interface GameTask {
   target: number
   status: 'ACTIVE' | 'COMPLETED' | 'REWARDED' | 'EXPIRED'
   xpReward: number
-  roomItemCode: string | null
+  roomItemCode: RoomItemCode | null
   avitoRewardType: string | null
   avitoRewardAmount: number
   storyStage: number | null
 }
 
 export interface RoomItem {
-  code: string
+  code: RoomItemCode
   name: string
   description: string
   status: 'LOCKED' | 'UNLOCKED' | 'PLACED'
   assetKey: string
   positionKey: string
-  unlockTaskCode: string | null
+  unlockTaskCode: GameTaskCode | null
 }
 
 export interface RoomResponse {
-  storyCode: string
+  storyCode: StoryCode
   progress: string
   items: RoomItem[]
 }
 
 export interface StoryResponse {
-  code: string
+  code: StoryCode
   title: string
   description: string
   currentStage: number
@@ -90,9 +136,9 @@ export interface StoryResponse {
   status: 'ACTIVE' | 'COMPLETED'
   nextTask: {
     id: string
-    code: string
+    code: GameTaskCode
     title: string
-    roomItemCode: string | null
+    roomItemCode: RoomItemCode | null
   } | null
 }
 
@@ -127,7 +173,7 @@ export interface LeaderboardResponse {
 }
 
 export interface Achievement {
-  code: string
+  code: AchievementCode
   title: string
   description: string
   iconKey: string
@@ -135,12 +181,59 @@ export interface Achievement {
   unlockedAt: string | null
 }
 
-export interface GameEvent {
+export type GameEventType =
+  | 'TASK_PROGRESS_UPDATED'
+  | 'TASK_COMPLETED'
+  | 'XP_EARNED'
+  | 'PET_LEVEL_UP'
+  | 'PET_MOOD_CHANGED'
+  | 'ROOM_ITEM_UNLOCKED'
+  | 'STORY_STAGE_COMPLETED'
+  | 'STORY_COMPLETED'
+  | 'LEADERBOARD_SCORE_UPDATED'
+  | 'ACHIEVEMENT_UNLOCKED'
+  | 'PET_CHARACTER_UNLOCKED'
+
+interface GameEventBase<TType extends GameEventType> {
   id: string
-  type: string
+  type: TType
   occurredAt: string
-  [key: string]: unknown
 }
+
+export type GameEvent =
+  | (GameEventBase<'TASK_PROGRESS_UPDATED'> & {
+      taskId: string
+      taskCode: GameTaskCode
+      progress: number
+      target: number
+    })
+  | (GameEventBase<'TASK_COMPLETED'> & {
+      taskId: string
+      taskCode: GameTaskCode
+    })
+  | (GameEventBase<'XP_EARNED'> & { amount: number; totalXp: number })
+  | (GameEventBase<'PET_LEVEL_UP'> & {
+      previousLevel: number
+      level: number
+    })
+  | (GameEventBase<'PET_MOOD_CHANGED'> & {
+      previousMood: PetMood
+      mood: PetMood
+    })
+  | (GameEventBase<'ROOM_ITEM_UNLOCKED'> & { itemCode: string })
+  | (GameEventBase<'STORY_STAGE_COMPLETED'> & {
+      storyCode: string
+      stage: number
+    })
+  | (GameEventBase<'STORY_COMPLETED'> & { storyCode: string })
+  | (GameEventBase<'LEADERBOARD_SCORE_UPDATED'> & {
+      score: number
+      delta: number
+    })
+  | (GameEventBase<'ACHIEVEMENT_UNLOCKED'> & { code: AchievementCode })
+  | (GameEventBase<'PET_CHARACTER_UNLOCKED'> & {
+      character: PetCharacter
+    })
 
 export interface ActionResult {
   actionId: string

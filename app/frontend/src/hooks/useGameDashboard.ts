@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  type QueryClient,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 
 import {
   getAchievements,
@@ -7,49 +12,68 @@ import {
   getPet,
   getRoom,
   getStory,
+  getTask,
   getTasks,
   postAction,
 } from '../api/game'
-import type { ActionRequest } from '../types/game'
+import type { ActionRequest, GameEvent } from '../types/game'
 
-export const gameQueryKey = ['game'] as const
+export const gameQueryKey = (userId?: string) =>
+  userId ? (['game', userId] as const) : (['game'] as const)
 
-export const useGameDashboard = (accessToken: string | null) => {
-  const enabled = Boolean(accessToken)
+export const gameQueryKeys = {
+  achievements: (userId: string) =>
+    [...gameQueryKey(userId), 'achievements'] as const,
+  daily: (userId: string) =>
+    [...gameQueryKey(userId), 'daily-summary'] as const,
+  leaderboard: (userId: string) =>
+    [...gameQueryKey(userId), 'leaderboard'] as const,
+  pet: (userId: string) => [...gameQueryKey(userId), 'pet'] as const,
+  room: (userId: string) => [...gameQueryKey(userId), 'room'] as const,
+  story: (userId: string) => [...gameQueryKey(userId), 'story'] as const,
+  tasks: (userId: string) => [...gameQueryKey(userId), 'tasks'] as const,
+}
+
+export const useGameDashboard = (
+  accessToken: string | null,
+  userId: string | undefined,
+) => {
+  const enabled = Boolean(accessToken && userId)
   const token = accessToken ?? ''
+  const queryOwnerId = userId ?? ''
 
   const pet = useQuery({
-    queryKey: [...gameQueryKey, 'pet'],
+    queryKey: gameQueryKeys.pet(queryOwnerId),
     queryFn: () => getPet(token),
     enabled,
   })
   const tasks = useQuery({
-    queryKey: [...gameQueryKey, 'tasks'],
+    queryKey: gameQueryKeys.tasks(queryOwnerId),
     queryFn: () => getTasks(token),
     enabled,
   })
   const room = useQuery({
-    queryKey: [...gameQueryKey, 'room'],
+    queryKey: gameQueryKeys.room(queryOwnerId),
     queryFn: () => getRoom(token),
     enabled,
   })
   const story = useQuery({
-    queryKey: [...gameQueryKey, 'story'],
+    queryKey: gameQueryKeys.story(queryOwnerId),
     queryFn: () => getStory(token),
     enabled,
   })
   const daily = useQuery({
-    queryKey: [...gameQueryKey, 'daily-summary'],
+    queryKey: gameQueryKeys.daily(queryOwnerId),
     queryFn: () => getDailySummary(token),
     enabled,
   })
   const leaderboard = useQuery({
-    queryKey: [...gameQueryKey, 'leaderboard'],
+    queryKey: gameQueryKeys.leaderboard(queryOwnerId),
     queryFn: () => getLeaderboard(token),
     enabled,
   })
   const achievements = useQuery({
-    queryKey: [...gameQueryKey, 'achievements'],
+    queryKey: gameQueryKeys.achievements(queryOwnerId),
     queryFn: () => getAchievements(token),
     enabled,
   })
@@ -57,13 +81,76 @@ export const useGameDashboard = (accessToken: string | null) => {
   return { pet, tasks, room, story, daily, leaderboard, achievements }
 }
 
-export const useGameAction = (accessToken: string | null) => {
+export type GameDashboardQueries = ReturnType<typeof useGameDashboard>
+
+export const useGameTask = (
+  accessToken: string | null,
+  userId: string | undefined,
+  taskId: string | null,
+) =>
+  useQuery({
+    queryKey: [...gameQueryKeys.tasks(userId ?? ''), taskId],
+    queryFn: () => getTask(accessToken ?? '', taskId ?? ''),
+    enabled: Boolean(accessToken && userId && taskId),
+  })
+
+export const invalidateGameQueriesForEvents = async (
+  queryClient: QueryClient,
+  userId: string | undefined,
+  events: readonly GameEvent[],
+) => {
+  if (!userId || events.length === 0) {
+    return
+  }
+
+  const affectedQueries = new Set<keyof typeof gameQueryKeys>(['daily'])
+
+  events.forEach((event) => {
+    switch (event.type) {
+      case 'TASK_PROGRESS_UPDATED':
+      case 'TASK_COMPLETED':
+        affectedQueries.add('tasks')
+        break
+      case 'XP_EARNED':
+      case 'PET_LEVEL_UP':
+      case 'PET_MOOD_CHANGED':
+      case 'PET_CHARACTER_UNLOCKED':
+        affectedQueries.add('pet')
+        break
+      case 'ROOM_ITEM_UNLOCKED':
+        affectedQueries.add('room')
+        break
+      case 'STORY_STAGE_COMPLETED':
+      case 'STORY_COMPLETED':
+        affectedQueries.add('story')
+        affectedQueries.add('pet')
+        break
+      case 'LEADERBOARD_SCORE_UPDATED':
+        affectedQueries.add('leaderboard')
+        break
+      case 'ACHIEVEMENT_UNLOCKED':
+        affectedQueries.add('achievements')
+        break
+    }
+  })
+
+  await Promise.all(
+    [...affectedQueries].map((key) =>
+      queryClient.invalidateQueries({ queryKey: gameQueryKeys[key](userId) }),
+    ),
+  )
+}
+
+export const useGameAction = (
+  accessToken: string | null,
+  userId: string | undefined,
+) => {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (action: ActionRequest) =>
       postAction(accessToken ?? '', action),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: gameQueryKey })
+    onSuccess: async (result) => {
+      await invalidateGameQueriesForEvents(queryClient, userId, result.events)
     },
   })
 }

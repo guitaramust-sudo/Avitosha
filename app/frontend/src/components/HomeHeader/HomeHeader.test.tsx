@@ -65,6 +65,18 @@ describe('HomeHeader', () => {
     ).toHaveTextContent('U')
   })
 
+  it('does not render controls unsupported by the backend', () => {
+    renderHeader()
+
+    expect(screen.queryByText('1 450')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Уведомления' }),
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Открыть меню' }),
+    ).not.toBeInTheDocument()
+  })
+
   it('clears the session and redirects to registration after logout', async () => {
     logoutUserMock.mockResolvedValue(undefined)
     const { queryClient, store, user } = renderHeader()
