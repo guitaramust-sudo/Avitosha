@@ -55,4 +55,44 @@ func TestRefreshUnauthorizedContract(t *testing.T) {
 	}
 }
 
+func TestPetAPIContract(t *testing.T) {
+	t.Parallel()
+
+	loader := openapi3.NewLoader()
+	doc, err := loader.LoadFromData(OpenAPIYAML())
+	if err != nil {
+		t.Fatalf("LoadFromData() error = %v", err)
+	}
+
+	tests := []struct {
+		path   string
+		method string
+	}{
+		{path: "/api/pet", method: "GET"},
+		{path: "/api/pet/items/{item_id}/use", method: "POST"},
+		{path: "/api/pet/daily-summary", method: "GET"},
+	}
+	for _, tt := range tests {
+		path := doc.Paths.Find(tt.path)
+		if path == nil {
+			t.Errorf("pet path %s is missing", tt.path)
+			continue
+		}
+		operation := path.GetOperation(tt.method)
+		if operation == nil {
+			t.Errorf("%s %s operation is missing", tt.method, tt.path)
+			continue
+		}
+		if operation.Security == nil || len(*operation.Security) == 0 {
+			t.Errorf("%s %s must require bearer authentication", tt.method, tt.path)
+		}
+	}
+
+	for _, schema := range []string{"PetSnapshotResponse", "PetCareResponse", "PetDailySummaryResponse"} {
+		if _, ok := doc.Components.Schemas[schema]; !ok {
+			t.Errorf("schema %s is missing", schema)
+		}
+	}
+}
+
 const httpStatusUnauthorized = 401

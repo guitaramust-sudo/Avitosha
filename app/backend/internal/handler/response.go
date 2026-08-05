@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-const jsonContentType = "application/json"
+const jsonContentType = "application/json; charset=utf-8"
 
 type errorResponse struct {
 	Error errorDetail `json:"error"`
