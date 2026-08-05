@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 
 import { useAppSelector } from '../../hooks/redux'
+import type { PetProfile } from '../../types/game'
 import ProfileMenu from '../ProfileMenu/ProfileMenu'
 
 import './HomeHeader.scss'
@@ -37,8 +38,35 @@ function BrandMark() {
   )
 }
 
-function HomeHeader() {
+const moodLabels = {
+  CALM: 'Спокоен',
+  CURIOUS: 'Заинтересован',
+  HAPPY: 'Рад',
+  EXCITED: 'В восторге',
+  PROUD: 'Гордится',
+  SLEEPING: 'Отдыхает',
+}
+
+interface HomeHeaderProps {
+  pet?: PetProfile
+}
+
+function HomeHeader({ pet }: HomeHeaderProps) {
   const email = useAppSelector((state) => state.auth.user?.email)
+  const currentXpFloor =
+    pet?.level === 2
+      ? 100
+      : pet?.level === 3
+        ? 250
+        : pet?.level === 4
+          ? 450
+          : pet?.level === 5
+            ? 700
+            : 0
+  const levelSpan = pet?.nextLevelXp ? pet.nextLevelXp - currentXpFloor : 1
+  const levelProgress = pet
+    ? Math.min(100, ((pet.growthXp - currentXpFloor) / levelSpan) * 100)
+    : 0
 
   return (
     <header className="home-header">
@@ -48,27 +76,34 @@ function HomeHeader() {
       </div>
 
       <div className="home-header__stats">
-        <HeaderStat icon="★" label="Уровень 8" tone="purple">
-          <div className="level-progress" aria-label="1250 из 2000 опыта">
+        <HeaderStat icon="★" label={`Уровень ${pet?.level ?? 1}`} tone="purple">
+          <div
+            className="level-progress"
+            aria-label={`${pet?.growthXp ?? 0} опыта`}
+          >
             <span className="level-progress__track">
-              <i />
+              <i style={{ width: `${levelProgress}%` }} />
             </span>
             <span>
-              <strong>1 250</strong> / 2 000 XP
+              <strong>{pet?.growthXp ?? 0}</strong>
+              {pet?.nextLevelXp ? ` / ${pet.nextLevelXp} XP` : ' XP · максимум'}
             </span>
           </div>
         </HeaderStat>
 
         <HeaderStat icon="☺" label="Настроение" tone="green">
           <strong className="header-stat__value header-stat__value--green">
-            Отличное!
+            {pet ? moodLabels[pet.mood] : 'Загрузка…'}
           </strong>
         </HeaderStat>
 
         <HeaderStat icon="◎" label="Цель" tone="blue">
           <div className="goal-progress">
-            <strong>Обустроить комнату</strong>
-            <span>4 / 8 предметов</span>
+            <strong>{pet?.currentStory.title ?? 'Обустроить комнату'}</strong>
+            <span>
+              {pet?.currentStory.currentStage ?? 0} /{' '}
+              {pet?.currentStory.totalStages ?? 5} этапов
+            </span>
           </div>
         </HeaderStat>
       </div>

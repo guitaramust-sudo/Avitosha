@@ -65,6 +65,149 @@
   }
 }
 
+.room-stage__story {
+  position: absolute;
+  z-index: 5;
+  top: h.rem(22px);
+  left: h.rem(24px);
+  display: grid;
+  gap: h.rem(4px);
+  padding: h.rem(10px) h.rem(14px);
+  border-radius: h.$radius-medium;
+  background: rgb(255 255 255 / 84%);
+  backdrop-filter: blur(h.rem(10px));
+
+  small {
+    color: h.$color-text-secondary;
+  }
+}
+
+.room-stage__speech {
+  position: absolute;
+  z-index: 5;
+  top: h.rem(88px);
+  left: 50%;
+  max-width: h.rem(340px);
+  padding: h.rem(10px) h.rem(14px);
+  border-radius: h.$radius-medium h.$radius-medium h.$radius-medium 0;
+  background: h.$color-surface;
+  box-shadow: h.$shadow-control;
+  font-size: h.rem(12px);
+  line-height: 1.4;
+  transform: translateX(-50%);
+}
+
+.room-stage__placed-count {
+  position: absolute;
+  z-index: 5;
+  right: h.rem(22px);
+  bottom: h.rem(18px);
+  padding: h.rem(7px) h.rem(11px);
+  border-radius: h.$radius-round;
+  background: rgb(255 255 255 / 86%);
+  font-size: h.rem(11px);
+  font-weight: h.$font-weight-semibold;
+}
+
+.room-object {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  min-width: h.rem(70px);
+  place-items: center;
+  gap: h.rem(3px);
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+
+  > span {
+    display: grid;
+    width: h.rem(58px);
+    height: h.rem(50px);
+    place-items: center;
+    border-radius: h.$radius-medium;
+    background: h.$color-surface;
+    box-shadow: h.$shadow-control;
+    font-size: h.rem(26px);
+  }
+
+  small {
+    padding: h.rem(3px) h.rem(7px);
+    border-radius: h.$radius-round;
+    background: rgb(255 255 255 / 78%);
+    font-size: h.rem(10px);
+  }
+
+  &.is-locked {
+    opacity: 0.22;
+    filter: grayscale(1);
+  }
+
+  &.is-placed {
+    animation: item-appear 360ms ease both;
+  }
+
+  &--box {
+    bottom: 18%;
+    left: 18%;
+  }
+  &--desk {
+    bottom: 31%;
+    left: 7%;
+  }
+  &--lamp {
+    top: 31%;
+    left: 20%;
+  }
+  &--chair {
+    right: 13%;
+    bottom: 25%;
+  }
+  &--plant {
+    right: 7%;
+    bottom: 12%;
+  }
+  &--poster {
+    top: 18%;
+    right: 25%;
+  }
+  &--piggy-bank {
+    right: 32%;
+    bottom: 14%;
+  }
+  &--toy-car {
+    bottom: 8%;
+    left: 34%;
+  }
+  &--suitcase {
+    right: 4%;
+    bottom: 40%;
+  }
+}
+
+.character-detail {
+  position: absolute;
+  right: 50%;
+  bottom: h.rem(8px);
+  padding: h.rem(5px) h.rem(9px);
+  border-radius: h.$radius-round;
+  background: h.$color-primary-light;
+  font-size: h.rem(9px);
+  white-space: nowrap;
+  transform: translateX(50%);
+}
+
+@keyframes item-appear {
+  from {
+    opacity: 0;
+    transform: translateY(h.rem(8px)) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 .room-slot {
   position: absolute;
   z-index: 2;

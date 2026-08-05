@@ -19,6 +19,116 @@
   }
 }
 
+.game-state {
+  display: grid;
+  min-height: 100vh;
+  place-content: center;
+  place-items: center;
+  gap: h.rem(12px);
+  padding: h.rem(24px);
+  background: h.$color-page;
+  text-align: center;
+
+  h1,
+  p {
+    margin: 0;
+  }
+
+  button {
+    min-height: h.rem(42px);
+    padding: 0 h.rem(18px);
+    border: 0;
+    border-radius: h.$radius-medium;
+    color: h.$color-white;
+    background: h.$color-primary;
+  }
+
+  &__loader {
+    width: h.rem(38px);
+    height: h.rem(38px);
+    border: h.rem(4px) solid h.$color-primary-light;
+    border-top-color: h.$color-primary;
+    border-radius: 50%;
+    animation: game-spin 800ms linear infinite;
+  }
+}
+
+@keyframes game-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.progress-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: h.rem(14px);
+}
+
+.progress-card {
+  display: flex;
+  min-width: 0;
+  gap: h.rem(14px);
+  padding: h.rem(18px);
+  border: h.rem(1px) solid h.$color-border;
+  border-radius: h.$radius-large;
+  background: h.$color-surface;
+  box-shadow: h.$shadow-card;
+
+  &__icon {
+    display: grid;
+    width: h.rem(42px);
+    height: h.rem(42px);
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: h.$radius-medium;
+    color: h.$color-primary;
+    background: h.$color-primary-light;
+    font-size: h.rem(22px);
+  }
+
+  small,
+  p,
+  h2 {
+    margin: 0;
+  }
+
+  small,
+  p {
+    color: h.$color-text-secondary;
+    font-size: h.rem(11px);
+  }
+
+  h2 {
+    margin: h.rem(5px) 0;
+    font-size: h.rem(16px);
+  }
+
+  p {
+    margin-bottom: h.rem(8px);
+    line-height: 1.45;
+  }
+
+  strong {
+    font-size: h.rem(11px);
+  }
+
+  ol {
+    display: grid;
+    gap: h.rem(4px);
+    margin: h.rem(8px) 0 0;
+    padding: 0;
+    list-style: none;
+
+    li {
+      display: flex;
+      justify-content: space-between;
+      gap: h.rem(12px);
+      font-size: h.rem(11px);
+    }
+  }
+}
+
 .home-dashboard {
   display: grid;
   grid-template-columns: h.rem(285px) minmax(0, 1fr);
@@ -53,6 +163,10 @@
     &__content {
       grid-area: content;
     }
+  }
+
+  .progress-grid {
+    grid-template-columns: 1fr;
   }
 }
 
