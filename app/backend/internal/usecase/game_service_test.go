@@ -113,6 +113,26 @@ func (repository *gameTestRepository) UpdateGamePet(_ context.Context, pet model
 	return nil
 }
 
+func TestRenamePetPersistsNormalizedName(t *testing.T) {
+	userID := uuid.New()
+	repository := newGameTestRepository(userID)
+	service := NewGameService(GameServiceDependencies{
+		Repository: repository, TxManager: &gameTestTxManager{}, IDGenerator: uuid.New,
+	})
+	now := time.Date(2026, 8, 5, 12, 0, 0, 0, time.UTC)
+
+	profile, err := service.RenamePet(context.Background(), userID, "  БЕЛЫЙ   БИМ ", now)
+	if err != nil {
+		t.Fatalf("RenamePet() error = %v", err)
+	}
+	if profile.Pet.Name != "Белый Бим" || repository.pet.Name != "Белый Бим" {
+		t.Fatalf("profile name = %q, stored name = %q", profile.Pet.Name, repository.pet.Name)
+	}
+	if !repository.pet.UpdatedAt.Equal(now) {
+		t.Fatalf("updated at = %v, want %v", repository.pet.UpdatedAt, now)
+	}
+}
+
 func (repository *gameTestRepository) GetOrCreateStoryProgress(
 	_ context.Context,
 	candidate model.UserStoryProgress,

@@ -149,6 +149,36 @@ func (service *GameService) EnsureProfile(ctx context.Context, userID uuid.UUID,
 	return profile, nil
 }
 
+func (service *GameService) RenamePet(
+	ctx context.Context,
+	userID uuid.UUID,
+	name string,
+	now time.Time,
+) (GameProfile, error) {
+	normalizedName, err := ValidatePetName(name)
+	if err != nil {
+		return GameProfile{}, err
+	}
+
+	var profile GameProfile
+	err = service.txManager.WithinTx(ctx, func(txCtx context.Context) error {
+		profile, err = service.EnsureProfile(txCtx, userID, now)
+		if err != nil {
+			return err
+		}
+		profile.Pet.Name = normalizedName
+		profile.Pet.UpdatedAt = now.UTC()
+		if err = service.repository.UpdateGamePet(txCtx, profile.Pet); err != nil {
+			return fmt.Errorf("rename pet: %w", err)
+		}
+		return nil
+	})
+	if err != nil {
+		return GameProfile{}, fmt.Errorf("rename pet transaction: %w", err)
+	}
+	return profile, nil
+}
+
 func (service *GameService) GetDailySummary(
 	ctx context.Context,
 	userID uuid.UUID,

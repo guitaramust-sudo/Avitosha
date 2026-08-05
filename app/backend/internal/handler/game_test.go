@@ -19,6 +19,7 @@ import (
 
 type fakeGameUseCase struct {
 	ensureProfileFunc   func(context.Context, uuid.UUID, time.Time) (usecase.GameProfile, error)
+	renamePetFunc       func(context.Context, uuid.UUID, string, time.Time) (usecase.GameProfile, error)
 	listTasksFunc       func(context.Context, uuid.UUID, time.Time) ([]model.TaskProgress, error)
 	getTaskFunc         func(context.Context, uuid.UUID, uuid.UUID, time.Time) (model.TaskProgress, error)
 	getRoomFunc         func(context.Context, uuid.UUID, time.Time) ([]model.RoomItemProgress, error)
@@ -31,6 +32,10 @@ type fakeGameUseCase struct {
 
 func (fake fakeGameUseCase) EnsureProfile(ctx context.Context, userID uuid.UUID, now time.Time) (usecase.GameProfile, error) {
 	return fake.ensureProfileFunc(ctx, userID, now)
+}
+
+func (fake fakeGameUseCase) RenamePet(ctx context.Context, userID uuid.UUID, name string, now time.Time) (usecase.GameProfile, error) {
+	return fake.renamePetFunc(ctx, userID, name, now)
 }
 
 func (fake fakeGameUseCase) ListTasks(ctx context.Context, userID uuid.UUID, now time.Time) ([]model.TaskProgress, error) {
@@ -72,6 +77,7 @@ func TestGameRoutesRequireIdentity(t *testing.T) {
 		path   string
 	}{
 		{http.MethodGet, "/api/v1/pet"},
+		{http.MethodPatch, "/api/v1/pet"},
 		{http.MethodGet, "/api/v1/tasks"},
 		{http.MethodPost, "/api/v1/actions"},
 		{http.MethodGet, "/api/v1/room"},
@@ -123,6 +129,69 @@ func TestGetGamePetAcceptsXUserIDAndReturnsProductProfile(t *testing.T) {
 	}
 	if body["growthXp"] != float64(130) || body["mood"] != "PROUD" {
 		t.Fatalf("body = %v", body)
+	}
+}
+
+func TestRenamePetReturnsNormalizedProfile(t *testing.T) {
+	userID := uuid.New()
+	now := time.Date(2026, 8, 5, 12, 0, 0, 0, time.UTC)
+	service := completeFakeGameUseCase()
+	service.renamePetFunc = func(_ context.Context, gotUserID uuid.UUID, name string, gotNow time.Time) (usecase.GameProfile, error) {
+		if gotUserID != userID || name != "  мурзик  " || !gotNow.Equal(now) {
+			t.Fatalf("RenamePet(%s, %q, %v)", gotUserID, name, gotNow)
+		}
+		return usecase.GameProfile{
+			Pet: model.Pet{ID: uuid.New(), UserID: userID, Name: "Мурзик", Level: 1, Mood: model.PetMoodCalm},
+			Story: model.StorySnapshot{
+				Story:    model.Story{Code: usecase.FirstRoomStoryCode, TotalStages: 5},
+				Progress: model.UserStoryProgress{Status: model.StoryStatusActive},
+			},
+		}, nil
+	}
+	router := newGameTestRouter(RouterDependencies{GameService: service, Now: func() time.Time { return now }})
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodPatch, "/api/v1/pet", bytes.NewBufferString(`{"name":"  мурзик  "}`))
+	request.Header.Set("X-User-ID", userID.String())
+	recorder := httptest.NewRecorder()
+
+	router.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", recorder.Code, recorder.Body.String())
+	}
+	var body map[string]any
+	if err := json.Unmarshal(recorder.Body.Bytes(), &body); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if body["name"] != "Мурзик" {
+		t.Fatalf("body = %v", body)
+	}
+}
+
+func TestRenamePetRejectsForbiddenName(t *testing.T) {
+	service := completeFakeGameUseCase()
+	service.renamePetFunc = func(context.Context, uuid.UUID, string, time.Time) (usecase.GameProfile, error) {
+		return usecase.GameProfile{}, usecase.ErrForbiddenPetName
+	}
+	router := newGameTestRouter(RouterDependencies{GameService: service})
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodPatch, "/api/v1/pet", bytes.NewBufferString(`{"name":"запрещено"}`))
+	request.Header.Set("X-User-ID", uuid.NewString())
+	recorder := httptest.NewRecorder()
+
+	router.ServeHTTP(recorder, request)
+
+	assertErrorResponse(t, recorder, http.StatusBadRequest, "forbidden_pet_name", "Это имя нельзя использовать. Выберите доброе имя без оскорблений")
+}
+
+func TestRenamePetRejectsUnknownRequestFields(t *testing.T) {
+	router := newGameTestRouter(RouterDependencies{GameService: completeFakeGameUseCase()})
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodPatch, "/api/v1/pet", bytes.NewBufferString(`{"name":"Мурзик","admin":true}`))
+	request.Header.Set("X-User-ID", uuid.NewString())
+	recorder := httptest.NewRecorder()
+
+	router.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, body = %s", recorder.Code, recorder.Body.String())
 	}
 }
 
@@ -289,6 +358,9 @@ func TestLeaderboardRejectsUnsupportedPeriodAndLimit(t *testing.T) {
 func completeFakeGameUseCase() fakeGameUseCase {
 	return fakeGameUseCase{
 		ensureProfileFunc: func(context.Context, uuid.UUID, time.Time) (usecase.GameProfile, error) {
+			return usecase.GameProfile{}, nil
+		},
+		renamePetFunc: func(context.Context, uuid.UUID, string, time.Time) (usecase.GameProfile, error) {
 			return usecase.GameProfile{}, nil
 		},
 		listTasksFunc: func(context.Context, uuid.UUID, time.Time) ([]model.TaskProgress, error) { return nil, nil },

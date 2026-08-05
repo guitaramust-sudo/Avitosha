@@ -12,5 +12,7 @@ var (
 	ErrLeaderboardEntryNotFound = errors.New("leaderboard entry not found")
 	ErrEventIDConflict          = errors.New("event ID belongs to another action")
 	ErrInvalidAction            = errors.New("invalid action")
+	ErrInvalidPetName           = errors.New("invalid pet name")
+	ErrForbiddenPetName         = errors.New("forbidden pet name")
 	ErrOutOfOrderStoryStage     = errors.New("story stage is out of order")
 )

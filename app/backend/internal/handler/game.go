@@ -22,6 +22,7 @@ import (
 
 type GameUseCase interface {
 	EnsureProfile(context.Context, uuid.UUID, time.Time) (usecase.GameProfile, error)
+	RenamePet(context.Context, uuid.UUID, string, time.Time) (usecase.GameProfile, error)
 	ListTasks(context.Context, uuid.UUID, time.Time) ([]model.TaskProgress, error)
 	GetTask(context.Context, uuid.UUID, uuid.UUID, time.Time) (model.TaskProgress, error)
 	GetRoom(context.Context, uuid.UUID, time.Time) ([]model.RoomItemProgress, error)
@@ -56,6 +57,24 @@ func (handler GameHandler) GetPet(w http.ResponseWriter, r *http.Request) {
 	profile, err := handler.service.EnsureProfile(r.Context(), userID, handler.now())
 	if err != nil {
 		handler.writeError(w, r, "get_pet", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, newGamePetDTO(profile))
+}
+
+func (handler GameHandler) RenamePet(w http.ResponseWriter, r *http.Request) {
+	userID, ok := handler.requireUser(w, r)
+	if !ok {
+		return
+	}
+	request, err := decodeRenamePetRequest(r)
+	if err != nil {
+		writeErrorResponse(w, http.StatusBadRequest, invalidRequestCode, err.Error())
+		return
+	}
+	profile, err := handler.service.RenamePet(r.Context(), userID, request.Name, handler.now())
+	if err != nil {
+		handler.writeError(w, r, "rename_pet", err)
 		return
 	}
 	writeJSON(w, http.StatusOK, newGamePetDTO(profile))
@@ -208,6 +227,10 @@ func (handler GameHandler) writeError(w http.ResponseWriter, r *http.Request, op
 
 func mapGameUsecaseError(err error) (int, string, string) {
 	switch {
+	case errors.Is(err, usecase.ErrInvalidPetName):
+		return http.StatusBadRequest, "invalid_pet_name", "Имя должно содержать от 2 до 20 символов: только русские буквы, пробел или дефис"
+	case errors.Is(err, usecase.ErrForbiddenPetName):
+		return http.StatusBadRequest, "forbidden_pet_name", "Это имя нельзя использовать. Выберите доброе имя без оскорблений"
 	case errors.Is(err, usecase.ErrInvalidAction):
 		return http.StatusBadRequest, invalidRequestCode, "Action is invalid"
 	case errors.Is(err, usecase.ErrEventIDConflict):
@@ -228,6 +251,23 @@ type actionRequest struct {
 	Category   *string          `json:"category"`
 	OccurredAt time.Time        `json:"occurredAt"`
 	Metadata   json.RawMessage  `json:"metadata"`
+}
+
+type renamePetRequest struct {
+	Name string `json:"name"`
+}
+
+func decodeRenamePetRequest(r *http.Request) (renamePetRequest, error) {
+	var request renamePetRequest
+	decoder := json.NewDecoder(io.LimitReader(r.Body, 4<<10))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&request); err != nil {
+		return renamePetRequest{}, fmt.Errorf("request body must be valid JSON")
+	}
+	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
+		return renamePetRequest{}, fmt.Errorf("request body must contain one JSON object")
+	}
+	return request, nil
 }
 
 func decodeActionRequest(r *http.Request) (actionRequest, error) {

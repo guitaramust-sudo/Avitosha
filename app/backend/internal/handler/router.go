@@ -91,6 +91,7 @@ func mountAPIRoutes(r chi.Router, logger *slog.Logger, deps RouterDependencies) 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Use(GameIdentity(logger, deps.AccessTokenVerifier))
 		r.Get("/pet", gameHandler.GetPet)
+		r.Patch("/pet", gameHandler.RenamePet)
 		r.Get("/tasks", gameHandler.ListTasks)
 		r.Get("/tasks/{task_id}", gameHandler.GetTask)
 		r.Post("/actions", gameHandler.ProcessAction)

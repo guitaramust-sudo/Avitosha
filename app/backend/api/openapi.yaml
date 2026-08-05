@@ -156,6 +156,31 @@ paths:
                 $ref: '#/components/schemas/PetProfile'
         '401':
           $ref: '#/components/responses/Unauthorized'
+    patch:
+      tags: [game]
+      operationId: renamePet
+      summary: Rename the current user's pet
+      description: The name is normalized and must contain only Russian letters, single spaces, or hyphens. Offensive names are rejected.
+      security:
+        - bearerAuth: []
+        - userIdHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RenamePetRequest'
+      responses:
+        '200':
+          description: Updated Avitosha profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PetProfile'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /api/v1/tasks:
     get:
       tags: [game]
@@ -474,6 +499,9 @@ components:
           format: uuid
         name:
           type: string
+          minLength: 2
+          maxLength: 20
+          pattern: '^[А-Яа-яЁё]+(?:[ -][А-Яа-яЁё]+)*$'
         level:
           type: integer
           minimum: 1
@@ -494,6 +522,17 @@ components:
           $ref: '#/components/schemas/CharacterProfile'
         currentStory:
           $ref: '#/components/schemas/CurrentStory'
+    RenamePetRequest:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 20
+          pattern: '^[А-Яа-яЁё]+(?:[ -][А-Яа-яЁё]+)*$'
+          example: Мурзик
     ActionType:
       type: string
       enum: [AD_VIEWED, AD_FAVORITED, MESSAGE_SENT, AD_CREATED, DELIVERY_USED, REVIEW_LEFT, BOOKING_CREATED]

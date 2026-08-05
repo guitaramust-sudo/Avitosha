@@ -69,6 +69,7 @@ func TestGameAPIContract(t *testing.T) {
 		method string
 	}{
 		{path: "/api/v1/pet", method: "GET"},
+		{path: "/api/v1/pet", method: "PATCH"},
 		{path: "/api/v1/tasks", method: "GET"},
 		{path: "/api/v1/tasks/{task_id}", method: "GET"},
 		{path: "/api/v1/actions", method: "POST"},
@@ -96,7 +97,7 @@ func TestGameAPIContract(t *testing.T) {
 	}
 
 	for _, schema := range []string{
-		"PetProfile", "TaskProgress", "ActionRequest", "ActionResult", "RoomResponse",
+		"PetProfile", "RenamePetRequest", "TaskProgress", "ActionRequest", "ActionResult", "RoomResponse",
 		"StoryResponse", "DailySummary", "LeaderboardResponse", "Achievement",
 	} {
 		if _, ok := doc.Components.Schemas[schema]; !ok {
