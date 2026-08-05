@@ -2,33 +2,26 @@
 
 .room-drag-overlay {
   display: grid;
-  width: h.rem(84px);
+  width: h.rem(110px);
+  height: h.rem(110px);
   place-items: center;
-  gap: h.rem(4px);
-  padding: h.rem(9px);
+  padding: h.rem(6px);
   border: h.rem(1px) solid h.$color-primary;
   border-radius: h.$radius-medium;
   background: rgb(255 255 255 / 94%);
   box-shadow: h.$shadow-card;
   cursor: grabbing;
 
-  > span {
-    display: grid;
-    width: h.rem(56px);
-    height: h.rem(48px);
-    place-items: center;
-    border-radius: h.$radius-small;
-    color: h.$color-primary;
-    background: h.$color-primary-light;
-    font-size: h.rem(25px);
+  > img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
   }
+}
 
-  small {
-    overflow: hidden;
-    max-width: 100%;
-    font-size: h.rem(10px);
-    font-weight: h.$font-weight-semibold;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+@include h.mobile {
+  .room-drag-overlay {
+    width: h.rem(82px);
+    height: h.rem(82px);
   }
 }

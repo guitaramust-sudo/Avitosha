@@ -16,6 +16,10 @@
   background: h.$color-surface;
   box-shadow: h.$shadow-card;
 
+  > div {
+    min-width: 0;
+  }
+
   &__icon {
     display: grid;
     width: h.rem(42px);
@@ -147,8 +151,44 @@
   }
 }
 
-@include h.tablet {
+@include h.laptop-small {
+  .progress-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    .leaderboard-card {
+      grid-column: 1 / -1;
+    }
+  }
+}
+
+@include h.mobile {
   .progress-grid {
     grid-template-columns: 1fr;
+
+    .leaderboard-card {
+      grid-column: auto;
+    }
+  }
+
+  .progress-card {
+    gap: h.rem(10px);
+    padding: h.rem(14px);
+
+    &__icon {
+      width: h.rem(36px);
+      height: h.rem(36px);
+      font-size: h.rem(18px);
+    }
+  }
+
+  .character-card {
+    align-items: flex-start;
+    flex-direction: column;
+
+    p,
+    h2,
+    strong {
+      overflow-wrap: anywhere;
+    }
   }
 }

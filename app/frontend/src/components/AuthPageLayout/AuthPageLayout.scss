@@ -171,3 +171,33 @@
     }
   }
 }
+
+@include h.mobile-small {
+  .auth-page {
+    &__visual {
+      padding: h.rem(18px);
+    }
+
+    &__brand {
+      font-size: h.rem(22px);
+    }
+
+    &__message {
+      gap: h.rem(10px);
+      margin: h.rem(28px) 0 h.rem(8px);
+
+      span,
+      p {
+        display: none;
+      }
+
+      h2 {
+        font-size: h.rem(30px);
+      }
+    }
+
+    &__form-area {
+      padding: h.rem(30px) h.rem(16px);
+    }
+  }
+}

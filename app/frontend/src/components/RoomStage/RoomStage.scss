@@ -110,9 +110,13 @@
 
 .room-object {
   position: absolute;
-  z-index: 2;
+  z-index: 4;
+  top: clamp(10%, var(--room-item-y), 90%);
+  left: clamp(8%, var(--room-item-x), 92%);
   display: grid;
-  min-width: h.rem(70px);
+  width: var(--room-item-width);
+  max-width: 24%;
+  aspect-ratio: 3 / 2;
   place-items: center;
   gap: h.rem(3px);
   padding: 0;
@@ -130,38 +134,24 @@
     opacity 180ms ease,
     transform 180ms ease;
 
-  > span {
-    display: grid;
-    width: h.rem(58px);
-    height: h.rem(50px);
-    place-items: center;
-    border-radius: h.$radius-medium;
-    background: h.$color-surface;
-    box-shadow: h.$shadow-control;
-    font-size: h.rem(26px);
-  }
-
-  small {
-    padding: h.rem(3px) h.rem(7px);
-    border-radius: h.$radius-round;
-    background: rgb(255 255 255 / 78%);
-    font-size: h.rem(10px);
+  > img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+    transition: filter 160ms ease;
   }
 
   &.is-placed {
     animation: item-appear 360ms ease both;
   }
 
-  &.is-unlocked > span {
-    outline: h.rem(2px) dashed h.$color-primary;
-  }
-
   &.is-selected {
     z-index: 7;
 
-    > span {
-      outline: h.rem(2px) solid h.$color-primary;
-      box-shadow: 0 0 0 h.rem(5px) rgb(139 63 242 / 12%);
+    > img {
+      filter: drop-shadow(0 0 h.rem(2px) rgb(139 63 242 / 65%))
+        drop-shadow(0 h.rem(3px) h.rem(6px) rgb(139 63 242 / 20%));
     }
   }
 
@@ -170,18 +160,19 @@
     opacity: 0.25;
     cursor: grabbing;
   }
-}
 
-.character-detail {
-  position: absolute;
-  right: 50%;
-  bottom: h.rem(8px);
-  padding: h.rem(5px) h.rem(9px);
-  border-radius: h.$radius-round;
-  background: h.$color-primary-light;
-  font-size: h.rem(9px);
-  white-space: nowrap;
-  transform: translateX(50%);
+  &--poster {
+    aspect-ratio: 508 / 484;
+
+    > img {
+      position: absolute;
+      top: -50.4%;
+      left: -96.8%;
+      width: 302.4%;
+      height: auto;
+      max-width: none;
+    }
+  }
 }
 
 @keyframes item-appear {
@@ -201,23 +192,110 @@
   }
 }
 
-@include h.mobile {
+@include h.tablet {
   .room-stage {
-    min-height: h.rem(440px);
+    min-height: 0;
+    aspect-ratio: 1672 / 941;
 
     &__character {
-      min-width: h.rem(190px);
+      width: min(28%, h.rem(210px));
+      min-width: h.rem(160px);
+      transform: translateX(-54.5%);
+    }
+  }
+
+  .room-object {
+    left: clamp(11%, var(--room-item-x), 89%);
+    max-width: 22%;
+
+    &--poster {
+      width: h.rem(66px);
+    }
+  }
+}
+
+@include h.mobile {
+  .room-stage {
+    min-height: 0;
+    aspect-ratio: 4 / 3;
+    border-radius: h.$radius-medium;
+    background-position: center;
+    background-size: 100% 100%;
+
+    &__character {
+      bottom: 2%;
+      width: min(42%, h.rem(155px));
+      min-width: h.rem(130px);
+      transform: translateX(-54.5%);
+    }
+  }
+
+  .room-stage__story {
+    top: h.rem(10px);
+    left: h.rem(10px);
+    max-width: calc(58% - h.rem(10px));
+    padding: h.rem(8px) h.rem(10px);
+
+    span {
+      display: none;
+    }
+  }
+
+  .room-stage__speech {
+    display: none;
+  }
+
+  .room-stage__edit-hint {
+    display: none;
+  }
+
+  .room-stage__placed-count {
+    display: none;
+  }
+
+  .room-object {
+    top: clamp(12%, var(--room-item-y), 88%);
+    left: clamp(12%, var(--room-item-x), 88%);
+    max-width: 22%;
+
+    &--poster {
+      width: h.rem(50px);
+      max-width: 16%;
     }
   }
 }
 
 @include h.mobile-small {
   .room-stage {
-    min-height: h.rem(410px);
+    aspect-ratio: 4 / 3;
 
     &__character {
-      bottom: h.rem(16px);
-      min-width: h.rem(175px);
+      bottom: 1%;
+      width: 40%;
+      min-width: h.rem(120px);
+    }
+  }
+
+  .room-stage__story {
+    max-width: 62%;
+
+    small {
+      font-size: h.rem(9px);
+    }
+
+    strong {
+      font-size: h.rem(11px);
+    }
+  }
+
+  .room-object {
+    top: clamp(14%, var(--room-item-y), 86%);
+    left: clamp(14%, var(--room-item-x), 86%);
+    max-width: 24%;
+
+    &--poster {
+      width: h.rem(44px);
+      max-width: 15%;
     }
   }
 }

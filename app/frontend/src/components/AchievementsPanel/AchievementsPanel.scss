@@ -297,5 +297,19 @@
 @include h.mobile {
   .achievements-panel {
     display: flex;
+
+    &__main {
+      padding: h.rem(18px) h.rem(12px);
+    }
+  }
+
+  .achievement {
+    grid-template-columns: h.rem(42px) minmax(0, 1fr) h.rem(22px);
+    gap: h.rem(9px);
+
+    &__icon {
+      width: h.rem(42px);
+      height: h.rem(42px);
+    }
   }
 }

@@ -73,14 +73,13 @@
   display: grid;
   min-width: 0;
   min-height: h.rem(118px);
-  grid-template-rows: 1fr auto;
-  gap: h.rem(8px);
+  place-items: center;
   padding: h.rem(12px) h.rem(8px) h.rem(10px);
   border: h.rem(1px) solid h.$color-border;
   border-radius: h.$radius-medium;
   background: h.$color-surface;
   cursor: grab;
-  touch-action: none;
+  touch-action: manipulation;
   transition:
     border-color 160ms ease,
     box-shadow 160ms ease,
@@ -124,40 +123,26 @@
     background: h.$color-surface-muted;
   }
 
-  &__placeholder {
-    display: grid;
-    width: 70%;
-    height: h.rem(55px);
-    align-self: end;
-    justify-self: center;
-    place-items: center;
-    border: h.rem(1px) dashed h.$color-border-strong;
-    border-radius: h.$radius-small;
-    background: linear-gradient(
-      145deg,
-      h.$color-surface-soft,
-      h.$color-surface-muted
-    );
-    color: h.$color-primary;
-    font-size: h.rem(25px);
+  &__image {
+    width: 100%;
+    height: h.rem(82px);
+    object-fit: contain;
   }
+}
 
-  &__name {
-    overflow: hidden;
-    font-size: h.rem(11px);
-    font-weight: h.$font-weight-medium;
-    text-align: center;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+@include h.tablet {
+  .room-collection__items {
+    grid-template-columns: repeat(auto-fit, minmax(h.rem(90px), 1fr));
+    overflow-x: visible;
   }
 }
 
 @include h.mobile {
   .room-collection {
-    padding: h.rem(16px);
+    padding: h.rem(14px);
 
     &__items {
-      grid-template-columns: repeat(9, h.rem(94px));
+      grid-template-columns: repeat(auto-fit, minmax(h.rem(76px), 1fr));
     }
 
     &__heading {
@@ -165,8 +150,31 @@
       flex-direction: column;
 
       > button {
-        align-self: start;
+        width: 100%;
       }
+    }
+  }
+
+  .collection-item {
+    min-height: h.rem(104px);
+
+    &__image {
+      height: h.rem(70px);
+    }
+  }
+}
+
+@include h.mobile-small {
+  .room-collection {
+    padding: h.rem(12px);
+
+    &__heading p {
+      display: none;
+    }
+
+    &__items {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: h.rem(8px);
     }
   }
 }
