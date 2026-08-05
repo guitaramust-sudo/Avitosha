@@ -163,6 +163,28 @@ func TestGameReadRoutesReturnTasksRoomAndStory(t *testing.T) {
 	}
 }
 
+func TestRoomProgressCountsOnlyFirstStoryItems(t *testing.T) {
+	items := make([]model.RoomItemProgress, 0, 9)
+	for index, code := range []string{"BOX", "DESK", "LAMP", "CHAIR", "PLANT", "POSTER", "RUG", "SHELF", "CLOCK"} {
+		status := model.RoomItemStatusLocked
+		if code == "BOX" || code == "RUG" {
+			status = model.RoomItemStatusPlaced
+		}
+		items = append(items, model.RoomItemProgress{
+			Item:   model.RoomItem{Code: code, SortOrder: index},
+			Status: status,
+		})
+	}
+
+	room := newRoomDTO(items)
+	if room.Progress != "1/6" {
+		t.Fatalf("progress = %q, want 1/6", room.Progress)
+	}
+	if len(room.Items) != 9 {
+		t.Fatalf("items = %d, want 9", len(room.Items))
+	}
+}
+
 func TestProcessActionValidatesAndFlattensDomainEvents(t *testing.T) {
 	userID := uuid.New()
 	eventID := uuid.New()

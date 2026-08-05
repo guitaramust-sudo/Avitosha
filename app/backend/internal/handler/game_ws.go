@@ -61,7 +61,11 @@ func (handler GameWebSocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Req
 		handler.logger.Warn("websocket upgrade failed", "user_id", userID, "error", err.Error())
 		return
 	}
-	defer connection.Close()
+	defer func() {
+		if err := connection.Close(); err != nil {
+			handler.logger.Debug("websocket close failed", "user_id", userID, "error", err.Error())
+		}
+	}()
 
 	subscription := handler.hub.Subscribe(userID)
 	defer subscription.Close()

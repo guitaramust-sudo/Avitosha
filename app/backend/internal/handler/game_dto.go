@@ -145,19 +145,23 @@ type roomItemDTO struct {
 func newRoomDTO(items []model.RoomItemProgress) roomDTO {
 	dtos := make([]roomItemDTO, len(items))
 	placed := 0
+	storyItems := 0
 	for index, item := range items {
 		dtos[index] = roomItemDTO{
 			Code: item.Item.Code, Name: item.Item.Name, Description: item.Item.Description,
 			Status: item.Status, AssetKey: item.Item.AssetKey, PositionKey: item.Item.PositionKey,
 			UnlockTaskCode: item.SourceTaskCode,
 		}
-		if item.Status == model.RoomItemStatusPlaced {
+		if item.Item.SortOrder <= 5 {
+			storyItems++
+		}
+		if item.Item.SortOrder <= 5 && item.Status == model.RoomItemStatusPlaced {
 			placed++
 		}
 	}
 	return roomDTO{
 		StoryCode: usecase.FirstRoomStoryCode,
-		Progress:  fmtProgress(placed, len(items)), Items: dtos,
+		Progress:  fmtProgress(placed, storyItems), Items: dtos,
 	}
 }
 

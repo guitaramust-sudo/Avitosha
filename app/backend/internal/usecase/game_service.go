@@ -546,8 +546,8 @@ func (service *GameService) event(
 }
 
 func normalizeActionCommand(command ProcessActionCommand) ProcessActionCommand {
-	command.Now = command.Now.UTC()
-	command.OccurredAt = command.OccurredAt.UTC()
+	command.Now = command.Now.UTC().Truncate(time.Microsecond)
+	command.OccurredAt = command.OccurredAt.UTC().Truncate(time.Microsecond)
 	command.ActionType = model.ActionType(strings.ToUpper(strings.TrimSpace(string(command.ActionType))))
 	command.EntityID = normalizedStringPointer(command.EntityID)
 	command.Category = normalizedUpperStringPointer(command.Category)

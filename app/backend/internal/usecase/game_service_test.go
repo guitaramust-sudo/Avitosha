@@ -384,7 +384,7 @@ func TestProcessActionCompletesFirstRoomStageAndIsIdempotent(t *testing.T) {
 	service := NewGameService(GameServiceDependencies{
 		Repository: repository, TxManager: txManager, IDGenerator: uuid.New, Publisher: publisher,
 	})
-	now := time.Date(2026, 8, 5, 12, 0, 0, 0, time.UTC)
+	now := time.Date(2026, 8, 5, 12, 0, 0, 123456789, time.UTC)
 	category := "furniture"
 
 	var lastCommand ProcessActionCommand

@@ -22,7 +22,16 @@ interface RoomStageProps {
 }
 
 function RoomStage({ pet, items, story }: RoomStageProps) {
-  const placedItems = items.filter((item) => item.status === 'PLACED')
+  const firstRoomCodes = new Set([
+    'BOX',
+    'DESK',
+    'LAMP',
+    'CHAIR',
+    'PLANT',
+    'POSTER',
+  ])
+  const storyItems = items.filter((item) => firstRoomCodes.has(item.code))
+  const placedItems = storyItems.filter((item) => item.status === 'PLACED')
   const phrase =
     story.status === 'COMPLETED'
       ? 'Комната готова! Теперь я чувствую себя как дома.'
@@ -64,7 +73,7 @@ function RoomStage({ pet, items, story }: RoomStageProps) {
         )}
       </div>
       <span className="room-stage__placed-count">
-        {placedItems.length}/{items.length} предметов
+        {placedItems.length}/{storyItems.length} предметов
       </span>
     </section>
   )

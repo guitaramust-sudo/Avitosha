@@ -27,6 +27,9 @@ func TestWebSocketDeliversUserEventsAndRemovesDisconnectedClient(t *testing.T) {
 	connection, response, err := websocket.DefaultDialer.Dial(
 		"ws"+strings.TrimPrefix(server.URL, "http")+"/api/v1/ws", header,
 	)
+	if response != nil {
+		defer func() { _ = response.Body.Close() }()
+	}
 	if err != nil {
 		if response != nil {
 			t.Fatalf("websocket dial: %v; status = %d", err, response.StatusCode)
@@ -83,6 +86,9 @@ func TestWebSocketRejectsWrongOrigin(t *testing.T) {
 	connection, response, err := websocket.DefaultDialer.Dial(
 		"ws"+strings.TrimPrefix(server.URL, "http")+"/api/v1/ws", header,
 	)
+	if response != nil {
+		defer func() { _ = response.Body.Close() }()
+	}
 	if connection != nil {
 		_ = connection.Close()
 	}
