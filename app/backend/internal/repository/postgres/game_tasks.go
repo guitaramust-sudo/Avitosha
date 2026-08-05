@@ -198,10 +198,10 @@ func (repository *GameRepository) ListRoomItems(ctx context.Context, userID uuid
 	rows, err := executorFromContext(ctx, repository.executor).Query(ctx, `
 SELECT ri.code, ri.name, ri.description, ri.asset_key, ri.position_key, ri.unlock_level,
        ri.sort_order, ri.created_at, ri.updated_at,
-       COALESCE(uri.status, 'LOCKED'), t.code, uri.unlocked_at
+       COALESCE(uri.status, 'LOCKED'), unlock_task.code, uri.unlocked_at
 FROM room_items ri
 LEFT JOIN user_room_items uri ON uri.item_code = ri.code AND uri.user_id = $1
-LEFT JOIN tasks t ON t.id = uri.source_task_id
+LEFT JOIN tasks unlock_task ON unlock_task.room_item_code = ri.code AND unlock_task.is_active
 ORDER BY ri.sort_order, ri.code
 `, userID)
 	if err != nil {

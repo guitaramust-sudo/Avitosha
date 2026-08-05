@@ -1,0 +1,217 @@
+package handler
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"log/slog"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/go-chi/chi/v5"
+	chimiddleware "github.com/go-chi/chi/v5/middleware"
+	"github.com/google/uuid"
+
+	"github.com/guitaramust-sudo/Avitosha/app/backend/internal/model"
+	"github.com/guitaramust-sudo/Avitosha/app/backend/internal/usecase"
+)
+
+type GameUseCase interface {
+	EnsureProfile(context.Context, uuid.UUID, time.Time) (usecase.GameProfile, error)
+	ListTasks(context.Context, uuid.UUID, time.Time) ([]model.TaskProgress, error)
+	GetTask(context.Context, uuid.UUID, uuid.UUID, time.Time) (model.TaskProgress, error)
+	GetRoom(context.Context, uuid.UUID, time.Time) ([]model.RoomItemProgress, error)
+	GetStory(context.Context, uuid.UUID, time.Time) (model.StorySnapshot, error)
+	ProcessAction(context.Context, usecase.ProcessActionCommand) (usecase.ProcessActionResult, error)
+}
+
+type GameHandler struct {
+	logger  *slog.Logger
+	service GameUseCase
+	now     func() time.Time
+}
+
+func NewGameHandler(logger *slog.Logger, service GameUseCase, now func() time.Time) GameHandler {
+	if logger == nil {
+		logger = slog.Default()
+	}
+	if now == nil {
+		now = time.Now
+	}
+	return GameHandler{logger: logger, service: service, now: now}
+}
+
+func (handler GameHandler) GetPet(w http.ResponseWriter, r *http.Request) {
+	userID, ok := handler.requireUser(w, r)
+	if !ok {
+		return
+	}
+	profile, err := handler.service.EnsureProfile(r.Context(), userID, handler.now())
+	if err != nil {
+		handler.writeError(w, r, "get_pet", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, newGamePetDTO(profile))
+}
+
+func (handler GameHandler) ListTasks(w http.ResponseWriter, r *http.Request) {
+	userID, ok := handler.requireUser(w, r)
+	if !ok {
+		return
+	}
+	tasks, err := handler.service.ListTasks(r.Context(), userID, handler.now())
+	if err != nil {
+		handler.writeError(w, r, "list_tasks", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, taskListDTO{Tasks: newTaskDTOs(tasks)})
+}
+
+func (handler GameHandler) GetTask(w http.ResponseWriter, r *http.Request) {
+	userID, ok := handler.requireUser(w, r)
+	if !ok {
+		return
+	}
+	taskID, err := uuid.Parse(chi.URLParam(r, "task_id"))
+	if err != nil {
+		writeErrorResponse(w, http.StatusBadRequest, invalidRequestCode, "task_id must be a UUID")
+		return
+	}
+	task, err := handler.service.GetTask(r.Context(), userID, taskID, handler.now())
+	if err != nil {
+		handler.writeError(w, r, "get_task", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, newTaskDTO(task))
+}
+
+func (handler GameHandler) ProcessAction(w http.ResponseWriter, r *http.Request) {
+	userID, ok := handler.requireUser(w, r)
+	if !ok {
+		return
+	}
+	request, err := decodeActionRequest(r)
+	if err != nil {
+		writeErrorResponse(w, http.StatusBadRequest, invalidRequestCode, err.Error())
+		return
+	}
+	result, err := handler.service.ProcessAction(r.Context(), usecase.ProcessActionCommand{
+		UserID: userID, EventID: request.EventID, ActionType: request.Type,
+		EntityID: request.EntityID, Category: request.Category, Metadata: request.Metadata,
+		OccurredAt: request.OccurredAt, Now: handler.now(),
+	})
+	if err != nil {
+		handler.writeError(w, r, "process_action", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, newActionResultDTO(result))
+}
+
+func (handler GameHandler) GetRoom(w http.ResponseWriter, r *http.Request) {
+	userID, ok := handler.requireUser(w, r)
+	if !ok {
+		return
+	}
+	items, err := handler.service.GetRoom(r.Context(), userID, handler.now())
+	if err != nil {
+		handler.writeError(w, r, "get_room", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, newRoomDTO(items))
+}
+
+func (handler GameHandler) GetStory(w http.ResponseWriter, r *http.Request) {
+	userID, ok := handler.requireUser(w, r)
+	if !ok {
+		return
+	}
+	story, err := handler.service.GetStory(r.Context(), userID, handler.now())
+	if err != nil {
+		handler.writeError(w, r, "get_story", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, newStoryDTO(story))
+}
+
+func (handler GameHandler) requireUser(w http.ResponseWriter, r *http.Request) (uuid.UUID, bool) {
+	userID, ok := gameUserID(r.Context())
+	if !ok {
+		writeErrorResponse(w, http.StatusUnauthorized, unauthorizedCode, "Authentication is required")
+		return uuid.Nil, false
+	}
+	return userID, true
+}
+
+func (handler GameHandler) writeError(w http.ResponseWriter, r *http.Request, operation string, err error) {
+	status, code, message := mapGameUsecaseError(err)
+	if status >= http.StatusInternalServerError {
+		handler.logger.Error("game request failed", "request_id", chimiddleware.GetReqID(r.Context()),
+			"operation", operation, "error", err.Error())
+	}
+	writeErrorResponse(w, status, code, message)
+}
+
+func mapGameUsecaseError(err error) (int, string, string) {
+	switch {
+	case errors.Is(err, usecase.ErrInvalidAction):
+		return http.StatusBadRequest, invalidRequestCode, "Action is invalid"
+	case errors.Is(err, usecase.ErrEventIDConflict):
+		return http.StatusConflict, "event_id_conflict", "eventId was already used for another action"
+	case errors.Is(err, usecase.ErrTaskNotFound):
+		return http.StatusNotFound, "task_not_found", "Task not found"
+	case errors.Is(err, usecase.ErrStoryNotFound):
+		return http.StatusNotFound, "story_not_found", "Story not found"
+	default:
+		return http.StatusInternalServerError, internalErrorCode, "Internal server error"
+	}
+}
+
+type actionRequest struct {
+	EventID    uuid.UUID        `json:"eventId"`
+	Type       model.ActionType `json:"type"`
+	EntityID   *string          `json:"entityId"`
+	Category   *string          `json:"category"`
+	OccurredAt time.Time        `json:"occurredAt"`
+	Metadata   json.RawMessage  `json:"metadata"`
+}
+
+func decodeActionRequest(r *http.Request) (actionRequest, error) {
+	var request actionRequest
+	decoder := json.NewDecoder(io.LimitReader(r.Body, 1<<20))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&request); err != nil {
+		return actionRequest{}, fmt.Errorf("request body must be valid JSON")
+	}
+	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
+		return actionRequest{}, fmt.Errorf("request body must contain one JSON object")
+	}
+	if request.EventID == uuid.Nil {
+		return actionRequest{}, fmt.Errorf("eventId must be a UUID")
+	}
+	if strings.TrimSpace(string(request.Type)) == "" {
+		return actionRequest{}, fmt.Errorf("type is required")
+	}
+	if request.OccurredAt.IsZero() {
+		return actionRequest{}, fmt.Errorf("occurredAt must be RFC3339 date-time")
+	}
+	if len(request.Metadata) == 0 {
+		request.Metadata = json.RawMessage(`{}`)
+	}
+	return request, nil
+}
+
+func parseLeaderboardLimit(r *http.Request) (int, error) {
+	value := strings.TrimSpace(r.URL.Query().Get("limit"))
+	if value == "" {
+		return usecase.DefaultLeaderboardLimit, nil
+	}
+	limit, err := strconv.Atoi(value)
+	if err != nil || limit < 1 || limit > 100 {
+		return 0, fmt.Errorf("limit must be between 1 and 100")
+	}
+	return limit, nil
+}

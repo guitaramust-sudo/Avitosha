@@ -17,6 +17,10 @@ type DomainEventPublisher interface {
 	Publish(uuid.UUID, []model.DomainEvent)
 }
 
+const DefaultPetName = "Авитоша"
+
+type IDGenerator func() uuid.UUID
+
 type GameServiceDependencies struct {
 	Repository  GameRepository
 	TxManager   TxManager

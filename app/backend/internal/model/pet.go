@@ -28,15 +28,6 @@ const (
 	PetCharacterCraftsperson PetCharacter = "CRAFTSPERSON"
 )
 
-// NeedType remains only until the legacy care service is removed in stage 3.
-type NeedType string
-
-const (
-	NeedTypeSatiety   NeedType = "SATIETY"
-	NeedTypeMood      NeedType = "MOOD"
-	NeedTypeCuriosity NeedType = "CURIOSITY"
-)
-
 type Pet struct {
 	ID        uuid.UUID
 	UserID    uuid.UUID

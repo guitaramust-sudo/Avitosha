@@ -32,9 +32,7 @@ type RouterDependencies struct {
 	FrontendOrigin      string
 	RefreshTokenTTL     time.Duration
 	SecureRefreshCookie bool
-	PetLifecycle        PetLifecycleUseCase
-	PetCare             PetCareUseCase
-	PetDailySummary     PetDailySummaryUseCase
+	GameService         GameUseCase
 	Now                 func() time.Time
 }
 
@@ -53,6 +51,7 @@ func NewRouter(deps RouterDependencies) *chi.Mux {
 	r.Use(CORS(deps.FrontendOrigin))
 
 	r.Get("/health/live", Live)
+	r.Get("/healthz", Live)
 	r.Method("GET", "/health/ready", NewReadyHandler(deps.DB))
 	r.Get("/swagger", func(w http.ResponseWriter, req *http.Request) {
 		http.Redirect(w, req, "/swagger/", http.StatusMovedPermanently)
@@ -83,15 +82,16 @@ func mountAPIRoutes(r chi.Router, logger *slog.Logger, deps RouterDependencies) 
 		authenticated := BearerAuth(logger, deps.AccessTokenVerifier)
 		r.With(authenticated).Get("/me", authHandler.Me)
 
-		petHandler := NewPetHandler(PetHandlerDependencies{
-			Logger: logger, Lifecycle: deps.PetLifecycle, Care: deps.PetCare,
-			DailySummary: deps.PetDailySummary, Now: deps.Now,
-		})
-		r.Route("/pet", func(r chi.Router) {
-			r.Use(authenticated)
-			r.Get("/", petHandler.Get)
-			r.Post("/items/{item_id}/use", petHandler.UseItem)
-			r.Get("/daily-summary", petHandler.DailySummary)
-		})
+	})
+
+	gameHandler := NewGameHandler(logger, deps.GameService, deps.Now)
+	r.Route("/api/v1", func(r chi.Router) {
+		r.Use(GameIdentity(logger, deps.AccessTokenVerifier))
+		r.Get("/pet", gameHandler.GetPet)
+		r.Get("/tasks", gameHandler.ListTasks)
+		r.Get("/tasks/{task_id}", gameHandler.GetTask)
+		r.Post("/actions", gameHandler.ProcessAction)
+		r.Get("/room", gameHandler.GetRoom)
+		r.Get("/story", gameHandler.GetStory)
 	})
 }

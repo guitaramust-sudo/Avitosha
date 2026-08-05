@@ -3,6 +3,8 @@ package usecase
 import "errors"
 
 var (
+	ErrPetNotFound              = errors.New("pet not found")
+	ErrInvalidGrowthXP          = errors.New("invalid growth XP")
 	ErrTaskNotFound             = errors.New("task not found")
 	ErrStoryNotFound            = errors.New("story not found")
 	ErrActionNotFound           = errors.New("action not found")

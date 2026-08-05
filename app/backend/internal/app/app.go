@@ -75,7 +75,7 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, err
 	if err != nil {
 		return nil, fmt.Errorf("create auth service: %w", err)
 	}
-	pet := newPetServices(pool, txManager)
+	game := newGameService(pool, txManager, nil)
 
 	router := handler.NewRouter(handler.RouterDependencies{
 		Logger:              logger,
@@ -85,9 +85,7 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, err
 		FrontendOrigin:      cfg.FrontendOrigin,
 		RefreshTokenTTL:     cfg.RefreshTokenTTL,
 		SecureRefreshCookie: cfg.AppEnv == config.AppEnvProd,
-		PetLifecycle:        pet.lifecycle,
-		PetCare:             pet.care,
-		PetDailySummary:     pet.dailySummary,
+		GameService:         game,
 	})
 	server := &http.Server{
 		Addr:         cfg.HTTPAddr,
@@ -100,19 +98,15 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, err
 	return newApp(logger, server, pool, cfg.ShutdownTimeout), nil
 }
 
-type petServices struct {
-	lifecycle    *usecase.PetLifecycleService
-	care         *usecase.PetCareService
-	dailySummary *usecase.PetDailySummaryService
-}
-
-func newPetServices(pool *pgxpool.Pool, txManager usecase.TxManager) petServices {
-	repository := postgres.NewPetRepository(pool)
-	return petServices{
-		lifecycle:    usecase.NewPetLifecycleService(repository, txManager, uuid.New),
-		care:         usecase.NewPetCareService(repository, txManager, uuid.New),
-		dailySummary: usecase.NewPetDailySummaryService(repository),
-	}
+func newGameService(
+	pool *pgxpool.Pool,
+	txManager usecase.TxManager,
+	publisher usecase.DomainEventPublisher,
+) *usecase.GameService {
+	return usecase.NewGameService(usecase.GameServiceDependencies{
+		Repository: postgres.NewGameRepository(pool), TxManager: txManager,
+		IDGenerator: uuid.New, Publisher: publisher,
+	})
 }
 
 func newApp(logger *slog.Logger, server *http.Server, db *pgxpool.Pool, shutdownTimeout time.Duration) *App {

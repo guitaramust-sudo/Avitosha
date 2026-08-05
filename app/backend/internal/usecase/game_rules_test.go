@@ -29,6 +29,17 @@ func TestApplyTaskProgressCapsAndCompletesOnce(t *testing.T) {
 	}
 }
 
+func TestCalculateLevelUsesProductThresholds(t *testing.T) {
+	for xp, want := range map[int]int{
+		0: 1, 99: 1, 100: 2, 249: 2, 250: 3, 449: 3, 450: 4, 699: 4, 700: 5, 1200: 5,
+	} {
+		got, err := CalculateLevel(xp)
+		if err != nil || got != want {
+			t.Fatalf("CalculateLevel(%d) = %d, %v; want %d", xp, got, err, want)
+		}
+	}
+}
+
 func TestWeeklyScoreAndMondayBoundary(t *testing.T) {
 	delta := WeeklyProgressDelta{EarnedXP: 30, CompletedTasks: 1, CompletedStages: 1}
 	if score := WeeklyScore(delta); score != 100 {
