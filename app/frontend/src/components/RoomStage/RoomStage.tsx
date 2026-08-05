@@ -14,7 +14,8 @@ import {
 import type { RoomItem, RoomItemCode } from '../../types/game'
 import {
   getDefaultRoomPosition,
-  roomItemIcons,
+  roomItemImages,
+  roomItemStageWidths,
   type RoomPosition,
 } from '../../utils/roomLayout'
 import Character from '../Character/Character'
@@ -31,6 +32,10 @@ interface RoomObjectProps {
   position: RoomPosition
 }
 
+type RoomObjectStyle = CSSProperties & {
+  '--room-item-width': string
+}
+
 function RoomObject({
   isSelected,
   item,
@@ -43,7 +48,8 @@ function RoomObject({
       id: `stage:${item.code}`,
       data: { code: item.code, source: 'stage' },
     })
-  const style: CSSProperties = {
+  const style: RoomObjectStyle = {
+    '--room-item-width': `${roomItemStageWidths[item.code]}px`,
     left: `${position.x}%`,
     top: `${position.y}%`,
     ...(transform
@@ -64,7 +70,7 @@ function RoomObject({
   return (
     <button
       ref={setNodeRef}
-      className={`room-object ${item.status === 'PLACED' ? 'is-placed' : 'is-unlocked'} ${isSelected ? 'is-selected' : ''} ${isDragging ? 'is-dragging' : ''}`}
+      className={`room-object room-object--${item.code.toLowerCase()} ${item.status === 'PLACED' ? 'is-placed' : 'is-unlocked'} ${isSelected ? 'is-selected' : ''} ${isDragging ? 'is-dragging' : ''}`}
       style={style}
       type="button"
       data-asset-key={item.assetKey}
@@ -78,8 +84,7 @@ function RoomObject({
       {...listeners}
       onKeyDown={handleKeyDown}
     >
-      <span aria-hidden="true">{roomItemIcons[item.code] ?? '◇'}</span>
-      <small>{item.name}</small>
+      <img src={roomItemImages[item.code]} alt="" />
     </button>
   )
 }
@@ -162,11 +167,6 @@ function RoomStage() {
       )}
       <div className="room-stage__character" data-mood={pet.mood}>
         <Character />
-        {pet.characterProfile.unlocked && (
-          <span className="character-detail">
-            {pet.characterProfile.visualDetail} · {pet.characterProfile.name}
-          </span>
-        )}
       </div>
       <span className="room-stage__placed-count">
         {room.progress} предметов

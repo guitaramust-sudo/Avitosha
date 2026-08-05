@@ -2,6 +2,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
   KeyboardSensor,
+  type Modifier,
   PointerSensor,
   useSensor,
   useSensors,
@@ -22,6 +23,28 @@ import { getDefaultRoomPosition, type RoomPosition } from '../utils/roomLayout'
 import { useAppDispatch, useAppSelector } from './redux'
 
 export const ROOM_DROP_ID = 'room-stage'
+
+export const snapRoomItemCenterToCursor: Modifier = ({
+  activatorEvent,
+  draggingNodeRect,
+  transform,
+}) => {
+  if (!(activatorEvent instanceof PointerEvent) || !draggingNodeRect) {
+    return transform
+  }
+
+  return {
+    ...transform,
+    x:
+      transform.x +
+      activatorEvent.clientX -
+      (draggingNodeRect.left + draggingNodeRect.width / 2),
+    y:
+      transform.y +
+      activatorEvent.clientY -
+      (draggingNodeRect.top + draggingNodeRect.height / 2),
+  }
+}
 
 interface DragData {
   code: RoomItemCode

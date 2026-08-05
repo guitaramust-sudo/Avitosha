@@ -44,7 +44,7 @@ describe('roomEditorSlice', () => {
     )
 
     expect(state.placements).toMatchObject({
-      BOX: { x: 18, y: 72 },
+      BOX: { x: 72, y: 80 },
     })
     expect(state.placements.DESK).toBeUndefined()
     expect(state.selectedItemCode).toBeNull()
@@ -79,7 +79,7 @@ describe('roomEditorSlice', () => {
     )
     state = roomEditorReducer(state, resetRoomLayout(items))
 
-    expect(state.placements.BOX).toEqual({ x: 18, y: 72 })
+    expect(state.placements.BOX).toEqual({ x: 72, y: 80 })
     expect(state.selectedItemCode).toBeNull()
   })
 
@@ -98,7 +98,7 @@ describe('roomEditorSlice', () => {
     )
 
     expect(state.ownerId).toBe('user-2')
-    expect(state.placements.BOX).toEqual({ x: 18, y: 72 })
+    expect(state.placements.BOX).toEqual({ x: 72, y: 80 })
   })
 
   it('clears room UI state on logout', () => {

@@ -2,12 +2,13 @@ import { DndContext, DragOverlay, rectIntersection } from '@dnd-kit/core'
 
 import { useAppSelector } from '../../hooks/redux'
 import {
+  snapRoomItemCenterToCursor,
   useRoomDragAndDrop,
   useRoomLayoutSync,
 } from '../../hooks/useRoomDragAndDrop'
 import { selectGameRoom } from '../../store/gameSlice'
 import type { RoomItem } from '../../types/game'
-import { roomItemIcons } from '../../utils/roomLayout'
+import { roomItemImages } from '../../utils/roomLayout'
 import RoomCollection from '../RoomCollection/RoomCollection'
 import RoomStage from '../RoomStage/RoomStage'
 
@@ -32,6 +33,7 @@ function RoomWorkspace() {
   return (
     <DndContext
       sensors={sensors}
+      modifiers={[snapRoomItemCenterToCursor]}
       collisionDetection={rectIntersection}
       onDragCancel={handleDragCancel}
       onDragEnd={handleDragEnd}
@@ -43,10 +45,7 @@ function RoomWorkspace() {
       <DragOverlay>
         {activeItem ? (
           <div className="room-drag-overlay">
-            <span aria-hidden="true">
-              {roomItemIcons[activeItem.code] ?? '◇'}
-            </span>
-            <small>{activeItem.name}</small>
+            <img src={roomItemImages[activeItem.code]} alt="" />
           </div>
         ) : null}
       </DragOverlay>

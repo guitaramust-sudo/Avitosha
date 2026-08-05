@@ -1,3 +1,12 @@
+import armchairImage from '../../images/room-items/armchair.png'
+import boxImage from '../../images/room-items/box.png'
+import carImage from '../../images/room-items/car.png'
+import caseImage from '../../images/room-items/case.png'
+import posterImage from '../../images/room-items/image.png'
+import lampImage from '../../images/room-items/lamp.png'
+import nightstandImage from '../../images/room-items/nightstand.png'
+import piggyBankImage from '../../images/room-items/piggy_bank.png'
+import plantImage from '../../images/room-items/plant.png'
 import type { RoomItemCode } from '../types/game'
 
 export interface RoomPosition {
@@ -6,27 +15,39 @@ export interface RoomPosition {
 }
 
 const roomPositionByKey: Record<string, RoomPosition> = {
-  box: { x: 18, y: 72 },
-  desk: { x: 10, y: 60 },
-  lamp: { x: 22, y: 36 },
-  chair: { x: 85, y: 66 },
-  plant: { x: 92, y: 78 },
-  poster: { x: 75, y: 25 },
-  'piggy-bank': { x: 68, y: 75 },
-  'toy-car': { x: 36, y: 83 },
-  suitcase: { x: 92, y: 50 },
+  box: { x: 72, y: 80 },
+  desk: { x: 10, y: 72 },
+  lamp: { x: 7, y: 48 },
+  chair: { x: 82, y: 72 },
+  plant: { x: 92, y: 57 },
+  poster: { x: 39, y: 16 },
+  'piggy-bank': { x: 62, y: 79 },
+  'toy-car': { x: 86, y: 83 },
+  suitcase: { x: 93, y: 75 },
 }
 
-export const roomItemIcons: Record<RoomItemCode, string> = {
-  BOX: '▣',
-  DESK: '▰',
-  LAMP: '◉',
-  CHAIR: '♨',
-  PLANT: '♣',
-  POSTER: '▤',
-  PIGGY_BANK: '◍',
-  TOY_CAR: '▱',
-  SUITCASE: '▥',
+export const roomItemStageWidths: Record<RoomItemCode, number> = {
+  BOX: 150,
+  DESK: 155,
+  LAMP: 105,
+  CHAIR: 210,
+  PLANT: 125,
+  POSTER: 90,
+  PIGGY_BANK: 105,
+  TOY_CAR: 125,
+  SUITCASE: 145,
+}
+
+export const roomItemImages: Record<RoomItemCode, string> = {
+  BOX: boxImage,
+  DESK: nightstandImage,
+  LAMP: lampImage,
+  CHAIR: armchairImage,
+  PLANT: plantImage,
+  POSTER: posterImage,
+  PIGGY_BANK: piggyBankImage,
+  TOY_CAR: carImage,
+  SUITCASE: caseImage,
 }
 
 const clamp = (value: number, minimum: number, maximum: number) =>
