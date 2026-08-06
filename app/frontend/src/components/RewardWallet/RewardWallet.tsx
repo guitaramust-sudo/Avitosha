@@ -1,5 +1,6 @@
 import { useAppSelector } from '../../hooks/redux'
 import { selectGameWallet } from '../../store/gameSlice'
+import { iconAssets } from '../../utils/iconAssets'
 import CollapsibleSection from '../CollapsibleSection/CollapsibleSection'
 
 import './RewardWallet.scss'
@@ -22,7 +23,7 @@ function RewardWallet() {
         className="progress-card__icon reward-wallet-card__icon"
         aria-hidden="true"
       >
-        ₽
+        <img src={iconAssets.wallet} alt="" />
       </span>
       <div className="reward-wallet-card__content">
         <small>Кошелёк наград</small>
@@ -64,7 +65,17 @@ function RewardWallet() {
               key={reward.code}
               className={reward.unlocked ? 'is-unlocked' : ''}
             >
-              <span aria-hidden="true">{reward.unlocked ? '✓' : '🔒'}</span>
+              <span aria-hidden="true">
+                {reward.unlocked ? (
+                  '✓'
+                ) : (
+                  <img
+                    className="reward-wallet-card__lock"
+                    src={iconAssets.lock}
+                    alt=""
+                  />
+                )}
+              </span>
               <div>
                 <strong>{reward.title}</strong>
                 <small>{reward.description}</small>

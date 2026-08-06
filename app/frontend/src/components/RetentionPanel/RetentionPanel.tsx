@@ -1,6 +1,7 @@
 import { useAppSelector } from '../../hooks/redux'
 import { selectGameDaily } from '../../store/gameSlice'
 import { formatGameDate } from '../../utils/gamePresentation'
+import { iconAssets } from '../../utils/iconAssets'
 import CollapsibleSection from '../CollapsibleSection/CollapsibleSection'
 
 import './RetentionPanel.scss'
@@ -26,7 +27,7 @@ function RetentionPanel() {
         className="progress-card__icon retention-card__icon"
         aria-hidden="true"
       >
-        🔥
+        <img src={iconAssets.fire} alt="" />
       </span>
       <div className="retention-card__content">
         <div className="retention-card__heading">

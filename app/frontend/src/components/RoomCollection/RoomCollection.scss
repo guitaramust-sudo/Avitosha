@@ -116,6 +116,12 @@
     background: h.$color-success;
     font-size: h.rem(11px);
     font-weight: h.$font-weight-bold;
+
+    img {
+      width: h.rem(12px);
+      height: h.rem(12px);
+      object-fit: contain;
+    }
   }
 
   &:disabled &__state {

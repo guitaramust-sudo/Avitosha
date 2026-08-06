@@ -226,6 +226,12 @@
     font-size: h.rem(20px);
     font-weight: h.$font-weight-bold;
 
+    img {
+      width: h.rem(28px);
+      height: h.rem(28px);
+      object-fit: contain;
+    }
+
     &--orange {
       color: h.$color-warning-dark;
       background: h.$color-warning-light;

@@ -1,5 +1,7 @@
 import type { PropsWithChildren } from 'react'
 
+import { iconAssets } from '../../utils/iconAssets'
+
 import './AuthPageLayout.scss'
 
 interface AuthPageLayoutProps extends PropsWithChildren {
@@ -18,7 +20,7 @@ function AuthPageLayout({
     <main className="auth-page">
       <section className="auth-page__visual" aria-hidden="true">
         <div className="auth-page__brand">
-          <span className="auth-page__logo">●</span>
+          <img className="auth-page__logo" src={iconAssets.avitoLogo} alt="" />
           <strong>Авитоша</strong>
         </div>
         <div className="auth-page__message">

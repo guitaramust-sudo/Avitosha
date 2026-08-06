@@ -46,24 +46,6 @@ export const taskStatusLabels: Record<GameTask['status'], string> = {
   EXPIRED: 'Завершено',
 }
 
-export const achievementIcons: Record<string, string> = {
-  'achievement.explorer': '⌕',
-  'achievement.first_ad': '▤',
-  'achievement.first_step': '★',
-  'achievement.housewarming': '⌂',
-  'achievement.in_touch': '●',
-  'achievement.room_complete': '✓',
-}
-
-export const characterIcons: Record<string, string> = {
-  'character.architect': '⌂',
-  'character.craftsperson': '◇',
-  'character.entrepreneur': '↗',
-  'character.explorer': '⌕',
-  'character.mechanic': '⚙',
-  'character.traveler': '⌁',
-}
-
 const achievementNames: Record<string, string> = {
   EXPLORER: 'Исследователь',
   FIRST_AD: 'Первое объявление',

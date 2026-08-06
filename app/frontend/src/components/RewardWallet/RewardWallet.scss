@@ -12,6 +12,12 @@
     gap: h.rem(10px);
   }
 
+  &__lock {
+    width: h.rem(15px);
+    height: h.rem(15px);
+    object-fit: contain;
+  }
+
   &__balance {
     display: flex;
     align-items: baseline;

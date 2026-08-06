@@ -4,12 +4,12 @@ import { useAppSelector } from '../../hooks/redux'
 import { useTaskAction } from '../../hooks/useTaskAction'
 import { selectGameAchievements, selectGameTasks } from '../../store/gameSlice'
 import {
-  achievementIcons,
   formatGameDateTime,
   roomItemLabels,
   taskActionLabels,
   taskStatusLabels,
 } from '../../utils/gamePresentation'
+import { achievementIconAssets, iconAssets } from '../../utils/iconAssets'
 import CollapsibleSection from '../CollapsibleSection/CollapsibleSection'
 import TaskDetailsDialog from '../TaskDetailsDialog/TaskDetailsDialog'
 
@@ -132,8 +132,15 @@ function AchievementsPanel() {
                   className="achievement__icon achievement__icon--purple"
                   aria-hidden="true"
                 >
-                  {achievementIcons[achievement.iconKey] ??
-                    (achievement.unlocked ? '★' : '◇')}
+                  <img
+                    src={
+                      achievement.unlocked
+                        ? (achievementIconAssets[achievement.iconKey] ??
+                          iconAssets.star)
+                        : iconAssets.lock
+                    }
+                    alt=""
+                  />
                 </span>
                 <div className="achievement__copy">
                   <h3>{achievement.title}</h3>

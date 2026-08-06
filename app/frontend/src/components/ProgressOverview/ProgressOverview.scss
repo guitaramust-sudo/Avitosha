@@ -27,10 +27,17 @@
     height: h.rem(42px);
     flex: 0 0 auto;
     place-items: center;
+    border: h.rem(1px) solid h.$color-border;
     border-radius: h.$radius-medium;
     color: h.$color-primary;
     background: h.$color-primary-light;
     font-size: h.rem(22px);
+
+    img {
+      width: h.rem(26px);
+      height: h.rem(26px);
+      object-fit: contain;
+    }
   }
 
   small,
@@ -159,6 +166,13 @@
   }
 }
 
+@include h.tablet {
+  .progress-grid {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
 @include h.mobile {
   .progress-grid {
     grid-template-columns: 1fr;
@@ -177,6 +191,11 @@
       width: h.rem(36px);
       height: h.rem(36px);
       font-size: h.rem(18px);
+
+      img {
+        width: h.rem(22px);
+        height: h.rem(22px);
+      }
     }
   }
 

@@ -4,11 +4,8 @@ import {
   selectGameLeaderboard,
   selectGamePet,
 } from '../../store/gameSlice'
-import {
-  characterIcons,
-  formatGameDate,
-  moodLabels,
-} from '../../utils/gamePresentation'
+import { formatGameDate, moodLabels } from '../../utils/gamePresentation'
+import { characterIconAssets, iconAssets } from '../../utils/iconAssets'
 import CollapsibleSection from '../CollapsibleSection/CollapsibleSection'
 import RetentionPanel from '../RetentionPanel/RetentionPanel'
 import RewardWallet from '../RewardWallet/RewardWallet'
@@ -30,7 +27,13 @@ function ProgressOverview() {
         tourId="character"
       >
         <span className="progress-card__icon" aria-hidden="true">
-          {characterIcons[pet.characterProfile.iconKey] ?? '⌕'}
+          <img
+            src={
+              characterIconAssets[pet.characterProfile.iconKey] ??
+              iconAssets.magnifier
+            }
+            alt=""
+          />
         </span>
         <div>
           <small>Характер Авитоши</small>
@@ -50,7 +53,7 @@ function ProgressOverview() {
         tourId="daily-summary"
       >
         <span className="progress-card__icon" aria-hidden="true">
-          ☀
+          <img src={iconAssets.sun} alt="" />
         </span>
         <div>
           <small>Сводка за {formatGameDate(daily.date)}</small>
@@ -98,7 +101,7 @@ function ProgressOverview() {
         tourId="leaderboard"
       >
         <span className="progress-card__icon" aria-hidden="true">
-          ♛
+          <img src={iconAssets.crown} alt="" />
         </span>
         <div>
           <small>Неделя с {formatGameDate(leaderboard.weekStart)}</small>

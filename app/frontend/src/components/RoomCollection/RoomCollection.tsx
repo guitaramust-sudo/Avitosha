@@ -4,6 +4,7 @@ import { useAppSelector } from '../../hooks/redux'
 import { useRoomItemControls } from '../../hooks/useRoomDragAndDrop'
 import { selectGameRoom } from '../../store/gameSlice'
 import type { RoomItem, RoomItemCode } from '../../types/game'
+import { iconAssets } from '../../utils/iconAssets'
 import { roomItemImages } from '../../utils/roomLayout'
 
 import './RoomCollection.scss'
@@ -47,7 +48,15 @@ function CollectionItem({ isSelected, item, onSelect }: CollectionItemProps) {
       aria-pressed={isSelected}
     >
       <span className="collection-item__state" aria-hidden="true">
-        {isLocked ? '▣' : isSelected ? '●' : isPlaced ? '✓' : '↕'}
+        {isLocked ? (
+          <img src={iconAssets.lock} alt="" />
+        ) : isSelected ? (
+          '●'
+        ) : isPlaced ? (
+          '✓'
+        ) : (
+          '↕'
+        )}
       </span>
       <img
         className="collection-item__image"

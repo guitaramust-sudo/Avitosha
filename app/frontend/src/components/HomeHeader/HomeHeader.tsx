@@ -7,23 +7,24 @@ import {
   selectGameWallet,
 } from '../../store/gameSlice'
 import { getLevelXpFloor, moodLabels } from '../../utils/gamePresentation'
+import { iconAssets } from '../../utils/iconAssets'
 import PetRenameDialog from '../PetRenameDialog/PetRenameDialog'
 import ProfileMenu from '../ProfileMenu/ProfileMenu'
 
 import './HomeHeader.scss'
 
 interface HeaderStatProps {
-  icon: string
+  iconSrc: string
   label: string
   tone: 'blue' | 'green' | 'purple'
   children: ReactNode
 }
 
-function HeaderStat({ icon, label, tone, children }: HeaderStatProps) {
+function HeaderStat({ iconSrc, label, tone, children }: HeaderStatProps) {
   return (
     <section className="header-stat">
       <span className={`header-stat__icon header-stat__icon--${tone}`}>
-        {icon}
+        <img src={iconSrc} alt="" />
       </span>
       <div className="header-stat__content">
         <span className="header-stat__label">{label}</span>
@@ -34,14 +35,7 @@ function HeaderStat({ icon, label, tone, children }: HeaderStatProps) {
 }
 
 function BrandMark() {
-  return (
-    <div className="brand-mark" aria-hidden="true">
-      <i className="brand-mark__dot brand-mark__dot--blue" />
-      <i className="brand-mark__dot brand-mark__dot--green" />
-      <i className="brand-mark__dot brand-mark__dot--red" />
-      <i className="brand-mark__dot brand-mark__dot--purple" />
-    </div>
-  )
+  return <img className="brand-mark" src={iconAssets.avitoLogo} alt="" />
 }
 
 function HomeHeader() {
@@ -80,7 +74,7 @@ function HomeHeader() {
 
         <div className="home-header__stats">
           <HeaderStat
-            icon="★"
+            iconSrc={iconAssets.star}
             label={`Уровень ${pet?.level ?? 1}`}
             tone="purple"
           >
@@ -100,13 +94,17 @@ function HomeHeader() {
             </div>
           </HeaderStat>
 
-          <HeaderStat icon="☺" label="Настроение" tone="green">
+          <HeaderStat
+            iconSrc={iconAssets.smile}
+            label="Настроение"
+            tone="green"
+          >
             <strong className="header-stat__value header-stat__value--green">
               {pet ? moodLabels[pet.mood] : 'Загрузка…'}
             </strong>
           </HeaderStat>
 
-          <HeaderStat icon="◎" label="Цель" tone="blue">
+          <HeaderStat iconSrc={iconAssets.target} label="Цель" tone="blue">
             <div className="goal-progress">
               <strong>
                 Обустроить
@@ -120,7 +118,7 @@ function HomeHeader() {
 
         <div className="home-header__actions">
           <span className="reward-balance" title="Баланс Avito-бонусов">
-            <i aria-hidden="true">₽</i>
+            <img src={iconAssets.coin} alt="" />
             {wallet?.balance.balance ?? 0}
           </span>
           <ProfileMenu email={email} />
