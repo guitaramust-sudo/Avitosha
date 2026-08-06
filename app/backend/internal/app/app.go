@@ -62,6 +62,8 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, err
 		return nil, fmt.Errorf("create token provider: %w", err)
 	}
 	txManager := postgres.NewTxManager(pool)
+	eventHub := realtime.NewHub(realtime.DefaultBufferSize)
+	game := newGameService(pool, txManager, eventHub)
 
 	authService, err := usecase.NewAuthService(usecase.AuthConfig{
 		AccessTokenTTL:  cfg.AccessTokenTTL,
@@ -72,12 +74,11 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, err
 		UserRepository:    postgres.NewUserRepository(pool),
 		SessionRepository: postgres.NewSessionRepository(pool),
 		TxManager:         txManager,
+		RegistrationHook:  newRegistrationHook(game, time.Now),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create auth service: %w", err)
 	}
-	eventHub := realtime.NewHub(realtime.DefaultBufferSize)
-	game := newGameService(pool, txManager, eventHub)
 
 	router := handler.NewRouter(handler.RouterDependencies{
 		Logger:              logger,
