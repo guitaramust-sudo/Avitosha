@@ -1,8 +1,13 @@
-import type { ReactNode } from 'react'
+import { type ReactNode, useState } from 'react'
 
 import { useAppSelector } from '../../hooks/redux'
-import { selectGamePet, selectGameRoom } from '../../store/gameSlice'
+import {
+  selectGamePet,
+  selectGameRoom,
+  selectGameWallet,
+} from '../../store/gameSlice'
 import { getLevelXpFloor, moodLabels } from '../../utils/gamePresentation'
+import PetRenameDialog from '../PetRenameDialog/PetRenameDialog'
 import ProfileMenu from '../ProfileMenu/ProfileMenu'
 
 import './HomeHeader.scss'
@@ -40,9 +45,11 @@ function BrandMark() {
 }
 
 function HomeHeader() {
+  const [isRenameOpen, setIsRenameOpen] = useState(false)
   const email = useAppSelector((state) => state.auth.user?.email)
   const pet = useAppSelector(selectGamePet)
   const room = useAppSelector(selectGameRoom)
+  const wallet = useAppSelector(selectGameWallet)
   const currentXpFloor = pet ? getLevelXpFloor(pet.level) : 0
   const levelSpan = pet?.nextLevelXp ? pet.nextLevelXp - currentXpFloor : 1
   const levelProgress = !pet
@@ -55,50 +62,78 @@ function HomeHeader() {
         )
 
   return (
-    <header className="home-header">
-      <div className="home-header__brand">
-        <BrandMark />
-        <span>Авитоша</span>
-      </div>
-
-      <div className="home-header__stats">
-        <HeaderStat icon="★" label={`Уровень ${pet?.level ?? 1}`} tone="purple">
-          <div
-            className="level-progress"
-            aria-label={`${pet?.growthXp ?? 0} опыта`}
+    <>
+      <header className="home-header">
+        <div className="home-header__brand">
+          <BrandMark />
+          <button
+            className="home-header__pet-name"
+            type="button"
+            aria-label="Изменить имя питомца"
+            onClick={() => setIsRenameOpen(true)}
+            disabled={!pet}
           >
-            <span className="level-progress__track">
-              <i style={{ width: `${levelProgress}%` }} />
-            </span>
-            <span>
-              <strong>{pet?.growthXp ?? 0}</strong>
-              {pet?.nextLevelXp ? ` / ${pet.nextLevelXp} XP` : ' XP · максимум'}
-            </span>
-          </div>
-        </HeaderStat>
+            <span>{pet?.name ?? 'Авитоша'}</span>
+            <i aria-hidden="true">✎</i>
+          </button>
+        </div>
 
-        <HeaderStat icon="☺" label="Настроение" tone="green">
-          <strong className="header-stat__value header-stat__value--green">
-            {pet ? moodLabels[pet.mood] : 'Загрузка…'}
-          </strong>
-        </HeaderStat>
+        <div className="home-header__stats">
+          <HeaderStat
+            icon="★"
+            label={`Уровень ${pet?.level ?? 1}`}
+            tone="purple"
+          >
+            <div
+              className="level-progress"
+              aria-label={`${pet?.growthXp ?? 0} опыта`}
+            >
+              <span className="level-progress__track">
+                <i style={{ width: `${levelProgress}%` }} />
+              </span>
+              <span>
+                <strong>{pet?.growthXp ?? 0}</strong>
+                {pet?.nextLevelXp
+                  ? ` / ${pet.nextLevelXp} XP`
+                  : ' XP · максимум'}
+              </span>
+            </div>
+          </HeaderStat>
 
-        <HeaderStat icon="◎" label="Цель" tone="blue">
-          <div className="goal-progress">
-            <strong>
-              Обустроить
-              <br />
-              комнату
+          <HeaderStat icon="☺" label="Настроение" tone="green">
+            <strong className="header-stat__value header-stat__value--green">
+              {pet ? moodLabels[pet.mood] : 'Загрузка…'}
             </strong>
-            <span>{room?.progress ?? '0/6'} предметов</span>
-          </div>
-        </HeaderStat>
-      </div>
+          </HeaderStat>
 
-      <div className="home-header__actions">
-        <ProfileMenu email={email} />
-      </div>
-    </header>
+          <HeaderStat icon="◎" label="Цель" tone="blue">
+            <div className="goal-progress">
+              <strong>
+                Обустроить
+                <br />
+                комнату
+              </strong>
+              <span>{room?.progress ?? '0/6'} предметов</span>
+            </div>
+          </HeaderStat>
+        </div>
+
+        <div className="home-header__actions">
+          <span className="reward-balance" title="Баланс Avito-бонусов">
+            <i aria-hidden="true">₽</i>
+            {wallet?.balance.balance ?? 0}
+          </span>
+          <ProfileMenu email={email} />
+        </div>
+      </header>
+
+      {isRenameOpen && pet && (
+        <PetRenameDialog
+          currentName={pet.name}
+          onClose={() => setIsRenameOpen(false)}
+        />
+      )}
+    </>
   )
 }
 

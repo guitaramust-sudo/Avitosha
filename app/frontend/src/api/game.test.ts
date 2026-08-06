@@ -4,10 +4,12 @@ import {
   getAchievements,
   getDailySummary,
   getPet,
+  getRewardWallet,
   getRoom,
   getTask,
   getTasks,
   postAction,
+  renamePet,
 } from './game'
 
 const jsonResponse = (body: unknown) =>
@@ -100,6 +102,63 @@ describe('game API', () => {
         }),
       }),
     )
+  })
+
+  it('renames the pet through the documented PATCH endpoint', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({
+        id: 'pet-id',
+        name: 'Мурзик',
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(renamePet('access-token', 'мурзик')).resolves.toMatchObject({
+      name: 'Мурзик',
+    })
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/pet',
+      expect.objectContaining({
+        body: JSON.stringify({ name: 'мурзик' }),
+        credentials: 'include',
+        method: 'PATCH',
+        headers: expect.objectContaining({
+          Authorization: 'Bearer access-token',
+        }),
+      }),
+    )
+  })
+
+  it('loads the reward wallet and normalizes an empty catalog', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        jsonResponse({
+          balance: {
+            balance: 20,
+            earnedTotal: 25,
+            type: 'AVITO_BONUS',
+            updatedAt: '2026-08-05T10:00:00Z',
+          },
+          catalog: null,
+          nextGoal: {
+            code: 'FREE_DELIVERY',
+            current: 25,
+            perkType: 'FREE_DELIVERY',
+            remaining: 5,
+            rewardType: 'AVITO_BONUS',
+            target: 30,
+            title: 'Бесплатная доставка',
+          },
+        }),
+      ),
+    )
+
+    await expect(getRewardWallet('access-token')).resolves.toMatchObject({
+      balance: { balance: 20, earnedTotal: 25 },
+      catalog: [],
+      nextGoal: { remaining: 5 },
+    })
   })
 
   it('normalizes null unlocked room items in the daily summary', async () => {

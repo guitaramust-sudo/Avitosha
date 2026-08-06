@@ -1,0 +1,139 @@
+@use '../../../helpers' as h;
+
+.retention-card {
+  grid-column: 1 / -1;
+
+  &__icon {
+    color: h.$color-warning-dark;
+    background: h.$color-warning-light;
+  }
+
+  &__content {
+    display: grid;
+    width: 100%;
+    gap: h.rem(10px);
+  }
+
+  &__heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: h.rem(12px);
+
+    > span {
+      padding: h.rem(5px) h.rem(9px);
+      border-radius: h.$radius-round;
+      color: h.$color-warning-dark;
+      background: h.$color-warning-light;
+      font-size: h.rem(10px);
+      font-weight: h.$font-weight-bold;
+
+      &.is-active {
+        color: h.$color-success-dark;
+        background: h.$color-success-light;
+      }
+    }
+  }
+
+  &__columns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: h.rem(10px);
+  }
+
+  &__record {
+    color: h.$color-text-muted;
+  }
+}
+
+.daily-quest,
+.tomorrow-preview {
+  padding: h.rem(13px);
+  border: h.rem(1px) solid h.$color-border;
+  border-radius: h.$radius-medium;
+
+  h3,
+  p {
+    margin: 0;
+  }
+
+  h3 {
+    margin: h.rem(7px) 0 h.rem(4px);
+    font-size: h.rem(14px);
+  }
+
+  p {
+    color: h.$color-text-secondary;
+    font-size: h.rem(11px);
+    line-height: 1.4;
+  }
+}
+
+.daily-quest {
+  &__heading {
+    display: flex;
+    justify-content: space-between;
+    gap: h.rem(10px);
+    font-size: h.rem(10px);
+
+    strong {
+      color: h.$color-primary;
+    }
+  }
+
+  &__progress {
+    display: block;
+    height: h.rem(6px);
+    overflow: hidden;
+    margin: h.rem(10px) 0 h.rem(6px);
+    border-radius: h.$radius-round;
+    background: h.$color-surface-muted;
+
+    i {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: h.$color-primary;
+    }
+  }
+}
+
+.tomorrow-preview {
+  background: h.$color-surface-soft;
+
+  > span,
+  small {
+    color: h.$color-text-muted;
+    font-size: h.rem(10px);
+  }
+
+  > div {
+    display: flex;
+    justify-content: space-between;
+    gap: h.rem(10px);
+    margin: h.rem(10px) 0 h.rem(6px);
+    font-size: h.rem(10px);
+
+    strong {
+      color: h.$color-success-dark;
+    }
+  }
+}
+
+@include h.mobile {
+  .retention-card {
+    &__heading {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    &__columns {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .tomorrow-preview > div {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

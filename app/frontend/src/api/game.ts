@@ -9,6 +9,7 @@ import {
   isRoomItemCode,
   type LeaderboardResponse,
   type PetProfile,
+  type RewardWallet,
   type RoomItem,
   type RoomResponse,
   type StoryResponse,
@@ -45,6 +46,13 @@ const normalizeTask = (task: RawGameTask): GameTask | null => {
 
 export const getPet = (accessToken: string) =>
   apiRequest<PetProfile>('/api/v1/pet', authorized(accessToken))
+
+export const renamePet = (accessToken: string, name: string) =>
+  apiRequest<PetProfile>('/api/v1/pet', {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({ name }),
+  })
 
 export const getTasks = async (accessToken: string) => {
   const response = await apiRequest<{ tasks: RawGameTask[] | null }>(
@@ -115,6 +123,18 @@ export const getDailySummary = async (
     ...response,
     unlockedRoomItems: response.unlockedRoomItems ?? [],
   }
+}
+
+export const getRewardWallet = async (
+  accessToken: string,
+): Promise<RewardWallet> => {
+  const response = await apiRequest<
+    Omit<RewardWallet, 'catalog'> & {
+      catalog: RewardWallet['catalog'] | null
+    }
+  >('/api/v1/rewards/wallet', authorized(accessToken))
+
+  return { ...response, catalog: response.catalog ?? [] }
 }
 
 export const getLeaderboard = async (

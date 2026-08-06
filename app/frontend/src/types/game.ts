@@ -155,6 +155,92 @@ export interface DailySummary {
   weeklyScoreDelta: number
   weeklyPosition: number | null
   petMood: PetMood
+  retention: RetentionOverview
+}
+
+export type RewardSource = 'TASK_COMPLETION' | 'DAILY_QUEST' | 'STREAK'
+
+export interface RewardOffer {
+  type: string
+  amount: number
+  source: RewardSource
+}
+
+export interface RewardGoal {
+  code: string
+  title: string
+  rewardType: string
+  perkType: string
+  current: number
+  target: number
+  remaining: number
+}
+
+export interface DailyQuest {
+  date: string
+  code: string
+  title: string
+  description: string
+  actionType: ActionType
+  category: string | null
+  progress: number
+  target: number
+  status: 'ACTIVE' | 'COMPLETED' | 'REWARDED' | 'EXPIRED'
+  reward: RewardOffer
+}
+
+export interface TomorrowDailyQuest {
+  code: string
+  title: string
+  description: string
+  actionType: ActionType
+  category: string | null
+  target: number
+  reward: RewardOffer
+}
+
+export interface RetentionOverview {
+  streak: {
+    current: number
+    longest: number
+    lastActiveDate: string | null
+    activeToday: boolean
+    reward: RewardOffer
+  }
+  dailyQuest: DailyQuest
+  tomorrow: {
+    date: string
+    streakAfterReturn: number
+    streakReward: RewardOffer
+    dailyQuest: TomorrowDailyQuest
+    nextGoal: RewardGoal | null
+  }
+}
+
+export interface RewardBalance {
+  type: string
+  balance: number
+  earnedTotal: number
+  updatedAt: string
+}
+
+export interface RewardCatalogEntry {
+  code: string
+  title: string
+  description: string
+  rewardType: string
+  perkType: string
+  threshold: number
+  unlocked: boolean
+  progressCurrent: number
+  progressTarget: number
+  remaining: number
+}
+
+export interface RewardWallet {
+  balance: RewardBalance
+  catalog: RewardCatalogEntry[]
+  nextGoal: RewardGoal | null
 }
 
 export interface LeaderboardEntry {
@@ -193,6 +279,11 @@ export type GameEventType =
   | 'LEADERBOARD_SCORE_UPDATED'
   | 'ACHIEVEMENT_UNLOCKED'
   | 'PET_CHARACTER_UNLOCKED'
+  | 'AVITO_REWARD_EARNED'
+  | 'REWARD_CATALOG_UNLOCKED'
+  | 'DAILY_QUEST_UPDATED'
+  | 'DAILY_QUEST_COMPLETED'
+  | 'STREAK_UPDATED'
 
 interface GameEventBase<TType extends GameEventType> {
   id: string
@@ -233,6 +324,49 @@ export type GameEvent =
   | (GameEventBase<'ACHIEVEMENT_UNLOCKED'> & { code: AchievementCode })
   | (GameEventBase<'PET_CHARACTER_UNLOCKED'> & {
       character: PetCharacter
+    })
+  | (GameEventBase<'AVITO_REWARD_EARNED'> & {
+      rewardType: string
+      amount: number
+      balance: number
+      earnedTotal: number
+      sourceKind: RewardSource
+      sourceRef: string
+      sourceTitle?: string
+      nextGoal?: Pick<
+        RewardGoal,
+        'code' | 'title' | 'current' | 'target' | 'remaining'
+      >
+      catalogUnlocks?: Array<
+        Pick<RewardCatalogEntry, 'code' | 'title' | 'perkType' | 'threshold'>
+      >
+    })
+  | (GameEventBase<'REWARD_CATALOG_UNLOCKED'> & {
+      code: string
+      title: string
+      perkType: string
+      threshold: number
+    })
+  | (GameEventBase<'DAILY_QUEST_UPDATED'> & {
+      code: string
+      title: string
+      progress: number
+      target: number
+      status: DailyQuest['status']
+      reward: Pick<RewardOffer, 'type' | 'amount'>
+    })
+  | (GameEventBase<'DAILY_QUEST_COMPLETED'> & {
+      code: string
+      title: string
+      rewardType: string
+      rewardAmount: number
+    })
+  | (GameEventBase<'STREAK_UPDATED'> & {
+      current: number
+      longest: number
+      lastActiveDate: string
+      reset: boolean
+      reward: Pick<RewardOffer, 'type' | 'amount'>
     })
 
 export interface ActionResult {

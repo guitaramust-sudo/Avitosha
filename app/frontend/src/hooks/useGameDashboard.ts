@@ -10,6 +10,7 @@ import {
   getDailySummary,
   getLeaderboard,
   getPet,
+  getRewardWallet,
   getRoom,
   getStory,
   getTask,
@@ -29,6 +30,8 @@ export const gameQueryKeys = {
   leaderboard: (userId: string) =>
     [...gameQueryKey(userId), 'leaderboard'] as const,
   pet: (userId: string) => [...gameQueryKey(userId), 'pet'] as const,
+  wallet: (userId: string) =>
+    [...gameQueryKey(userId), 'reward-wallet'] as const,
   room: (userId: string) => [...gameQueryKey(userId), 'room'] as const,
   story: (userId: string) => [...gameQueryKey(userId), 'story'] as const,
   tasks: (userId: string) => [...gameQueryKey(userId), 'tasks'] as const,
@@ -77,8 +80,22 @@ export const useGameDashboard = (
     queryFn: () => getAchievements(token),
     enabled,
   })
+  const wallet = useQuery({
+    queryKey: gameQueryKeys.wallet(queryOwnerId),
+    queryFn: () => getRewardWallet(token),
+    enabled,
+  })
 
-  return { pet, tasks, room, story, daily, leaderboard, achievements }
+  return {
+    pet,
+    tasks,
+    room,
+    story,
+    daily,
+    leaderboard,
+    achievements,
+    wallet,
+  }
 }
 
 export type GameDashboardQueries = ReturnType<typeof useGameDashboard>
@@ -130,6 +147,15 @@ export const invalidateGameQueriesForEvents = async (
         break
       case 'ACHIEVEMENT_UNLOCKED':
         affectedQueries.add('achievements')
+        break
+      case 'AVITO_REWARD_EARNED':
+      case 'REWARD_CATALOG_UNLOCKED':
+        affectedQueries.add('wallet')
+        break
+      case 'DAILY_QUEST_UPDATED':
+      case 'DAILY_QUEST_COMPLETED':
+      case 'STREAK_UPDATED':
+        affectedQueries.add('daily')
         break
     }
   })

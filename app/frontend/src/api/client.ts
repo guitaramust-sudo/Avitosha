@@ -36,9 +36,11 @@ const toApiErrorCode = (code: string): ApiErrorCode => {
     'email_already_exists',
     'internal_error',
     'invalid_credentials',
+    'invalid_pet_name',
     'invalid_request',
     'session_expired',
     'unauthorized',
+    'forbidden_pet_name',
   ]
 
   return knownCodes.includes(code as ApiErrorCode)

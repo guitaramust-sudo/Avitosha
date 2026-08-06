@@ -18,6 +18,7 @@ export const useGameDashboardSync = (
   const room = dashboard.room.data
   const story = dashboard.story.data
   const tasks = dashboard.tasks.data
+  const wallet = dashboard.wallet.data
 
   useEffect(() => {
     if (
@@ -28,7 +29,8 @@ export const useGameDashboardSync = (
       pet === undefined ||
       room === undefined ||
       story === undefined ||
-      tasks === undefined
+      tasks === undefined ||
+      wallet === undefined
     ) {
       return
     }
@@ -43,6 +45,7 @@ export const useGameDashboardSync = (
         room,
         story,
         tasks,
+        wallet,
       }),
     )
   }, [
@@ -55,6 +58,7 @@ export const useGameDashboardSync = (
     story,
     tasks,
     userId,
+    wallet,
   ])
 
   return isGameReady && gameOwnerId === userId

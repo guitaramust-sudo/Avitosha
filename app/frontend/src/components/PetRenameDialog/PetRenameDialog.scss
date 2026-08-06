@@ -1,0 +1,126 @@
+@use '../../../helpers' as h;
+
+.pet-rename-backdrop {
+  position: fixed;
+  z-index: 60;
+  inset: 0;
+  display: grid;
+  padding: h.rem(20px);
+  background: rgb(13 14 18 / 48%);
+  place-items: center;
+}
+
+.pet-rename-dialog {
+  position: relative;
+  width: min(100%, h.rem(430px));
+  padding: h.rem(28px);
+  border: h.rem(1px) solid h.$color-border;
+  border-radius: h.$radius-large;
+  background: h.$color-surface;
+  box-shadow: h.$shadow-shell;
+
+  h2,
+  p {
+    margin: 0;
+  }
+
+  h2 {
+    margin: h.rem(8px) 0;
+    font-size: h.rem(24px);
+  }
+
+  p {
+    color: h.$color-text-secondary;
+    font-size: h.rem(13px);
+    line-height: 1.5;
+  }
+
+  &__eyebrow {
+    color: h.$color-primary;
+    font-size: h.rem(11px);
+    font-weight: h.$font-weight-bold;
+    text-transform: uppercase;
+  }
+
+  &__close {
+    position: absolute;
+    top: h.rem(16px);
+    right: h.rem(16px);
+    width: h.rem(36px);
+    height: h.rem(36px);
+    padding: 0;
+    border: h.rem(1px) solid h.$color-border;
+    border-radius: 50%;
+    background: h.$color-surface;
+    cursor: pointer;
+    font-size: h.rem(22px);
+  }
+
+  form {
+    display: grid;
+    gap: h.rem(8px);
+    margin-top: h.rem(20px);
+
+    label {
+      font-size: h.rem(13px);
+      font-weight: h.$font-weight-semibold;
+    }
+
+    input {
+      min-height: h.rem(46px);
+      padding: 0 h.rem(14px);
+      border: h.rem(1px) solid h.$color-border-strong;
+      border-radius: h.$radius-medium;
+      outline: none;
+
+      &:focus {
+        border-color: h.$color-primary;
+        box-shadow: 0 0 0 h.rem(3px) h.$color-primary-light;
+      }
+    }
+
+    [role='alert'] {
+      color: h.$color-danger;
+      font-size: h.rem(11px);
+    }
+  }
+
+  &__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: h.rem(8px);
+    margin-top: h.rem(12px);
+
+    button {
+      min-height: h.rem(42px);
+      padding: 0 h.rem(16px);
+      border: h.rem(1px) solid h.$color-border;
+      border-radius: h.$radius-medium;
+      background: h.$color-surface;
+      cursor: pointer;
+
+      &[type='submit'] {
+        border-color: h.$color-primary;
+        color: h.$color-white;
+        background: h.$color-primary;
+      }
+
+      &:disabled {
+        cursor: wait;
+        opacity: 0.65;
+      }
+    }
+  }
+}
+
+@include h.mobile-small {
+  .pet-rename-backdrop {
+    align-items: end;
+    padding: 0;
+  }
+
+  .pet-rename-dialog {
+    padding: h.rem(24px) h.rem(16px);
+    border-radius: h.$radius-large h.$radius-large 0 0;
+  }
+}

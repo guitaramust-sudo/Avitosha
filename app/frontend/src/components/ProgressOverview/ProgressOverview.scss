@@ -2,7 +2,7 @@
 
 .progress-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: h.rem(14px);
 }
 
@@ -113,6 +113,7 @@
 }
 
 .leaderboard-card {
+  grid-column: span 1;
   ol {
     max-height: h.rem(205px);
     overflow-y: auto;
@@ -154,10 +155,6 @@
 @include h.laptop-small {
   .progress-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-
-    .leaderboard-card {
-      grid-column: 1 / -1;
-    }
   }
 }
 

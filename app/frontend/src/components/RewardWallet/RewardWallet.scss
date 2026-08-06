@@ -1,0 +1,124 @@
+@use '../../../helpers' as h;
+
+.reward-wallet-card {
+  &__icon {
+    color: h.$color-success-dark;
+    background: h.$color-success-light;
+  }
+
+  &__content {
+    display: grid;
+    width: 100%;
+    gap: h.rem(10px);
+  }
+
+  &__balance {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: h.rem(12px);
+
+    span {
+      color: h.$color-text-secondary;
+      font-size: h.rem(11px);
+    }
+  }
+
+  &__goal {
+    display: grid;
+    gap: h.rem(7px);
+    padding: h.rem(11px);
+    border-radius: h.$radius-medium;
+    background: h.$color-success-light;
+
+    div {
+      display: flex;
+      justify-content: space-between;
+      gap: h.rem(12px);
+    }
+
+    span {
+      color: h.$color-success-dark;
+      font-size: h.rem(10px);
+    }
+  }
+
+  &__complete {
+    color: h.$color-success-dark;
+  }
+
+  &__catalog {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: h.rem(7px);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    li {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: h.rem(8px);
+      padding: h.rem(9px);
+      border: h.rem(1px) solid h.$color-border;
+      border-radius: h.$radius-small;
+      opacity: 0.72;
+
+      &.is-unlocked {
+        border-color: h.$color-success-soft;
+        background: h.$color-success-light;
+        opacity: 1;
+      }
+
+      div {
+        display: grid;
+        min-width: 0;
+        gap: h.rem(2px);
+      }
+
+      strong,
+      small {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      b {
+        color: h.$color-text-secondary;
+        font-size: h.rem(9px);
+        white-space: nowrap;
+      }
+    }
+  }
+}
+
+.reward-progress {
+  display: block;
+  height: h.rem(5px);
+  overflow: hidden;
+  border-radius: h.$radius-round;
+  background: rgb(255 255 255 / 75%);
+
+  i {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: h.$color-success;
+  }
+}
+
+@include h.mobile {
+  .reward-wallet-card {
+    &__balance,
+    &__goal div {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: h.rem(4px);
+    }
+
+    &__catalog {
+      grid-template-columns: 1fr;
+    }
+  }
+}

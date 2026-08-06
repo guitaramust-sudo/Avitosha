@@ -11,6 +11,7 @@ import type {
   GameTask,
   LeaderboardResponse,
   PetProfile,
+  RewardWallet,
   RoomResponse,
   StoryResponse,
 } from '../types/game'
@@ -27,6 +28,7 @@ export interface GameDashboardSnapshot {
   room: RoomResponse
   story: StoryResponse
   tasks: GameTask[]
+  wallet: RewardWallet
 }
 
 export interface GameState {
@@ -39,6 +41,7 @@ export interface GameState {
   room: RoomResponse | null
   story: StoryResponse | null
   tasks: GameTask[]
+  wallet: RewardWallet | null
 }
 
 interface SyncGameDashboardPayload extends GameDashboardSnapshot {
@@ -55,6 +58,7 @@ const createInitialState = (): GameState => ({
   room: null,
   story: null,
   tasks: [],
+  wallet: null,
 })
 
 const gameSlice = createSlice({
@@ -108,11 +112,12 @@ export const selectGameLeaderboard = (state: RootState) =>
   state.game.leaderboard
 export const selectGameAchievements = (state: RootState) =>
   state.game.achievements
+export const selectGameWallet = (state: RootState) => state.game.wallet
 
 export const selectIsGameReady = createSelector(
   [selectGameState],
-  ({ daily, leaderboard, ownerId, pet, room, story }) =>
-    Boolean(ownerId && pet && room && story && daily && leaderboard),
+  ({ daily, leaderboard, ownerId, pet, room, story, wallet }) =>
+    Boolean(ownerId && pet && room && story && daily && leaderboard && wallet),
 )
 
 export const selectGameDashboard = createSelector(
@@ -123,7 +128,8 @@ export const selectGameDashboard = createSelector(
     game.room &&
     game.story &&
     game.daily &&
-    game.leaderboard
+    game.leaderboard &&
+    game.wallet
       ? {
           achievements: game.achievements,
           daily: game.daily,
@@ -132,6 +138,7 @@ export const selectGameDashboard = createSelector(
           room: game.room,
           story: game.story,
           tasks: game.tasks,
+          wallet: game.wallet,
         }
       : null,
 )

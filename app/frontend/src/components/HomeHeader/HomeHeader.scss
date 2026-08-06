@@ -20,6 +20,32 @@
     letter-spacing: -0.04em;
   }
 
+  &__pet-name {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: h.rem(7px);
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+    font: inherit;
+    font-weight: inherit;
+    letter-spacing: inherit;
+
+    span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    i {
+      color: h.$color-text-muted;
+      font-size: h.rem(16px);
+      font-style: normal;
+    }
+  }
+
   &__stats {
     display: grid;
     grid-template-columns: 1.05fr 0.85fr 1.2fr;
@@ -31,6 +57,32 @@
     align-items: center;
     gap: h.rem(12px);
     padding-left: h.rem(22px);
+  }
+}
+
+.reward-balance {
+  display: inline-flex;
+  min-height: h.rem(44px);
+  align-items: center;
+  gap: h.rem(7px);
+  padding: 0 h.rem(13px);
+  border: h.rem(1px) solid h.$color-border;
+  border-radius: h.$radius-medium;
+  background: h.$color-surface;
+  box-shadow: h.$shadow-control;
+  font-size: h.rem(14px);
+  font-weight: h.$font-weight-bold;
+
+  i {
+    display: grid;
+    width: h.rem(23px);
+    height: h.rem(23px);
+    place-items: center;
+    border-radius: 50%;
+    color: h.$color-white;
+    background: h.$color-success;
+    font-size: h.rem(12px);
+    font-style: normal;
   }
 }
 
@@ -279,6 +331,12 @@
     &__value {
       font-size: h.rem(12px);
     }
+  }
+
+  .reward-balance {
+    min-height: h.rem(38px);
+    padding: 0 h.rem(9px);
+    font-size: h.rem(12px);
   }
 
   .level-progress,

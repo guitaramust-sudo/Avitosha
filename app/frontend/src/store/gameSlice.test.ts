@@ -36,6 +36,42 @@ const createSnapshot = (suffix = 'one'): GameDashboardSnapshot => ({
     unlockedRoomItems: ['BOX'],
     weeklyPosition: 1,
     weeklyScoreDelta: 100,
+    retention: {
+      streak: {
+        activeToday: true,
+        current: 3,
+        lastActiveDate: '2026-08-05',
+        longest: 4,
+        reward: { amount: 4, source: 'STREAK', type: 'AVITO_BONUS' },
+      },
+      dailyQuest: {
+        actionType: 'AD_VIEWED',
+        category: null,
+        code: 'DAILY_VIEW',
+        date: '2026-08-05',
+        description: 'Посмотреть объявление',
+        progress: 1,
+        reward: { amount: 5, source: 'DAILY_QUEST', type: 'AVITO_BONUS' },
+        status: 'ACTIVE',
+        target: 3,
+        title: 'Найти интересное',
+      },
+      tomorrow: {
+        dailyQuest: {
+          actionType: 'AD_FAVORITED',
+          category: null,
+          code: 'DAILY_FAVORITE',
+          description: 'Добавить объявление в избранное',
+          reward: { amount: 5, source: 'DAILY_QUEST', type: 'AVITO_BONUS' },
+          target: 1,
+          title: 'Сохранить находку',
+        },
+        date: '2026-08-06',
+        nextGoal: null,
+        streakAfterReturn: 4,
+        streakReward: { amount: 2, source: 'STREAK', type: 'AVITO_BONUS' },
+      },
+    },
   },
   leaderboard: {
     currentUser: {
@@ -100,6 +136,16 @@ const createSnapshot = (suffix = 'one'): GameDashboardSnapshot => ({
     totalStages: 5,
   },
   tasks: [],
+  wallet: {
+    balance: {
+      balance: 20,
+      earnedTotal: 20,
+      type: 'AVITO_BONUS',
+      updatedAt: '2026-08-05T10:00:00Z',
+    },
+    catalog: [],
+    nextGoal: null,
+  },
 })
 
 const createEvent = (id: string): GameEvent => ({
@@ -206,6 +252,7 @@ describe('gameSlice', () => {
       room: null,
       story: null,
       tasks: [],
+      wallet: null,
     })
   })
 })

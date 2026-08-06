@@ -9,6 +9,8 @@ import {
   formatGameDate,
   moodLabels,
 } from '../../utils/gamePresentation'
+import RetentionPanel from '../RetentionPanel/RetentionPanel'
+import RewardWallet from '../RewardWallet/RewardWallet'
 
 import './ProgressOverview.scss'
 
@@ -123,6 +125,9 @@ function ProgressOverview() {
           </ol>
         </div>
       </article>
+
+      <RewardWallet />
+      <RetentionPanel />
     </section>
   )
 }

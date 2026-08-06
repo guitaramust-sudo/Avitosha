@@ -163,6 +163,38 @@ export const getGameEventMessage = (events: GameEvent[]) => {
       case 'TASK_COMPLETED':
         messages.push({ priority: 70, text: 'Задание выполнено' })
         break
+      case 'REWARD_CATALOG_UNLOCKED':
+        messages.push({
+          priority: 85,
+          text: `Открыта награда: ${event.title}`,
+        })
+        break
+      case 'AVITO_REWARD_EARNED':
+        messages.push({
+          priority: 68,
+          text: `Получено ${event.amount} Avito-бонусов`,
+        })
+        break
+      case 'DAILY_QUEST_COMPLETED':
+        messages.push({
+          priority: 72,
+          text: `Ежедневное задание выполнено: ${event.title}`,
+        })
+        break
+      case 'DAILY_QUEST_UPDATED':
+        messages.push({
+          priority: 35,
+          text: `Задание дня: ${event.progress}/${event.target}`,
+        })
+        break
+      case 'STREAK_UPDATED':
+        messages.push({
+          priority: 45,
+          text: event.reset
+            ? 'Серия дней началась заново'
+            : `Серия: ${event.current} дней подряд`,
+        })
+        break
       case 'STORY_STAGE_COMPLETED':
         messages.push({
           priority: 65,

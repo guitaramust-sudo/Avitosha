@@ -3,9 +3,11 @@ export type ApiErrorCode =
   | 'internal_error'
   | 'invalid_credentials'
   | 'invalid_request'
+  | 'invalid_pet_name'
   | 'network_error'
   | 'session_expired'
   | 'unauthorized'
+  | 'forbidden_pet_name'
   | 'unknown_error'
 
 export interface ApiErrorPayload {
