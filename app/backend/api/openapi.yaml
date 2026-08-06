@@ -149,7 +149,7 @@ paths:
         - userIdHeader: []
       responses:
         '200':
-          description: Avitosha profile, created on first access
+          description: Avitosha profile created during user registration
           content:
             application/json:
               schema:
@@ -345,7 +345,7 @@ paths:
       tags: [game]
       operationId: getRewardBalances
       summary: Get the current user's reward balances
-      description: Returns balances actually credited for completed tasks. AVITO_BONUS is created with a zero balance on first profile access.
+      description: Returns balances actually credited for completed tasks. AVITO_BONUS is initialized with a zero balance during user registration.
       security:
         - bearerAuth: []
         - userIdHeader: []

@@ -169,6 +169,47 @@ func TestAuthServiceRegisterRollsBackWhenSessionCreateFails(t *testing.T) {
 	}
 }
 
+func TestAuthServiceRegisterRollsBackWhenRegistrationHookFails(t *testing.T) {
+	store := newFakeAuthStore()
+	txManager := &fakeTxManager{store: store}
+	authService := newTestAuthService(t, AuthDependencies{
+		PasswordHasher: &fakePasswordHasher{
+			hashFn: func(password string) (string, error) {
+				return "hashed:" + password, nil
+			},
+		},
+		TokenProvider: &fakeTokenProvider{
+			createAccessTokenFn: func(userID, sessionID uuid.UUID, issuedAt, expiresAt time.Time) (string, error) {
+				return "access-token", nil
+			},
+			createRefreshTokenFn: func() (string, error) {
+				return "refresh-token", nil
+			},
+		},
+		UserRepository:    &fakeUserRepository{store: store},
+		SessionRepository: &fakeSessionRepository{store: store},
+		TxManager:         txManager,
+		RegistrationHook:  &fakeRegistrationHook{err: ErrUnexpectedStorage},
+	})
+
+	_, err := authService.Register(context.Background(), RegisterParams{
+		Email:    "user@example.com",
+		Password: "password123",
+	})
+	if !errors.Is(err, ErrInternal) {
+		t.Fatalf("Register() error = %v, want ErrInternal", err)
+	}
+	if !txManager.rolledBack {
+		t.Fatal("Register() did not roll back transaction after registration hook failure")
+	}
+	if len(store.usersByEmail) != 0 {
+		t.Fatalf("users in store after rollback = %d, want 0", len(store.usersByEmail))
+	}
+	if len(store.sessionsByID) != 0 {
+		t.Fatalf("sessions in store after rollback = %d, want 0", len(store.sessionsByID))
+	}
+}
+
 func TestAuthServiceLoginSuccess(t *testing.T) {
 	store := newFakeAuthStore()
 	userRepository := &fakeUserRepository{store: store}
