@@ -1,0 +1,101 @@
+@use '../../../helpers' as h;
+
+.first-visit-tour {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  cursor: pointer;
+
+  &__highlight {
+    position: fixed;
+    top: calc(var(--tour-top) - h.rem(7px));
+    left: calc(var(--tour-left) - h.rem(7px));
+    width: calc(var(--tour-width) + h.rem(14px));
+    height: calc(var(--tour-height) + h.rem(14px));
+    border: h.rem(3px) solid h.$color-primary;
+    border-radius: h.$radius-large;
+    box-shadow: 0 0 0 9999px rgb(13 14 18 / 70%);
+    pointer-events: none;
+    transition: 240ms ease;
+    transition-property: top, left, width, height;
+  }
+
+  &__tooltip {
+    position: fixed;
+    z-index: 1;
+    top: var(--tooltip-top);
+    left: clamp(
+      h.rem(14px),
+      calc(var(--tour-left) + h.rem(8px)),
+      calc(100vw - h.rem(374px))
+    );
+    width: min(calc(100vw - h.rem(28px)), h.rem(360px));
+    padding: h.rem(18px);
+    border-radius: h.$radius-large;
+    background: h.$color-surface;
+    box-shadow: h.$shadow-shell;
+    cursor: pointer;
+
+    > span {
+      color: h.$color-primary;
+      font-size: h.rem(10px);
+      font-weight: h.$font-weight-bold;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    h2,
+    p {
+      margin: 0;
+    }
+
+    h2 {
+      margin: h.rem(6px) 0;
+      font-size: h.rem(19px);
+    }
+
+    p {
+      color: h.$color-text-secondary;
+      font-size: h.rem(12px);
+      line-height: 1.5;
+    }
+
+    > div {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: h.rem(12px);
+      margin-top: h.rem(14px);
+
+      button {
+        padding: 0;
+        border: 0;
+        color: h.$color-text-muted;
+        background: none;
+        cursor: pointer;
+        font-size: h.rem(11px);
+      }
+
+      strong {
+        color: h.$color-primary;
+        font-size: h.rem(11px);
+      }
+    }
+  }
+}
+
+@include h.mobile {
+  .first-visit-tour {
+    &__highlight {
+      border-radius: h.$radius-medium;
+    }
+
+    &__tooltip {
+      top: auto;
+      right: h.rem(12px);
+      bottom: h.rem(12px);
+      left: h.rem(12px);
+      width: auto;
+    }
+  }
+}

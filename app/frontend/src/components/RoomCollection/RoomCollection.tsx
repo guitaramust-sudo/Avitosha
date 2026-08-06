@@ -65,7 +65,7 @@ function RoomCollection() {
     useRoomItemControls(items)
 
   return (
-    <section className="room-collection">
+    <section className="room-collection" data-tour="collection">
       <div className="room-collection__heading">
         <div>
           <h2>Коллекция комнаты</h2>

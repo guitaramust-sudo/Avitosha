@@ -6,6 +6,7 @@ import {
 
 import authReducer from './authSlice'
 import gameReducer from './gameSlice'
+import onboardingReducer from './onboardingSlice'
 import roomEditorReducer from './roomEditorSlice'
 import toastReducer from './toastSlice'
 
@@ -14,6 +15,7 @@ export const createAppStore = () =>
     reducer: {
       auth: authReducer,
       game: gameReducer,
+      onboarding: onboardingReducer,
       roomEditor: roomEditorReducer,
       toast: toastReducer,
     },

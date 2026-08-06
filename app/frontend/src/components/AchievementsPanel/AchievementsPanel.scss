@@ -8,8 +8,13 @@
   border-radius: h.$radius-large;
   background: h.$color-surface;
 
+  &.is-collapsed {
+    height: h.rem(54px);
+    align-self: start;
+  }
+
   &__main {
-    padding: h.rem(22px) h.rem(14px) h.rem(18px);
+    padding: h.rem(22px) h.rem(52px) h.rem(18px) h.rem(14px);
 
     h2 {
       margin: 0 0 h.rem(18px);
@@ -299,7 +304,7 @@
     display: flex;
 
     &__main {
-      padding: h.rem(18px) h.rem(12px);
+      padding: h.rem(18px) h.rem(48px) h.rem(18px) h.rem(12px);
     }
   }
 

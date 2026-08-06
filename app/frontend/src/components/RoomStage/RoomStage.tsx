@@ -72,6 +72,7 @@ function RoomObject({
   return (
     <button
       ref={setNodeRef}
+      data-tour="room"
       className={`room-object room-object--${item.code.toLowerCase()} ${item.status === 'PLACED' ? 'is-placed' : 'is-unlocked'} ${isSelected ? 'is-selected' : ''} ${isDragging ? 'is-dragging' : ''}`}
       style={style}
       type="button"

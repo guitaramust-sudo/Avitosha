@@ -1,6 +1,7 @@
 import { useAppSelector } from '../../hooks/redux'
 import { selectGameDaily } from '../../store/gameSlice'
 import { formatGameDate } from '../../utils/gamePresentation'
+import CollapsibleSection from '../CollapsibleSection/CollapsibleSection'
 
 import './RetentionPanel.scss'
 
@@ -16,7 +17,11 @@ function RetentionPanel() {
   const questCompleted = ['COMPLETED', 'REWARDED'].includes(dailyQuest.status)
 
   return (
-    <article className="progress-card retention-card">
+    <CollapsibleSection
+      className="progress-card retention-card"
+      title="Ежедневный возврат"
+      tourId="retention"
+    >
       <span
         className="progress-card__icon retention-card__icon"
         aria-hidden="true"
@@ -80,7 +85,7 @@ function RetentionPanel() {
           Лучшая серия: {streak.longest} дней
         </small>
       </div>
-    </article>
+    </CollapsibleSection>
   )
 }
 

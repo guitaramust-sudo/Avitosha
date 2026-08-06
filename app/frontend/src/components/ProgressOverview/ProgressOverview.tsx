@@ -9,6 +9,7 @@ import {
   formatGameDate,
   moodLabels,
 } from '../../utils/gamePresentation'
+import CollapsibleSection from '../CollapsibleSection/CollapsibleSection'
 import RetentionPanel from '../RetentionPanel/RetentionPanel'
 import RewardWallet from '../RewardWallet/RewardWallet'
 
@@ -19,13 +20,15 @@ function ProgressOverview() {
   const leaderboard = useAppSelector(selectGameLeaderboard)
   const pet = useAppSelector(selectGamePet)
 
-  if (!daily || !leaderboard || !pet) {
-    return null
-  }
+  if (!daily || !leaderboard || !pet) return null
 
   return (
     <section className="progress-grid" aria-label="Прогресс Авитоши">
-      <article className="progress-card character-card">
+      <CollapsibleSection
+        className="progress-card character-card"
+        title="Характер Авитоши"
+        tourId="character"
+      >
         <span className="progress-card__icon" aria-hidden="true">
           {characterIcons[pet.characterProfile.iconKey] ?? '⌕'}
         </span>
@@ -33,18 +36,19 @@ function ProgressOverview() {
           <small>Характер Авитоши</small>
           <h2>{pet.characterProfile.name}</h2>
           <p>{pet.characterProfile.description}</p>
-          <p className="progress-card__detail">
-            {pet.characterProfile.visualDetail}
-          </p>
           <strong>
             {pet.characterProfile.unlocked
               ? 'Характер открыт'
               : `${pet.characterProfile.progress}/${pet.characterProfile.target} действий`}
           </strong>
         </div>
-      </article>
+      </CollapsibleSection>
 
-      <article className="progress-card">
+      <CollapsibleSection
+        className="progress-card"
+        title="Дневная сводка"
+        tourId="daily-summary"
+      >
         <span className="progress-card__icon" aria-hidden="true">
           ☀
         </span>
@@ -86,9 +90,13 @@ function ProgressOverview() {
           </dl>
           <strong>Настроение: {moodLabels[daily.petMood]}</strong>
         </div>
-      </article>
+      </CollapsibleSection>
 
-      <article className="progress-card leaderboard-card">
+      <CollapsibleSection
+        className="progress-card leaderboard-card"
+        title="Лидерборд"
+        tourId="leaderboard"
+      >
         <span className="progress-card__icon" aria-hidden="true">
           ♛
         </span>
@@ -124,7 +132,7 @@ function ProgressOverview() {
             ))}
           </ol>
         </div>
-      </article>
+      </CollapsibleSection>
 
       <RewardWallet />
       <RetentionPanel />

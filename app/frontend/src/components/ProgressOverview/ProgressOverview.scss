@@ -11,6 +11,7 @@
   min-width: 0;
   gap: h.rem(14px);
   padding: h.rem(18px);
+  padding-right: h.rem(52px);
   border: h.rem(1px) solid h.$color-border;
   border-radius: h.$radius-large;
   background: h.$color-surface;
@@ -170,6 +171,7 @@
   .progress-card {
     gap: h.rem(10px);
     padding: h.rem(14px);
+    padding-right: h.rem(48px);
 
     &__icon {
       width: h.rem(36px);

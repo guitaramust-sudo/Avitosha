@@ -10,6 +10,7 @@ import {
   taskActionLabels,
   taskStatusLabels,
 } from '../../utils/gamePresentation'
+import CollapsibleSection from '../CollapsibleSection/CollapsibleSection'
 import TaskDetailsDialog from '../TaskDetailsDialog/TaskDetailsDialog'
 
 import './AchievementsPanel.scss'
@@ -26,7 +27,12 @@ function AchievementsPanel() {
 
   return (
     <>
-      <aside className="achievements-panel">
+      <CollapsibleSection
+        as="aside"
+        className="achievements-panel"
+        title="Задания и достижения"
+        tourId="tasks"
+      >
         <section className="achievements-panel__main">
           <span className="panel-kicker">Текущая просьба</span>
           <h2>{activeTask?.petPhrase ?? 'Комната готова!'}</h2>
@@ -150,7 +156,7 @@ function AchievementsPanel() {
             ))}
           </div>
         </section>
-      </aside>
+      </CollapsibleSection>
       <TaskDetailsDialog taskId={selectedTaskId} onClose={closeTaskDetails} />
     </>
   )

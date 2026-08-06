@@ -1,5 +1,6 @@
 import { useAppSelector } from '../../hooks/redux'
 import { selectGameWallet } from '../../store/gameSlice'
+import CollapsibleSection from '../CollapsibleSection/CollapsibleSection'
 
 import './RewardWallet.scss'
 
@@ -12,7 +13,11 @@ function RewardWallet() {
   if (!wallet) return null
 
   return (
-    <article className="progress-card reward-wallet-card">
+    <CollapsibleSection
+      className="progress-card reward-wallet-card"
+      title="Кошелёк наград"
+      tourId="wallet"
+    >
       <span
         className="progress-card__icon reward-wallet-card__icon"
         aria-hidden="true"
@@ -71,7 +76,7 @@ function RewardWallet() {
           ))}
         </ul>
       </div>
-    </article>
+    </CollapsibleSection>
   )
 }
 

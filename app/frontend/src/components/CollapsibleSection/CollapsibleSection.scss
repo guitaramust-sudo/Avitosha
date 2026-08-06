@@ -1,0 +1,55 @@
+@use '../../../helpers' as h;
+
+.collapsible-section {
+  position: relative;
+
+  &__toggle {
+    position: absolute;
+    z-index: 3;
+    top: h.rem(10px);
+    right: h.rem(10px);
+    display: grid;
+    width: h.rem(30px);
+    height: h.rem(30px);
+    padding: 0;
+    border: h.rem(1px) solid h.$color-border;
+    border-radius: 50%;
+    color: h.$color-text-secondary;
+    background: rgb(255 255 255 / 90%);
+    cursor: pointer;
+    place-items: center;
+
+    span {
+      transition: transform 180ms ease;
+    }
+
+    &:hover {
+      color: h.$color-primary;
+      border-color: h.$color-primary;
+    }
+  }
+
+  &__content {
+    display: contents;
+  }
+
+  &__summary {
+    min-width: 0;
+    margin: 0;
+    padding-right: h.rem(38px);
+    overflow: hidden;
+    font-size: h.rem(14px);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &.is-collapsed {
+    min-height: h.rem(54px);
+    align-items: center;
+    padding: h.rem(16px);
+
+    .collapsible-section__toggle span {
+      transform: rotate(180deg);
+    }
+  }
+}

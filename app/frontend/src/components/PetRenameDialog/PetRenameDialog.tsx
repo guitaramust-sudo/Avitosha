@@ -12,10 +12,15 @@ import './PetRenameDialog.scss'
 
 interface PetRenameDialogProps {
   currentName: string
+  isFirstVisit?: boolean
   onClose: () => void
 }
 
-function PetRenameDialog({ currentName, onClose }: PetRenameDialogProps) {
+function PetRenameDialog({
+  currentName,
+  isFirstVisit = false,
+  onClose,
+}: PetRenameDialogProps) {
   const dispatch = useAppDispatch()
   const renameMutation = useRenamePetMutation()
   const inputRef = useRef<HTMLInputElement | null>(null)
@@ -81,8 +86,12 @@ function PetRenameDialog({ currentName, onClose }: PetRenameDialogProps) {
         >
           ×
         </button>
-        <span className="pet-rename-dialog__eyebrow">Профиль питомца</span>
-        <h2 id="pet-rename-title">Как зовут Авитошу?</h2>
+        <span className="pet-rename-dialog__eyebrow">
+          {isFirstVisit ? 'Первое знакомство' : 'Профиль питомца'}
+        </span>
+        <h2 id="pet-rename-title">
+          {isFirstVisit ? 'Придумайте имя питомцу' : 'Как зовут Авитошу?'}
+        </h2>
         <p>
           Имя можно написать только русскими буквами, с пробелом или дефисом.
         </p>
@@ -109,7 +118,7 @@ function PetRenameDialog({ currentName, onClose }: PetRenameDialogProps) {
           {serverError && <div role="alert">{serverError}</div>}
           <div className="pet-rename-dialog__actions">
             <button type="button" onClick={onClose} disabled={isPending}>
-              Отмена
+              {isFirstVisit ? 'Оставить Авитошей' : 'Отмена'}
             </button>
             <button type="submit" disabled={isPending}>
               {isPending ? 'Сохраняем…' : 'Сохранить имя'}
