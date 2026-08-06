@@ -1,5 +1,10 @@
 import { useDraggable, useDroppable } from '@dnd-kit/core'
-import type { CSSProperties, KeyboardEvent, MouseEvent } from 'react'
+import {
+  type CSSProperties,
+  type KeyboardEvent,
+  type MouseEvent,
+  useState,
+} from 'react'
 
 import { useAppSelector } from '../../hooks/redux'
 import {
@@ -72,6 +77,7 @@ function RoomObject({
   return (
     <button
       ref={setNodeRef}
+      data-tour="room"
       className={`room-object room-object--${item.code.toLowerCase()} ${item.status === 'PLACED' ? 'is-placed' : 'is-unlocked'} ${isSelected ? 'is-selected' : ''} ${isDragging ? 'is-dragging' : ''}`}
       style={style}
       type="button"
@@ -92,6 +98,10 @@ function RoomObject({
 }
 
 function RoomStage() {
+  const [dismissedSpeechKey, setDismissedSpeechKey] = useState<string | null>(
+    null,
+  )
+  const [hidingSpeechKey, setHidingSpeechKey] = useState<string | null>(null)
   const pet = useAppSelector(selectGamePet)
   const room = useAppSelector(selectGameRoom)
   const story = useAppSelector(selectGameStory)
@@ -113,10 +123,16 @@ function RoomStage() {
       : story.nextTask
         ? `Следующая цель: ${story.nextTask.title}`
         : 'Давай обустроим нашу первую комнату!'
+  const speechKey = story.nextTask?.id ?? 'room-intro'
+  const isSpeechVisible = Boolean(phrase && dismissedSpeechKey !== speechKey)
   const selectedItem = items.find(
     (item) => item.code === selectedItemCode && item.status !== 'LOCKED',
   )
   const handleRoomClick = (event: MouseEvent<HTMLElement>) => {
+    if (isSpeechVisible && hidingSpeechKey !== speechKey) {
+      setHidingSpeechKey(speechKey)
+    }
+
     if (!selectedItem || event.target !== event.currentTarget) {
       return
     }
@@ -161,7 +177,19 @@ function RoomStage() {
         )
       })}
 
-      {phrase && <div className="room-stage__speech">{phrase}</div>}
+      {isSpeechVisible && (
+        <div
+          className={`room-stage__speech ${hidingSpeechKey === speechKey ? 'is-hiding' : ''}`}
+          onAnimationEnd={() => {
+            if (hidingSpeechKey === speechKey) {
+              setDismissedSpeechKey(speechKey)
+              setHidingSpeechKey(null)
+            }
+          }}
+        >
+          {phrase}
+        </div>
+      )}
       {selectedItem && (
         <div className="room-stage__edit-hint">
           Выбран: {selectedItem.name}. Нажмите на свободное место.

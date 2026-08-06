@@ -865,6 +865,25 @@ func (r *fakeSessionRepository) GetActiveByRefreshTokenHash(ctx context.Context,
 	return cloneSession(session), nil
 }
 
+func (r *fakeSessionRepository) GetActiveByIDAndUserID(ctx context.Context, sessionID, userID uuid.UUID, now time.Time) (model.Session, error) {
+	if r.getActiveErr != nil {
+		return model.Session{}, r.getActiveErr
+	}
+
+	session, ok := r.store.sessionsByID[sessionID]
+	if !ok {
+		return model.Session{}, ErrSessionNotFound
+	}
+	if session.UserID != userID {
+		return model.Session{}, ErrSessionNotFound
+	}
+	if session.RevokedAt != nil || !session.ExpiresAt.After(now) {
+		return model.Session{}, ErrSessionNotFound
+	}
+
+	return cloneSession(session), nil
+}
+
 func (r *fakeSessionRepository) Rotate(ctx context.Context, params RotateSessionParams) (model.Session, error) {
 	if r.rotateErr != nil {
 		return model.Session{}, r.rotateErr

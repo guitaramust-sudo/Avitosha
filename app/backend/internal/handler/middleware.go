@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bufio"
+	"errors"
 	"log/slog"
 	"net"
 	"net/http"
@@ -11,6 +12,8 @@ import (
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 
 	backendauth "github.com/guitaramust-sudo/Avitosha/app/backend/internal/auth"
+	"github.com/guitaramust-sudo/Avitosha/app/backend/internal/model"
+	"github.com/guitaramust-sudo/Avitosha/app/backend/internal/usecase"
 )
 
 func RequestID(next http.Handler) http.Handler {
@@ -92,7 +95,7 @@ func CORS(frontendOrigin string) func(http.Handler) http.Handler {
 	}
 }
 
-func BearerAuth(logger *slog.Logger, verifier AccessTokenVerifier) func(http.Handler) http.Handler {
+func BearerAuth(logger *slog.Logger, authenticator AccessTokenAuthenticator) func(http.Handler) http.Handler {
 	if logger == nil {
 		logger = slog.Default()
 	}
@@ -105,13 +108,24 @@ func BearerAuth(logger *slog.Logger, verifier AccessTokenVerifier) func(http.Han
 				return
 			}
 
-			authenticatedUser, err := verifier.VerifyAccessToken(token)
+			authenticatedUser, err := authenticateAccessToken(r, token, authenticator)
 			if err != nil {
+				if !errors.Is(err, usecase.ErrUnauthorized) {
+					logger.Error(
+						"access token session check failed",
+						"request_id", chimiddleware.GetReqID(r.Context()),
+						"path", r.URL.Path,
+						"category", "access_token_auth_internal_error",
+						"error", err.Error(),
+					)
+					writeErrorResponse(w, http.StatusInternalServerError, internalErrorCode, "Internal server error")
+					return
+				}
 				logger.Warn(
-					"access token verification failed",
+					"access token authentication failed",
 					"request_id", chimiddleware.GetReqID(r.Context()),
 					"path", r.URL.Path,
-					"category", "invalid_access_token",
+					"category", "inactive_or_invalid_access_token",
 				)
 				writeErrorResponse(w, http.StatusUnauthorized, "unauthorized", "Authentication is required")
 				return
@@ -166,4 +180,12 @@ func bearerToken(authorizationHeader string) (string, error) {
 	}
 
 	return parts[1], nil
+}
+
+func authenticateAccessToken(r *http.Request, token string, authenticator AccessTokenAuthenticator) (model.AuthenticatedUser, error) {
+	if authenticator == nil {
+		return model.AuthenticatedUser{}, usecase.ErrUnauthorized
+	}
+
+	return authenticator.AuthenticateAccessToken(r.Context(), token)
 }

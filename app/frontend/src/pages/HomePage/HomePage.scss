@@ -73,9 +73,26 @@
   }
 }
 
+@include h.media-max(1250px) {
+  .home-dashboard {
+    grid-template-areas:
+      'content'
+      'achievements';
+    grid-template-columns: minmax(0, 1fr);
+
+    > .achievements-panel {
+      grid-area: achievements;
+    }
+
+    &__content {
+      grid-area: content;
+    }
+  }
+}
+
 @include h.laptop-small {
   .home-dashboard {
-    grid-template-columns: h.rem(270px) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

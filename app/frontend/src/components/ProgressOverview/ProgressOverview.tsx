@@ -4,11 +4,9 @@ import {
   selectGameLeaderboard,
   selectGamePet,
 } from '../../store/gameSlice'
-import {
-  characterIcons,
-  formatGameDate,
-  moodLabels,
-} from '../../utils/gamePresentation'
+import { formatGameDate, moodLabels } from '../../utils/gamePresentation'
+import { characterIconAssets, iconAssets } from '../../utils/iconAssets'
+import CollapsibleSection from '../CollapsibleSection/CollapsibleSection'
 import RetentionPanel from '../RetentionPanel/RetentionPanel'
 import RewardWallet from '../RewardWallet/RewardWallet'
 
@@ -19,34 +17,43 @@ function ProgressOverview() {
   const leaderboard = useAppSelector(selectGameLeaderboard)
   const pet = useAppSelector(selectGamePet)
 
-  if (!daily || !leaderboard || !pet) {
-    return null
-  }
+  if (!daily || !leaderboard || !pet) return null
 
   return (
     <section className="progress-grid" aria-label="Прогресс Авитоши">
-      <article className="progress-card character-card">
+      <CollapsibleSection
+        className="progress-card character-card"
+        title="Характер Авитоши"
+        tourId="character"
+      >
         <span className="progress-card__icon" aria-hidden="true">
-          {characterIcons[pet.characterProfile.iconKey] ?? '⌕'}
+          <img
+            src={
+              characterIconAssets[pet.characterProfile.iconKey] ??
+              iconAssets.magnifier
+            }
+            alt=""
+          />
         </span>
         <div>
           <small>Характер Авитоши</small>
           <h2>{pet.characterProfile.name}</h2>
           <p>{pet.characterProfile.description}</p>
-          <p className="progress-card__detail">
-            {pet.characterProfile.visualDetail}
-          </p>
           <strong>
             {pet.characterProfile.unlocked
               ? 'Характер открыт'
               : `${pet.characterProfile.progress}/${pet.characterProfile.target} действий`}
           </strong>
         </div>
-      </article>
+      </CollapsibleSection>
 
-      <article className="progress-card">
+      <CollapsibleSection
+        className="progress-card"
+        title="Дневная сводка"
+        tourId="daily-summary"
+      >
         <span className="progress-card__icon" aria-hidden="true">
-          ☀
+          <img src={iconAssets.sun} alt="" />
         </span>
         <div>
           <small>Сводка за {formatGameDate(daily.date)}</small>
@@ -86,11 +93,15 @@ function ProgressOverview() {
           </dl>
           <strong>Настроение: {moodLabels[daily.petMood]}</strong>
         </div>
-      </article>
+      </CollapsibleSection>
 
-      <article className="progress-card leaderboard-card">
+      <CollapsibleSection
+        className="progress-card leaderboard-card"
+        title="Лидерборд"
+        tourId="leaderboard"
+      >
         <span className="progress-card__icon" aria-hidden="true">
-          ♛
+          <img src={iconAssets.crown} alt="" />
         </span>
         <div>
           <small>Неделя с {formatGameDate(leaderboard.weekStart)}</small>
@@ -124,7 +135,7 @@ function ProgressOverview() {
             ))}
           </ol>
         </div>
-      </article>
+      </CollapsibleSection>
 
       <RewardWallet />
       <RetentionPanel />

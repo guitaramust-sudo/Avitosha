@@ -29,7 +29,7 @@
   &__character {
     position: absolute;
     z-index: 3;
-    bottom: h.rem(24px);
+    bottom: h.rem(4px);
     left: 50%;
     width: min(30%, h.rem(275px));
     min-width: h.rem(210px);
@@ -68,7 +68,7 @@
 .room-stage__speech {
   position: absolute;
   z-index: 5;
-  top: h.rem(88px);
+  top: h.rem(112px);
   left: 50%;
   max-width: h.rem(340px);
   padding: h.rem(10px) h.rem(14px);
@@ -78,6 +78,18 @@
   font-size: h.rem(12px);
   line-height: 1.4;
   transform: translateX(-50%);
+
+  &.is-hiding {
+    animation: speech-hide 220ms ease forwards;
+    pointer-events: none;
+  }
+}
+
+@keyframes speech-hide {
+  to {
+    opacity: 0;
+    transform: translate(-50%, h.rem(8px)) scale(0.96);
+  }
 }
 
 .room-stage__edit-hint {
@@ -223,7 +235,7 @@
     background-size: 100% 100%;
 
     &__character {
-      bottom: 2%;
+      bottom: -2%;
       width: min(42%, h.rem(155px));
       min-width: h.rem(130px);
       transform: translateX(-54.5%);
@@ -270,7 +282,7 @@
     aspect-ratio: 4 / 3;
 
     &__character {
-      bottom: 1%;
+      bottom: -3%;
       width: 40%;
       min-width: h.rem(120px);
     }

@@ -73,58 +73,18 @@
   font-size: h.rem(14px);
   font-weight: h.$font-weight-bold;
 
-  i {
-    display: grid;
+  img {
     width: h.rem(23px);
     height: h.rem(23px);
-    place-items: center;
-    border-radius: 50%;
-    color: h.$color-white;
-    background: h.$color-success;
-    font-size: h.rem(12px);
-    font-style: normal;
+    object-fit: contain;
   }
 }
 
 .brand-mark {
-  position: relative;
   width: h.rem(43px);
   height: h.rem(43px);
   flex: 0 0 auto;
-
-  &__dot {
-    position: absolute;
-    display: block;
-    width: h.rem(19px);
-    height: h.rem(19px);
-    border-radius: 50%;
-
-    &--blue {
-      top: 0;
-      left: h.rem(11px);
-      background: h.$color-info-bright;
-    }
-
-    &--green {
-      top: h.rem(17px);
-      left: 0;
-      background: h.$color-success;
-    }
-
-    &--red {
-      right: 0;
-      bottom: h.rem(4px);
-      background: h.$color-danger;
-    }
-
-    &--purple {
-      right: h.rem(7px);
-      bottom: 0;
-      width: h.rem(12px);
-      height: h.rem(12px);
-      background: h.$color-primary;
-    }
-  }
+  object-fit: contain;
 }
 
 .header-stat {
@@ -142,10 +102,17 @@
     height: h.rem(48px);
     flex: 0 0 auto;
     place-items: center;
+    border: h.rem(1px) solid h.$color-border;
     border-radius: 50%;
     font-size: h.rem(25px);
     font-style: normal;
     font-weight: h.$font-weight-bold;
+
+    img {
+      width: h.rem(27px);
+      height: h.rem(27px);
+      object-fit: contain;
+    }
 
     &--purple {
       color: h.$color-primary;
@@ -354,8 +321,6 @@
       .brand-mark {
         width: h.rem(34px);
         height: h.rem(34px);
-        transform: scale(0.8);
-        transform-origin: left center;
       }
     }
 

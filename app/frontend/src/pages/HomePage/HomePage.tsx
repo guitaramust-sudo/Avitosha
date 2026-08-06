@@ -1,4 +1,5 @@
 import AchievementsPanel from '../../components/AchievementsPanel/AchievementsPanel'
+import FirstVisitOnboarding from '../../components/FirstVisitOnboarding/FirstVisitOnboarding'
 import HomeHeader from '../../components/HomeHeader/HomeHeader'
 import ProgressOverview from '../../components/ProgressOverview/ProgressOverview'
 import RoomWorkspace from '../../components/RoomWorkspace/RoomWorkspace'
@@ -71,6 +72,7 @@ function HomePage() {
           </div>
         </div>
       </div>
+      <FirstVisitOnboarding />
     </main>
   )
 }

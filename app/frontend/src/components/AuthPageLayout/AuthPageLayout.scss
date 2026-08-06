@@ -40,15 +40,9 @@
   }
 
   &__logo {
-    display: grid;
     width: h.rem(42px);
     height: h.rem(42px);
-    place-items: center;
-    border-radius: 42% 58% 64% 36%;
-    color: h.$color-danger;
-    background: h.$color-white;
-    font-size: h.rem(19px);
-    transform: rotate(-8deg);
+    object-fit: contain;
   }
 
   &__message {

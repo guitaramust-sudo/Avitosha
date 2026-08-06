@@ -57,6 +57,7 @@ const fillValidForm = async (user: ReturnType<typeof userEvent.setup>) => {
 describe('RegisterForm', () => {
   beforeEach(() => {
     registerUserMock.mockReset()
+    localStorage.clear()
   })
 
   it('stores the user in Redux and redirects after registration', async () => {
@@ -78,6 +79,15 @@ describe('RegisterForm', () => {
       user: session.user,
     })
     expect(queryClient.getQueryData(['auth', 'current-user'])).toEqual(session)
+    expect(store.getState().onboarding).toEqual({
+      ownerId: session.user.id,
+      stage: 'naming',
+    })
+    expect(
+      localStorage.getItem(
+        `avitosha:first-visit-onboarding:${session.user.id}`,
+      ),
+    ).toBe('pending')
   })
 
   it('does not submit mismatched passwords', async () => {

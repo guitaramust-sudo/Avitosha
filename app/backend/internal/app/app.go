@@ -85,16 +85,24 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, err
 		return nil, fmt.Errorf("create auth service: %w", err)
 	}
 
-	router := handler.NewRouter(handler.RouterDependencies{
-		Logger:              logger,
-		DB:                  pool,
-		AuthService:         authService,
+	accessTokenAuthenticator, err := usecase.NewAccessTokenAuthService(usecase.AccessTokenAuthDependencies{
 		AccessTokenVerifier: tokenProvider,
-		FrontendOrigin:      cfg.FrontendOrigin,
-		RefreshTokenTTL:     cfg.RefreshTokenTTL,
-		SecureRefreshCookie: cfg.AppEnv == config.AppEnvProd,
-		GameService:         game,
-		EventHub:            eventHub,
+		SessionRepository:   postgres.NewSessionRepository(pool),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("create access token authenticator: %w", err)
+	}
+
+	router := handler.NewRouter(handler.RouterDependencies{
+		Logger:                   logger,
+		DB:                       pool,
+		AuthService:              authService,
+		AccessTokenAuthenticator: accessTokenAuthenticator,
+		FrontendOrigin:           cfg.FrontendOrigin,
+		RefreshTokenTTL:          cfg.RefreshTokenTTL,
+		SecureRefreshCookie:      cfg.AppEnv == config.AppEnvProd,
+		GameService:              game,
+		EventHub:                 eventHub,
 	})
 	server := &http.Server{
 		Addr:         cfg.HTTPAddr,
