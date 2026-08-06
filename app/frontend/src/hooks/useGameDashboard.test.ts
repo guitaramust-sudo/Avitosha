@@ -47,4 +47,27 @@ describe('invalidateGameQueriesForEvents', () => {
       queryKey: gameQueryKeys.wallet('user-id'),
     })
   })
+
+  it('refreshes task advice when task progress changes', async () => {
+    const queryClient = new QueryClient()
+    const invalidateQueries = vi
+      .spyOn(queryClient, 'invalidateQueries')
+      .mockResolvedValue(undefined)
+
+    await invalidateGameQueriesForEvents(queryClient, 'user-id', [
+      {
+        id: 'progress-event',
+        occurredAt: '2026-08-05T10:00:00Z',
+        progress: 2,
+        target: 5,
+        taskCode: 'VIEW_FURNITURE_ADS',
+        taskId: 'task-id',
+        type: 'TASK_PROGRESS_UPDATED',
+      },
+    ])
+
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: gameQueryKeys.advice('user-id'),
+    })
+  })
 })

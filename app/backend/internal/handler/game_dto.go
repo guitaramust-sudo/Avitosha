@@ -103,6 +103,18 @@ func newTaskDTO(task model.TaskProgress) taskDTO {
 	}
 }
 
+type taskAdviceDTO struct {
+	TaskID        uuid.UUID `json:"taskId"`
+	Text          string    `json:"text"`
+	GeneratedByAI bool      `json:"generatedByAi"`
+}
+
+func newTaskAdviceDTO(advice usecase.TaskAdvice) taskAdviceDTO {
+	return taskAdviceDTO{
+		TaskID: advice.TaskID, Text: advice.Text, GeneratedByAI: advice.GeneratedByAI,
+	}
+}
+
 type actionResultDTO struct {
 	ActionID  uuid.UUID        `json:"actionId"`
 	Duplicate bool             `json:"duplicate"`

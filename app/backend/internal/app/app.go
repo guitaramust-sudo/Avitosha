@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	backendai "github.com/guitaramust-sudo/Avitosha/app/backend/internal/ai"
 	backendauth "github.com/guitaramust-sudo/Avitosha/app/backend/internal/auth"
 	"github.com/guitaramust-sudo/Avitosha/app/backend/internal/config"
 	"github.com/guitaramust-sudo/Avitosha/app/backend/internal/handler"
@@ -63,7 +64,11 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, err
 	}
 	txManager := postgres.NewTxManager(pool)
 	eventHub := realtime.NewHub(realtime.DefaultBufferSize)
-	game := newGameService(pool, txManager, eventHub)
+	adviceGenerator, err := newAdviceGenerator(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("create advice generator: %w", err)
+	}
+	game := newGameService(pool, txManager, eventHub, adviceGenerator)
 
 	authService, err := usecase.NewAuthService(usecase.AuthConfig{
 		AccessTokenTTL:  cfg.AccessTokenTTL,
@@ -106,10 +111,21 @@ func newGameService(
 	pool *pgxpool.Pool,
 	txManager usecase.TxManager,
 	publisher usecase.DomainEventPublisher,
+	advice usecase.AdviceGenerator,
 ) *usecase.GameService {
 	return usecase.NewGameService(usecase.GameServiceDependencies{
 		Repository: postgres.NewGameRepository(pool), TxManager: txManager,
-		IDGenerator: uuid.New, Publisher: publisher,
+		IDGenerator: uuid.New, Publisher: publisher, Advice: advice,
+	})
+}
+
+func newAdviceGenerator(cfg config.Config) (usecase.AdviceGenerator, error) {
+	if cfg.ProxyAPIKey == "" {
+		return nil, nil
+	}
+	return backendai.NewProxyAPIAdviceGenerator(backendai.ProxyAPIConfig{
+		APIKey: cfg.ProxyAPIKey, BaseURL: cfg.ProxyAPIBaseURL, Model: cfg.ProxyAPIModel,
+		Client: &http.Client{Timeout: cfg.ProxyAPITimeout},
 	})
 }
 

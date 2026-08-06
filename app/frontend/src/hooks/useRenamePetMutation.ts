@@ -15,9 +15,14 @@ export const useRenamePetMutation = () => {
       if (!userId) return
 
       queryClient.setQueryData(gameQueryKeys.pet(userId), pet)
-      await queryClient.invalidateQueries({
-        queryKey: gameQueryKeys.leaderboard(userId),
-      })
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: gameQueryKeys.leaderboard(userId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: gameQueryKeys.advice(userId),
+        }),
+      ])
     },
   })
 }

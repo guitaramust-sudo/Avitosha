@@ -18,6 +18,10 @@ type DomainEventPublisher interface {
 	Publish(uuid.UUID, []model.DomainEvent)
 }
 
+type AdviceGenerator interface {
+	Generate(context.Context, AdviceGenerationInput) (string, error)
+}
+
 const (
 	DefaultPetName    = "Авитоша"
 	DefaultRewardType = "AVITO_BONUS"
@@ -30,6 +34,7 @@ type GameServiceDependencies struct {
 	TxManager   TxManager
 	IDGenerator IDGenerator
 	Publisher   DomainEventPublisher
+	Advice      AdviceGenerator
 }
 
 type GameService struct {
@@ -37,6 +42,7 @@ type GameService struct {
 	txManager   TxManager
 	idGenerator IDGenerator
 	publisher   DomainEventPublisher
+	advice      AdviceGenerator
 }
 
 type GameProfile struct {
@@ -87,6 +93,28 @@ type ProcessActionResult struct {
 	Events    []model.DomainEvent `json:"events"`
 }
 
+type AdviceGenerationInput struct {
+	PetName           string
+	PetMood           model.PetMood
+	CharacterName     string
+	TaskTitle         string
+	TaskDescription   string
+	ActionType        model.ActionType
+	Progress          int
+	Target            int
+	Status            model.TaskStatus
+	XPReward          int
+	RoomItemCode      string
+	AvitoRewardType   string
+	AvitoRewardAmount int
+}
+
+type TaskAdvice struct {
+	TaskID        uuid.UUID
+	Text          string
+	GeneratedByAI bool
+}
+
 func NewGameService(deps GameServiceDependencies) *GameService {
 	idGenerator := deps.IDGenerator
 	if idGenerator == nil {
@@ -94,7 +122,7 @@ func NewGameService(deps GameServiceDependencies) *GameService {
 	}
 	return &GameService{
 		repository: deps.Repository, txManager: deps.TxManager,
-		idGenerator: idGenerator, publisher: deps.Publisher,
+		idGenerator: idGenerator, publisher: deps.Publisher, advice: deps.Advice,
 	}
 }
 

@@ -7,6 +7,7 @@ import {
   getRewardWallet,
   getRoom,
   getTask,
+  getTaskAdvice,
   getTasks,
   postAction,
   renamePet,
@@ -236,6 +237,26 @@ describe('game API', () => {
     await getTask('access-token', 'task/id')
 
     expect(fetchMock.mock.calls[0]?.[0]).toBe('/api/v1/tasks/task%2Fid')
+  })
+
+  it('loads advice for an individual task', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({
+        generatedByAi: false,
+        taskId: 'task/id',
+        text: 'Сравни несколько вариантов.',
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(
+      getTaskAdvice('access-token', 'task/id'),
+    ).resolves.toMatchObject({
+      generatedByAi: false,
+      text: 'Сравни несколько вариантов.',
+    })
+
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('/api/v1/tasks/task%2Fid/advice')
   })
 
   it('filters achievements outside the documented scenario', async () => {

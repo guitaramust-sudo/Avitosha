@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 
 import { useAppSelector } from '../../hooks/redux'
-import { useGameTask } from '../../hooks/useGameDashboard'
+import { useGameTask, useTaskAdvice } from '../../hooks/useGameDashboard'
 import {
   roomItemLabels,
   taskActionLabels,
@@ -20,6 +20,7 @@ function TaskDetailsDialog({ onClose, taskId }: TaskDetailsDialogProps) {
   const userId = useAppSelector((state) => state.auth.user?.id)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
   const taskQuery = useGameTask(accessToken, userId, taskId)
+  const adviceQuery = useTaskAdvice(accessToken, userId, taskId)
 
   useEffect(() => {
     if (!taskId) {
@@ -97,6 +98,26 @@ function TaskDetailsDialog({ onClose, taskId }: TaskDetailsDialogProps) {
             <h2 id="task-dialog-title">{task.title}</h2>
             <p>{task.description}</p>
             <blockquote>{task.petPhrase}</blockquote>
+
+            <aside className="task-dialog__advice" aria-live="polite">
+              <div className="task-dialog__advice-heading">
+                <h3>Совет Авитоши</h3>
+                {adviceQuery.data?.generatedByAi && <span>ИИ</span>}
+              </div>
+              {adviceQuery.isPending && <p>Авитоша думает над советом…</p>}
+              {adviceQuery.isError && (
+                <div className="task-dialog__advice-error">
+                  <p>Совет пока не загрузился.</p>
+                  <button
+                    type="button"
+                    onClick={() => void adviceQuery.refetch()}
+                  >
+                    Повторить
+                  </button>
+                </div>
+              )}
+              {adviceQuery.data && <p>{adviceQuery.data.text}</p>}
+            </aside>
 
             <dl className="task-dialog__facts">
               <div>

@@ -22,25 +22,36 @@ afterEach(() => {
 
 describe('TaskDetailsDialog', () => {
   it('loads task details and closes from its button', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      jsonResponse({
-        actionType: 'AD_VIEWED',
-        avitoRewardAmount: 10,
-        avitoRewardType: 'AVITO_BONUS',
-        category: 'FURNITURE',
-        code: 'VIEW_FURNITURE_ADS',
-        description: 'Посмотри 5 объявлений с мебелью',
-        id: 'task-id',
-        petPhrase: 'Давай найдём стол!',
-        progress: 2,
-        roomItemCode: 'DESK',
-        status: 'ACTIVE',
-        storyStage: 1,
-        target: 5,
-        title: 'Помоги выбрать стол',
-        xpReward: 30,
-      }),
-    )
+    const fetchMock = vi.fn().mockImplementation((input: string) => {
+      if (input.endsWith('/advice')) {
+        return Promise.resolve(
+          jsonResponse({
+            generatedByAi: true,
+            taskId: 'task-id',
+            text: 'Сравни фотографии и условия доставки.',
+          }),
+        )
+      }
+      return Promise.resolve(
+        jsonResponse({
+          actionType: 'AD_VIEWED',
+          avitoRewardAmount: 10,
+          avitoRewardType: 'AVITO_BONUS',
+          category: 'FURNITURE',
+          code: 'VIEW_FURNITURE_ADS',
+          description: 'Посмотри 5 объявлений с мебелью',
+          id: 'task-id',
+          petPhrase: 'Давай найдём стол!',
+          progress: 2,
+          roomItemCode: 'DESK',
+          status: 'ACTIVE',
+          storyStage: 1,
+          target: 5,
+          title: 'Помоги выбрать стол',
+          xpReward: 30,
+        }),
+      )
+    })
     vi.stubGlobal('fetch', fetchMock)
     const store = createAppStore()
     store.dispatch(
@@ -66,7 +77,18 @@ describe('TaskDetailsDialog', () => {
     expect(
       await screen.findByRole('heading', { name: 'Помоги выбрать стол' }),
     ).toBeInTheDocument()
-    expect(fetchMock.mock.calls[0]?.[0]).toBe('/api/v1/tasks/task-id')
+    expect(
+      await screen.findByText('Сравни фотографии и условия доставки.'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('ИИ')).toBeInTheDocument()
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/tasks/task-id',
+      expect.anything(),
+    )
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/tasks/task-id/advice',
+      expect.anything(),
+    )
 
     await user.click(
       screen.getByRole('button', { name: 'Закрыть детали задания' }),

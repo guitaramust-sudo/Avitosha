@@ -112,6 +112,7 @@ X-User-ID: <existing-user-uuid>
 | GET | `/api/v1/pet` | питомец, XP, настроение, характер и текущая история |
 | GET | `/api/v1/tasks` | назначенные задания и награды |
 | GET | `/api/v1/tasks/{task_id}` | одно задание |
+| GET | `/api/v1/tasks/{task_id}/advice` | короткий персональный совет Авитоши по заданию |
 | POST | `/api/v1/actions` | mock-событие Авито |
 | GET | `/api/v1/room` | открытые и заблокированные предметы |
 | GET | `/api/v1/story` | прогресс `FIRST_ROOM` и следующая цель |
@@ -123,6 +124,14 @@ X-User-ID: <existing-user-uuid>
 | GET | `/api/v1/ws` | realtime-события |
 
 Полный контракт доступен в `app/backend/api/openapi.yaml` и через `/swagger/`.
+
+### Советы Авитоши через ProxyAPI
+
+Backend отправляет в модель только имя и состояние питомца, характер, описание текущего задания, его прогресс и заранее известные награды. Email, тексты сообщений, access token и другие пользовательские данные в запрос не входят. ИИ формирует только текст совета и не участвует в расчёте прогресса, XP, бонусов или баланса.
+
+Для включения генерации задайте `PROXYAPI_API_KEY`. По умолчанию используется OpenRouter endpoint ProxyAPI и модель `qwen/qwen-2.5-7b-instruct`; URL, модель и таймаут меняются через `PROXYAPI_BASE_URL`, `PROXYAPI_MODEL` и `PROXYAPI_TIMEOUT`. Если ключ не задан, провайдер недоступен или ответ не прошёл проверку, endpoint возвращает безопасный локальный совет с `generatedByAi: false`.
+
+Краткая памятка для backend и frontend: [`docs/ai-advice.md`](docs/ai-advice.md).
 
 ### Пример действия
 

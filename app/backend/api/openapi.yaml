@@ -224,6 +224,33 @@ paths:
                 $ref: '#/components/schemas/TaskProgress'
         '404':
           $ref: '#/components/responses/NotFound'
+  /api/v1/tasks/{task_id}/advice:
+    get:
+      tags: [game]
+      operationId: getTaskAdvice
+      summary: Get a short personalized Avitosha tip for a task
+      description: Uses the configured ProxyAPI model when available and returns a deterministic safe fallback otherwise. This endpoint never changes progress, rewards, or balances.
+      security:
+        - bearerAuth: []
+        - userIdHeader: []
+      parameters:
+        - name: task_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Personalized or fallback task advice
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskAdvice'
+        '400':
+          $ref: '#/components/responses/InvalidRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /api/v1/actions:
     post:
       tags: [game]
@@ -611,6 +638,22 @@ components:
         storyStage:
           type: integer
           nullable: true
+    TaskAdvice:
+      type: object
+      additionalProperties: false
+      required: [taskId, text, generatedByAi]
+      properties:
+        taskId:
+          type: string
+          format: uuid
+        text:
+          type: string
+          minLength: 1
+          maxLength: 220
+          example: Сравни фотографии, состояние товара и условия доставки.
+        generatedByAi:
+          type: boolean
+          description: True when ProxyAPI returned a valid Qwen response; false for the safe local fallback.
     ActionRequest:
       type: object
       additionalProperties: false

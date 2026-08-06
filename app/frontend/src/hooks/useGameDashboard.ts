@@ -14,6 +14,7 @@ import {
   getRoom,
   getStory,
   getTask,
+  getTaskAdvice,
   getTasks,
   postAction,
 } from '../api/game'
@@ -23,6 +24,7 @@ export const gameQueryKey = (userId?: string) =>
   userId ? (['game', userId] as const) : (['game'] as const)
 
 export const gameQueryKeys = {
+  advice: (userId: string) => [...gameQueryKey(userId), 'advice'] as const,
   achievements: (userId: string) =>
     [...gameQueryKey(userId), 'achievements'] as const,
   daily: (userId: string) =>
@@ -111,6 +113,18 @@ export const useGameTask = (
     enabled: Boolean(accessToken && userId && taskId),
   })
 
+export const useTaskAdvice = (
+  accessToken: string | null,
+  userId: string | undefined,
+  taskId: string | null,
+) =>
+  useQuery({
+    queryKey: [...gameQueryKeys.advice(userId ?? ''), taskId],
+    queryFn: () => getTaskAdvice(accessToken ?? '', taskId ?? ''),
+    enabled: Boolean(accessToken && userId && taskId),
+    staleTime: 5 * 60 * 1000,
+  })
+
 export const invalidateGameQueriesForEvents = async (
   queryClient: QueryClient,
   userId: string | undefined,
@@ -127,12 +141,14 @@ export const invalidateGameQueriesForEvents = async (
       case 'TASK_PROGRESS_UPDATED':
       case 'TASK_COMPLETED':
         affectedQueries.add('tasks')
+        affectedQueries.add('advice')
         break
       case 'XP_EARNED':
       case 'PET_LEVEL_UP':
       case 'PET_MOOD_CHANGED':
       case 'PET_CHARACTER_UNLOCKED':
         affectedQueries.add('pet')
+        affectedQueries.add('advice')
         break
       case 'ROOM_ITEM_UNLOCKED':
         affectedQueries.add('room')

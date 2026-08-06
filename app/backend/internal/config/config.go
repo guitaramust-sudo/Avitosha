@@ -22,6 +22,9 @@ const (
 
 	defaultAccessTokenTTL  = 15 * time.Minute
 	defaultRefreshTokenTTL = 30 * 24 * time.Hour
+	defaultProxyAPIBaseURL = "https://api.proxyapi.ru/openrouter/v1"
+	defaultProxyAPIModel   = "qwen/qwen-2.5-7b-instruct"
+	defaultProxyAPITimeout = 4 * time.Second
 )
 
 type Config struct {
@@ -39,6 +42,10 @@ type Config struct {
 	HTTPIdleTimeout  time.Duration
 	AccessTokenTTL   time.Duration
 	RefreshTokenTTL  time.Duration
+	ProxyAPIKey      string
+	ProxyAPIBaseURL  string
+	ProxyAPIModel    string
+	ProxyAPITimeout  time.Duration
 }
 
 func Load() (Config, error) {
@@ -61,6 +68,10 @@ func LoadFromEnv(getenv func(string) string) (Config, error) {
 		HTTPIdleTimeout:  60 * time.Second,
 		AccessTokenTTL:   defaultAccessTokenTTL,
 		RefreshTokenTTL:  defaultRefreshTokenTTL,
+		ProxyAPIKey:      strings.TrimSpace(getenv("PROXYAPI_API_KEY")),
+		ProxyAPIBaseURL:  envOrDefault(getenv, "PROXYAPI_BASE_URL", defaultProxyAPIBaseURL),
+		ProxyAPIModel:    envOrDefault(getenv, "PROXYAPI_MODEL", defaultProxyAPIModel),
+		ProxyAPITimeout:  defaultProxyAPITimeout,
 	}
 
 	if value := strings.TrimSpace(getenv("SHUTDOWN_TIMEOUT")); value != "" {
@@ -83,6 +94,13 @@ func LoadFromEnv(getenv func(string) string) (Config, error) {
 			return Config{}, fmt.Errorf("REFRESH_TOKEN_TTL must be a duration: %w", err)
 		}
 		cfg.RefreshTokenTTL = ttl
+	}
+	if value := strings.TrimSpace(getenv("PROXYAPI_TIMEOUT")); value != "" {
+		timeout, err := time.ParseDuration(value)
+		if err != nil {
+			return Config{}, fmt.Errorf("PROXYAPI_TIMEOUT must be a duration: %w", err)
+		}
+		cfg.ProxyAPITimeout = timeout
 	}
 
 	if err := cfg.Validate(); err != nil {
@@ -132,6 +150,15 @@ func (cfg Config) Validate() error {
 	}
 	if cfg.RefreshTokenTTL <= 0 {
 		return fmt.Errorf("REFRESH_TOKEN_TTL must be positive")
+	}
+	if cfg.ProxyAPIBaseURL == "" {
+		return fmt.Errorf("PROXYAPI_BASE_URL must not be empty")
+	}
+	if cfg.ProxyAPIModel == "" {
+		return fmt.Errorf("PROXYAPI_MODEL must not be empty")
+	}
+	if cfg.ProxyAPITimeout <= 0 {
+		return fmt.Errorf("PROXYAPI_TIMEOUT must be positive")
 	}
 
 	return nil

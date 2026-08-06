@@ -21,6 +21,10 @@ func TestLoadFromEnv(t *testing.T) {
 		"SHUTDOWN_TIMEOUT":  "3s",
 		"ACCESS_TOKEN_TTL":  "20m",
 		"REFRESH_TOKEN_TTL": "720h",
+		"PROXYAPI_API_KEY":  "proxy-key",
+		"PROXYAPI_BASE_URL": "https://proxy.example/openrouter/v1",
+		"PROXYAPI_MODEL":    "qwen/test-model",
+		"PROXYAPI_TIMEOUT":  "2s",
 	}
 
 	cfg, err := LoadFromEnv(mapGetter(env))
@@ -48,6 +52,12 @@ func TestLoadFromEnv(t *testing.T) {
 	}
 	if cfg.RefreshTokenTTL != 30*24*time.Hour {
 		t.Fatalf("RefreshTokenTTL = %s, want 720h", cfg.RefreshTokenTTL)
+	}
+	if cfg.ProxyAPIKey != "proxy-key" || cfg.ProxyAPIBaseURL != "https://proxy.example/openrouter/v1" {
+		t.Fatalf("ProxyAPI config = key %q, url %q", cfg.ProxyAPIKey, cfg.ProxyAPIBaseURL)
+	}
+	if cfg.ProxyAPIModel != "qwen/test-model" || cfg.ProxyAPITimeout != 2*time.Second {
+		t.Fatalf("ProxyAPI model = %q, timeout = %s", cfg.ProxyAPIModel, cfg.ProxyAPITimeout)
 	}
 }
 
@@ -80,6 +90,24 @@ func TestLoadFromEnvUsesDefaults(t *testing.T) {
 	}
 	if cfg.RefreshTokenTTL != defaultRefreshTokenTTL {
 		t.Fatalf("RefreshTokenTTL = %s, want %s", cfg.RefreshTokenTTL, defaultRefreshTokenTTL)
+	}
+	if cfg.ProxyAPIBaseURL != defaultProxyAPIBaseURL || cfg.ProxyAPIModel != defaultProxyAPIModel {
+		t.Fatalf("ProxyAPI defaults = url %q, model %q", cfg.ProxyAPIBaseURL, cfg.ProxyAPIModel)
+	}
+	if cfg.ProxyAPITimeout != defaultProxyAPITimeout {
+		t.Fatalf("ProxyAPITimeout = %s, want %s", cfg.ProxyAPITimeout, defaultProxyAPITimeout)
+	}
+}
+
+func TestLoadFromEnvRejectsInvalidProxyAPITimeout(t *testing.T) {
+	t.Parallel()
+	_, err := LoadFromEnv(mapGetter(map[string]string{
+		"HTTP_ADDR": "127.0.0.1:8080", "DATABASE_URL": "postgres://test",
+		"FRONTEND_ORIGIN": "http://localhost:3000", "JWT_SIGNING_KEY": "test-key",
+		"JWT_ISSUER": "avitosha", "JWT_AUDIENCE": "avitosha-web", "PROXYAPI_TIMEOUT": "0s",
+	}))
+	if err == nil || !strings.Contains(err.Error(), "PROXYAPI_TIMEOUT") {
+		t.Fatalf("error = %v, want PROXYAPI_TIMEOUT", err)
 	}
 }
 

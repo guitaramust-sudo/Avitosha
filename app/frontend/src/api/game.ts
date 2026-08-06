@@ -13,6 +13,7 @@ import {
   type RoomItem,
   type RoomResponse,
   type StoryResponse,
+  type TaskAdvice,
 } from '../types/game'
 import { apiRequest } from './client'
 
@@ -78,6 +79,12 @@ export const getTask = async (accessToken: string, taskId: string) => {
 
   return normalizedTask
 }
+
+export const getTaskAdvice = (accessToken: string, taskId: string) =>
+  apiRequest<TaskAdvice>(
+    `/api/v1/tasks/${encodeURIComponent(taskId)}/advice`,
+    authorized(accessToken),
+  )
 
 export const getRoom = async (accessToken: string): Promise<RoomResponse> => {
   type RawRoomItem = Omit<RoomItem, 'code' | 'unlockTaskCode'> & {

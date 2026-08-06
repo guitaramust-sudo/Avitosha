@@ -111,6 +111,12 @@ export interface GameTask {
   storyStage: number | null
 }
 
+export interface TaskAdvice {
+  taskId: string
+  text: string
+  generatedByAi: boolean
+}
+
 export interface RoomItem {
   code: RoomItemCode
   name: string

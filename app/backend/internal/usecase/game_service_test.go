@@ -3,6 +3,8 @@ package usecase
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -57,6 +59,17 @@ type gameTestRepository struct {
 	catalog             []model.RewardCatalogItem
 	templates           []model.DailyQuestTemplate
 	questReadsForUpdate int
+}
+
+type gameTestAdviceGenerator struct {
+	input AdviceGenerationInput
+	text  string
+	err   error
+}
+
+func (generator *gameTestAdviceGenerator) Generate(_ context.Context, input AdviceGenerationInput) (string, error) {
+	generator.input = input
+	return generator.text, generator.err
 }
 
 func newGameTestRepository(userID uuid.UUID) *gameTestRepository {
@@ -345,6 +358,58 @@ func (repository *gameTestRepository) AssignStoryTask(
 		repository.userTasks[task.ID] = progress
 	}
 	return model.TaskProgress{Task: task, Progress: progress}, nil
+}
+
+func (repository *gameTestRepository) GetTaskProgress(
+	_ context.Context,
+	_ uuid.UUID,
+	taskID uuid.UUID,
+) (model.TaskProgress, error) {
+	progress, ok := repository.userTasks[taskID]
+	if !ok {
+		return model.TaskProgress{}, ErrTaskNotFound
+	}
+	return model.TaskProgress{Task: repository.taskByID(taskID), Progress: progress}, nil
+}
+
+func TestGetTaskAdviceUsesGeneratorContext(t *testing.T) {
+	userID := uuid.New()
+	repository := newGameTestRepository(userID)
+	generator := &gameTestAdviceGenerator{text: "  Сравни фотографии и условия доставки.  "}
+	service := NewGameService(GameServiceDependencies{
+		Repository: repository, TxManager: &gameTestTxManager{}, IDGenerator: uuid.New, Advice: generator,
+	})
+	now := time.Date(2026, 8, 5, 12, 0, 0, 0, time.UTC)
+	taskID := repository.tasksByStage[1].ID
+
+	advice, err := service.GetTaskAdvice(context.Background(), userID, taskID, now)
+	if err != nil {
+		t.Fatalf("GetTaskAdvice() error = %v", err)
+	}
+	if advice.Text != "Сравни фотографии и условия доставки." || !advice.GeneratedByAI {
+		t.Fatalf("advice = %+v", advice)
+	}
+	if generator.input.PetName != DefaultPetName || generator.input.TaskTitle != "Стол" || generator.input.Target != 5 {
+		t.Fatalf("generator input = %+v", generator.input)
+	}
+}
+
+func TestGetTaskAdviceFallsBackWhenGeneratorFails(t *testing.T) {
+	userID := uuid.New()
+	repository := newGameTestRepository(userID)
+	service := NewGameService(GameServiceDependencies{
+		Repository: repository, TxManager: &gameTestTxManager{}, IDGenerator: uuid.New,
+		Advice: &gameTestAdviceGenerator{err: errors.New("provider unavailable")},
+	})
+	taskID := repository.tasksByStage[1].ID
+
+	advice, err := service.GetTaskAdvice(context.Background(), userID, taskID, time.Now())
+	if err != nil {
+		t.Fatalf("GetTaskAdvice() error = %v", err)
+	}
+	if advice.GeneratedByAI || advice.Text == "" || !strings.Contains(advice.Text, "5 объявлений") {
+		t.Fatalf("fallback advice = %+v", advice)
+	}
 }
 
 func (repository *gameTestRepository) FindMatchingActiveTasksForUpdate(
