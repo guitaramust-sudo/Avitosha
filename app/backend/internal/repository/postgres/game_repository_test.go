@@ -278,6 +278,44 @@ SELECT COUNT(*) FROM reward_transactions WHERE user_id = $1
 	}
 }
 
+func TestFirstActionCreditsStreakRewardWithoutSQLTypeConflict(t *testing.T) {
+	pool := newTestPool(t)
+	userRepository := postgres.NewUserRepository(pool)
+	user, err := userRepository.Create(context.Background(), usecase.CreateUserParams{
+		Email: "streak-reward@example.com", PasswordHash: "hashed-password",
+	})
+	if err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+
+	repository := postgres.NewGameRepository(pool)
+	service := usecase.NewGameService(usecase.GameServiceDependencies{
+		Repository: repository, TxManager: postgres.NewTxManager(pool), IDGenerator: uuid.New,
+	})
+	now := time.Now().UTC().Truncate(time.Microsecond)
+	category := "FURNITURE"
+
+	result, err := service.ProcessAction(context.Background(), usecase.ProcessActionCommand{
+		UserID: user.ID, EventID: uuid.New(), ActionType: model.ActionTypeAdViewed,
+		EntityID: stringPointer("advert-first"), Category: &category, Metadata: json.RawMessage(`{}`),
+		OccurredAt: now, Now: now,
+	})
+	if err != nil {
+		t.Fatalf("ProcessAction() error = %v", err)
+	}
+	if result.Duplicate {
+		t.Fatal("first action was unexpectedly marked as duplicate")
+	}
+
+	balances, err := repository.ListRewardBalances(context.Background(), user.ID)
+	if err != nil {
+		t.Fatalf("list reward balances: %v", err)
+	}
+	if len(balances) != 1 || balances[0].Balance != 2 || balances[0].EarnedTotal != 2 {
+		t.Fatalf("reward balances = %+v, want streak reward balance 2", balances)
+	}
+}
+
 func TestGameRepositoryRoomUnlockIsIdempotent(t *testing.T) {
 	pool := newTestPool(t)
 	userRepository := postgres.NewUserRepository(pool)
