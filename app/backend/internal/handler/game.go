@@ -31,6 +31,7 @@ type GameUseCase interface {
 	GetLeaderboard(context.Context, uuid.UUID, int, time.Time) (usecase.Leaderboard, error)
 	GetAchievements(context.Context, uuid.UUID, time.Time) ([]model.AchievementProgress, error)
 	GetRewardBalances(context.Context, uuid.UUID, time.Time) ([]model.RewardBalance, error)
+	GetRewardWallet(context.Context, uuid.UUID, time.Time) (usecase.RewardWallet, error)
 	ProcessAction(context.Context, usecase.ProcessActionCommand) (usecase.ProcessActionResult, error)
 }
 
@@ -219,6 +220,19 @@ func (handler GameHandler) GetRewardBalances(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	writeJSON(w, http.StatusOK, rewardBalanceListDTO{Balances: newRewardBalanceDTOs(balances)})
+}
+
+func (handler GameHandler) GetRewardWallet(w http.ResponseWriter, r *http.Request) {
+	userID, ok := handler.requireUser(w, r)
+	if !ok {
+		return
+	}
+	wallet, err := handler.service.GetRewardWallet(r.Context(), userID, handler.now())
+	if err != nil {
+		handler.writeError(w, r, "get_reward_wallet", err)
+		return
+	}
+	writeJSON(w, http.StatusOK, newRewardWalletDTO(wallet))
 }
 
 func (handler GameHandler) requireUser(w http.ResponseWriter, r *http.Request) (uuid.UUID, bool) {

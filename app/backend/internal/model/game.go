@@ -231,12 +231,35 @@ type RewardBalance struct {
 	UpdatedAt   time.Time
 }
 
+type RewardSourceKind string
+
+const (
+	RewardSourceTaskCompletion RewardSourceKind = "TASK_COMPLETION"
+	RewardSourceDailyQuest     RewardSourceKind = "DAILY_QUEST"
+	RewardSourceStreak         RewardSourceKind = "STREAK"
+)
+
 type RewardCredit struct {
-	ID         uuid.UUID
-	UserID     uuid.UUID
-	ActionID   uuid.UUID
-	TaskID     uuid.UUID
-	RewardType string
-	Amount     int
-	CreatedAt  time.Time
+	ID          uuid.UUID
+	UserID      uuid.UUID
+	ActionID    uuid.UUID
+	TaskID      *uuid.UUID
+	RewardType  string
+	Amount      int
+	SourceKind  RewardSourceKind
+	SourceRef   string
+	SourceTitle *string
+	CreatedAt   time.Time
+}
+
+type RewardCatalogItem struct {
+	Code        string
+	Title       string
+	Description string
+	RewardType  string
+	PerkType    string
+	Threshold   int64
+	SortOrder   int
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }

@@ -214,6 +214,7 @@ type dailySummaryDTO struct {
 	WeeklyScoreDelta  int           `json:"weeklyScoreDelta"`
 	WeeklyPosition    *int          `json:"weeklyPosition"`
 	PetMood           model.PetMood `json:"petMood"`
+	Retention         retentionDTO  `json:"retention"`
 }
 
 func newDailySummaryDTO(summary usecase.DailySummary) dailySummaryDTO {
@@ -227,7 +228,100 @@ func newDailySummaryDTO(summary usecase.DailySummary) dailySummaryDTO {
 		StoryStageAfter:   summary.Progress.StoryStageAfter,
 		WeeklyScoreDelta:  summary.Progress.WeeklyScoreDelta,
 		WeeklyPosition:    summary.WeeklyPosition, PetMood: summary.Progress.PetMood,
+		Retention: newRetentionDTO(summary.Retention),
 	}
+}
+
+type retentionDTO struct {
+	Streak     streakDTO          `json:"streak"`
+	DailyQuest dailyQuestDTO      `json:"dailyQuest"`
+	Tomorrow   tomorrowPreviewDTO `json:"tomorrow"`
+}
+
+type streakDTO struct {
+	Current        int            `json:"current"`
+	Longest        int            `json:"longest"`
+	LastActiveDate *string        `json:"lastActiveDate"`
+	ActiveToday    bool           `json:"activeToday"`
+	Reward         rewardOfferDTO `json:"reward"`
+}
+
+type dailyQuestDTO struct {
+	Date        string                 `json:"date"`
+	Code        string                 `json:"code"`
+	Title       string                 `json:"title"`
+	Description string                 `json:"description"`
+	ActionType  model.ActionType       `json:"actionType"`
+	Category    *string                `json:"category"`
+	Progress    int                    `json:"progress"`
+	Target      int                    `json:"target"`
+	Status      model.DailyQuestStatus `json:"status"`
+	Reward      rewardOfferDTO         `json:"reward"`
+}
+
+type rewardOfferDTO struct {
+	Type   string                 `json:"type"`
+	Amount int                    `json:"amount"`
+	Source model.RewardSourceKind `json:"source"`
+}
+
+type tomorrowPreviewDTO struct {
+	Date              string                `json:"date"`
+	StreakAfterReturn int                   `json:"streakAfterReturn"`
+	StreakReward      rewardOfferDTO        `json:"streakReward"`
+	DailyQuest        tomorrowDailyQuestDTO `json:"dailyQuest"`
+	NextGoal          *rewardGoalDTO        `json:"nextGoal"`
+}
+
+type tomorrowDailyQuestDTO struct {
+	Code        string           `json:"code"`
+	Title       string           `json:"title"`
+	Description string           `json:"description"`
+	ActionType  model.ActionType `json:"actionType"`
+	Category    *string          `json:"category"`
+	Target      int              `json:"target"`
+	Reward      rewardOfferDTO   `json:"reward"`
+}
+
+func newRetentionDTO(retention usecase.RetentionOverview) retentionDTO {
+	var lastActiveDate *string
+	if retention.Streak.LastActiveDate != nil {
+		formatted := retention.Streak.LastActiveDate.UTC().Format(time.DateOnly)
+		lastActiveDate = &formatted
+	}
+	return retentionDTO{
+		Streak: streakDTO{
+			Current: retention.Streak.Current, Longest: retention.Streak.Longest,
+			LastActiveDate: lastActiveDate, ActiveToday: retention.Streak.ActiveToday,
+			Reward: newRewardOfferDTO(retention.Streak.Reward),
+		},
+		DailyQuest: dailyQuestDTO{
+			Date: retention.DailyQuest.Date.UTC().Format(time.DateOnly),
+			Code: retention.DailyQuest.Code, Title: retention.DailyQuest.Title,
+			Description: retention.DailyQuest.Description, ActionType: retention.DailyQuest.ActionType,
+			Category: retention.DailyQuest.Category, Progress: retention.DailyQuest.Progress,
+			Target: retention.DailyQuest.Target, Status: retention.DailyQuest.Status,
+			Reward: newRewardOfferDTO(retention.DailyQuest.Reward),
+		},
+		Tomorrow: tomorrowPreviewDTO{
+			Date:              retention.Tomorrow.Date.UTC().Format(time.DateOnly),
+			StreakAfterReturn: retention.Tomorrow.StreakAfterReturn,
+			StreakReward:      newRewardOfferDTO(retention.Tomorrow.StreakReward),
+			DailyQuest: tomorrowDailyQuestDTO{
+				Code: retention.Tomorrow.DailyQuest.Code, Title: retention.Tomorrow.DailyQuest.Title,
+				Description: retention.Tomorrow.DailyQuest.Description,
+				ActionType:  retention.Tomorrow.DailyQuest.ActionType,
+				Category:    retention.Tomorrow.DailyQuest.Category,
+				Target:      retention.Tomorrow.DailyQuest.Target,
+				Reward:      newRewardOfferDTO(retention.Tomorrow.DailyQuest.Reward),
+			},
+			NextGoal: newRewardGoalDTO(retention.Tomorrow.NextGoal),
+		},
+	}
+}
+
+func newRewardOfferDTO(offer usecase.RewardOffer) rewardOfferDTO {
+	return rewardOfferDTO{Type: offer.Type, Amount: offer.Amount, Source: offer.Source}
 }
 
 type leaderboardDTO struct {
@@ -296,6 +390,63 @@ func newRewardBalanceDTOs(balances []model.RewardBalance) []rewardBalanceDTO {
 		}
 	}
 	return result
+}
+
+type rewardWalletDTO struct {
+	Balance  rewardBalanceDTO       `json:"balance"`
+	Catalog  []rewardCatalogItemDTO `json:"catalog"`
+	NextGoal *rewardGoalDTO         `json:"nextGoal"`
+}
+
+type rewardCatalogItemDTO struct {
+	Code            string `json:"code"`
+	Title           string `json:"title"`
+	Description     string `json:"description"`
+	RewardType      string `json:"rewardType"`
+	PerkType        string `json:"perkType"`
+	Threshold       int64  `json:"threshold"`
+	Unlocked        bool   `json:"unlocked"`
+	ProgressCurrent int64  `json:"progressCurrent"`
+	ProgressTarget  int64  `json:"progressTarget"`
+	Remaining       int64  `json:"remaining"`
+}
+
+type rewardGoalDTO struct {
+	Code       string `json:"code"`
+	Title      string `json:"title"`
+	RewardType string `json:"rewardType"`
+	PerkType   string `json:"perkType"`
+	Current    int64  `json:"current"`
+	Target     int64  `json:"target"`
+	Remaining  int64  `json:"remaining"`
+}
+
+func newRewardWalletDTO(wallet usecase.RewardWallet) rewardWalletDTO {
+	catalog := make([]rewardCatalogItemDTO, len(wallet.Catalog))
+	for index, item := range wallet.Catalog {
+		catalog[index] = rewardCatalogItemDTO{
+			Code: item.Item.Code, Title: item.Item.Title, Description: item.Item.Description,
+			RewardType: item.Item.RewardType, PerkType: item.Item.PerkType,
+			Threshold: item.Item.Threshold, Unlocked: item.Unlocked,
+			ProgressCurrent: item.ProgressCurrent, ProgressTarget: item.ProgressTarget,
+			Remaining: item.Remaining,
+		}
+	}
+	return rewardWalletDTO{
+		Balance:  rewardBalanceDTO{Type: wallet.Balance.RewardType, Balance: wallet.Balance.Balance, EarnedTotal: wallet.Balance.EarnedTotal, UpdatedAt: wallet.Balance.UpdatedAt},
+		Catalog:  catalog,
+		NextGoal: newRewardGoalDTO(wallet.NextGoal),
+	}
+}
+
+func newRewardGoalDTO(goal *usecase.RewardGoal) *rewardGoalDTO {
+	if goal == nil {
+		return nil
+	}
+	return &rewardGoalDTO{
+		Code: goal.Item.Code, Title: goal.Item.Title, RewardType: goal.Item.RewardType,
+		PerkType: goal.Item.PerkType, Current: goal.Current, Target: goal.Target, Remaining: goal.Remaining,
+	}
 }
 
 func newAchievementsDTO(items []model.AchievementProgress) achievementsDTO {

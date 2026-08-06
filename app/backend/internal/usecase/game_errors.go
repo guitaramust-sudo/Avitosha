@@ -9,6 +9,7 @@ var (
 	ErrStoryNotFound            = errors.New("story not found")
 	ErrActionNotFound           = errors.New("action not found")
 	ErrDailyProgressNotFound    = errors.New("daily progress not found")
+	ErrDailyQuestNotFound       = errors.New("daily quest not found")
 	ErrLeaderboardEntryNotFound = errors.New("leaderboard entry not found")
 	ErrEventIDConflict          = errors.New("event ID belongs to another action")
 	ErrInvalidAction            = errors.New("invalid action")

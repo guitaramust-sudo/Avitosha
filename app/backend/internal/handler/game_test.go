@@ -28,6 +28,7 @@ type fakeGameUseCase struct {
 	getLeaderboardFunc    func(context.Context, uuid.UUID, int, time.Time) (usecase.Leaderboard, error)
 	getAchievementsFunc   func(context.Context, uuid.UUID, time.Time) ([]model.AchievementProgress, error)
 	getRewardBalancesFunc func(context.Context, uuid.UUID, time.Time) ([]model.RewardBalance, error)
+	getRewardWalletFunc   func(context.Context, uuid.UUID, time.Time) (usecase.RewardWallet, error)
 	processActionFunc     func(context.Context, usecase.ProcessActionCommand) (usecase.ProcessActionResult, error)
 }
 
@@ -71,6 +72,10 @@ func (fake fakeGameUseCase) GetRewardBalances(ctx context.Context, userID uuid.U
 	return fake.getRewardBalancesFunc(ctx, userID, now)
 }
 
+func (fake fakeGameUseCase) GetRewardWallet(ctx context.Context, userID uuid.UUID, now time.Time) (usecase.RewardWallet, error) {
+	return fake.getRewardWalletFunc(ctx, userID, now)
+}
+
 func (fake fakeGameUseCase) ProcessAction(ctx context.Context, command usecase.ProcessActionCommand) (usecase.ProcessActionResult, error) {
 	return fake.processActionFunc(ctx, command)
 }
@@ -91,6 +96,7 @@ func TestGameRoutesRequireIdentity(t *testing.T) {
 		{http.MethodGet, "/api/v1/leaderboard"},
 		{http.MethodGet, "/api/v1/achievements"},
 		{http.MethodGet, "/api/v1/rewards/balance"},
+		{http.MethodGet, "/api/v1/rewards/wallet"},
 	} {
 		request := httptest.NewRequestWithContext(context.Background(), route.method, route.path, nil)
 		recorder := httptest.NewRecorder()
@@ -272,6 +278,48 @@ func TestGetRewardBalancesReturnsCurrentAndLifetimeAmounts(t *testing.T) {
 	}
 }
 
+func TestGetRewardWalletReturnsCatalogAndNextGoal(t *testing.T) {
+	userID := uuid.New()
+	now := time.Date(2026, 8, 5, 12, 0, 0, 0, time.UTC)
+	service := completeFakeGameUseCase()
+	service.getRewardWalletFunc = func(_ context.Context, gotUserID uuid.UUID, gotNow time.Time) (usecase.RewardWallet, error) {
+		if gotUserID != userID || !gotNow.Equal(now) {
+			t.Fatalf("GetRewardWallet(%s, %v)", gotUserID, gotNow)
+		}
+		return usecase.RewardWallet{
+			Balance: model.RewardBalance{RewardType: usecase.DefaultRewardType, Balance: 92, EarnedTotal: 92, UpdatedAt: now},
+			Catalog: []usecase.RewardCatalogEntry{{
+				Item: model.RewardCatalogItem{
+					Code: "PROMO_BOOST", Title: "Boost", Description: "Promotion bonus",
+					RewardType: usecase.DefaultRewardType, PerkType: "PROMOTION", Threshold: 75,
+				},
+				Unlocked: true, ProgressCurrent: 75, ProgressTarget: 75,
+			}},
+			NextGoal: &usecase.RewardGoal{
+				Item: model.RewardCatalogItem{
+					Code: "AUTOTEKA_CHECK", Title: "Autoteka", RewardType: usecase.DefaultRewardType,
+					PerkType: "AUTOTEKA",
+				},
+				Current: 92, Target: 110, Remaining: 18,
+			},
+		}, nil
+	}
+	router := newGameTestRouter(RouterDependencies{GameService: service, Now: func() time.Time { return now }})
+	request := httptest.NewRequestWithContext(context.Background(), http.MethodGet, "/api/v1/rewards/wallet", nil)
+	request.Header.Set("X-User-ID", userID.String())
+	recorder := httptest.NewRecorder()
+
+	router.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", recorder.Code, recorder.Body.String())
+	}
+	if !bytes.Contains(recorder.Body.Bytes(), []byte(`"code":"AUTOTEKA_CHECK"`)) ||
+		!bytes.Contains(recorder.Body.Bytes(), []byte(`"earnedTotal":92`)) {
+		t.Fatalf("body = %s", recorder.Body.String())
+	}
+}
+
 func TestRoomProgressCountsOnlyFirstStoryItems(t *testing.T) {
 	items := make([]model.RoomItemProgress, 0, 9)
 	for index, code := range []string{"BOX", "DESK", "LAMP", "CHAIR", "PLANT", "POSTER", "RUG", "SHELF", "CLOCK"} {
@@ -350,7 +398,26 @@ func TestProgressRoutesReturnDailyLeaderboardAndAchievements(t *testing.T) {
 			Date: now, ActionsCount: 7, CompletedTasks: 2, EarnedXP: 60,
 			LevelBefore: 1, LevelAfter: 2, UnlockedRoomItems: []string{"DESK", "LAMP"},
 			StoryStageBefore: 0, StoryStageAfter: 2, WeeklyScoreDelta: 200, PetMood: model.PetMoodProud,
-		}, WeeklyPosition: gameIntPointer(14)}, nil
+		}, WeeklyPosition: gameIntPointer(14), Retention: usecase.RetentionOverview{
+			Streak: usecase.StreakOverview{
+				Current: 4, Longest: 7, LastActiveDate: gameTimePointer(now), ActiveToday: true,
+				Reward: usecase.RewardOffer{Type: usecase.DefaultRewardType, Amount: 2, Source: model.RewardSourceStreak},
+			},
+			DailyQuest: usecase.DailyQuestOverview{
+				Date: now, Code: "DAILY_CONTACT", Title: "Contact seller", Description: "Send a message",
+				ActionType: model.ActionTypeMessageSent, Progress: 1, Target: 1, Status: model.DailyQuestStatusRewarded,
+				Reward: usecase.RewardOffer{Type: usecase.DefaultRewardType, Amount: 8, Source: model.RewardSourceDailyQuest},
+			},
+			Tomorrow: usecase.TomorrowPreview{
+				Date: now.AddDate(0, 0, 1), StreakAfterReturn: 5,
+				StreakReward: usecase.RewardOffer{Type: usecase.DefaultRewardType, Amount: 2, Source: model.RewardSourceStreak},
+				DailyQuest: usecase.DailyQuestPreview{
+					Code: "DAILY_DISCOVER", Title: "Discover", Description: "View 3 ads",
+					ActionType: model.ActionTypeAdViewed, Target: 3,
+					Reward: usecase.RewardOffer{Type: usecase.DefaultRewardType, Amount: 5, Source: model.RewardSourceDailyQuest},
+				},
+			},
+		}}, nil
 	}
 	service.getLeaderboardFunc = func(_ context.Context, gotUserID uuid.UUID, limit int, _ time.Time) (usecase.Leaderboard, error) {
 		if gotUserID != userID || limit != 10 {
@@ -426,6 +493,9 @@ func completeFakeGameUseCase() fakeGameUseCase {
 		getRewardBalancesFunc: func(context.Context, uuid.UUID, time.Time) ([]model.RewardBalance, error) {
 			return nil, nil
 		},
+		getRewardWalletFunc: func(context.Context, uuid.UUID, time.Time) (usecase.RewardWallet, error) {
+			return usecase.RewardWallet{}, nil
+		},
 	}
 }
 
@@ -446,5 +516,9 @@ func newGameTestRouter(overrides RouterDependencies) http.Handler {
 }
 
 func gameIntPointer(value int) *int {
+	return &value
+}
+
+func gameTimePointer(value time.Time) *time.Time {
 	return &value
 }
