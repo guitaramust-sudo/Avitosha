@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/guitaramust-sudo/Avitosha/app/backend/internal/repository/postgres"
 	"github.com/guitaramust-sudo/Avitosha/app/backend/internal/usecase"
 )
@@ -54,6 +56,14 @@ func TestSessionRepositoryCreateAndGetActive(t *testing.T) {
 	}
 	if activeSession.ID != session.ID {
 		t.Fatalf("GetActiveByRefreshTokenHash() session ID = %s, want %s", activeSession.ID, session.ID)
+	}
+
+	activeByID, err := sessionRepository.GetActiveByIDAndUserID(context.Background(), session.ID, user.ID, now)
+	if err != nil {
+		t.Fatalf("GetActiveByIDAndUserID() error = %v", err)
+	}
+	if activeByID.ID != session.ID {
+		t.Fatalf("GetActiveByIDAndUserID() session ID = %s, want %s", activeByID.ID, session.ID)
 	}
 }
 
@@ -155,6 +165,11 @@ func TestSessionRepositoryRevoke(t *testing.T) {
 	if !errors.Is(err, usecase.ErrSessionNotFound) {
 		t.Fatalf("GetActiveByRefreshTokenHash() error = %v, want ErrSessionNotFound", err)
 	}
+
+	_, err = sessionRepository.GetActiveByIDAndUserID(context.Background(), session.ID, user.ID, now.Add(2*time.Minute))
+	if !errors.Is(err, usecase.ErrSessionNotFound) {
+		t.Fatalf("GetActiveByIDAndUserID() error = %v, want ErrSessionNotFound", err)
+	}
 }
 
 func TestSessionRepositoryExpiredSessionIsNotActive(t *testing.T) {
@@ -184,5 +199,10 @@ func TestSessionRepositoryExpiredSessionIsNotActive(t *testing.T) {
 	_, err = sessionRepository.GetActiveByRefreshTokenHash(context.Background(), []byte("expired-hash"), now)
 	if !errors.Is(err, usecase.ErrSessionNotFound) {
 		t.Fatalf("GetActiveByRefreshTokenHash() error = %v, want ErrSessionNotFound", err)
+	}
+
+	_, err = sessionRepository.GetActiveByIDAndUserID(context.Background(), uuid.New(), user.ID, now)
+	if !errors.Is(err, usecase.ErrSessionNotFound) {
+		t.Fatalf("GetActiveByIDAndUserID() missing session error = %v, want ErrSessionNotFound", err)
 	}
 }
