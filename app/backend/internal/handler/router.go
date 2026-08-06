@@ -21,21 +21,21 @@ type AuthService interface {
 	GetCurrentUser(ctx context.Context, params usecase.GetCurrentUserParams) (model.User, error)
 }
 
-type AccessTokenVerifier interface {
-	VerifyAccessToken(token string) (model.AuthenticatedUser, error)
+type AccessTokenAuthenticator interface {
+	AuthenticateAccessToken(ctx context.Context, token string) (model.AuthenticatedUser, error)
 }
 
 type RouterDependencies struct {
-	Logger              *slog.Logger
-	DB                  DatabasePinger
-	AuthService         AuthService
-	AccessTokenVerifier AccessTokenVerifier
-	FrontendOrigin      string
-	RefreshTokenTTL     time.Duration
-	SecureRefreshCookie bool
-	GameService         GameUseCase
-	EventHub            *realtime.Hub
-	Now                 func() time.Time
+	Logger                   *slog.Logger
+	DB                       DatabasePinger
+	AuthService              AuthService
+	AccessTokenAuthenticator AccessTokenAuthenticator
+	FrontendOrigin           string
+	RefreshTokenTTL          time.Duration
+	SecureRefreshCookie      bool
+	GameService              GameUseCase
+	EventHub                 *realtime.Hub
+	Now                      func() time.Time
 }
 
 func NewRouter(deps RouterDependencies) *chi.Mux {
@@ -81,7 +81,7 @@ func mountAPIRoutes(r chi.Router, logger *slog.Logger, deps RouterDependencies) 
 			r.Post("/logout", authHandler.Logout)
 		})
 
-		authenticated := BearerAuth(logger, deps.AccessTokenVerifier)
+		authenticated := BearerAuth(logger, deps.AccessTokenAuthenticator)
 		r.With(authenticated).Get("/me", authHandler.Me)
 
 	})
@@ -89,7 +89,7 @@ func mountAPIRoutes(r chi.Router, logger *slog.Logger, deps RouterDependencies) 
 	gameHandler := NewGameHandler(logger, deps.GameService, deps.Now)
 	webSocketHandler := NewGameWebSocketHandler(logger, deps.EventHub, deps.FrontendOrigin)
 	r.Route("/api/v1", func(r chi.Router) {
-		r.Use(GameIdentity(logger, deps.AccessTokenVerifier))
+		r.Use(GameIdentity(logger, deps.AccessTokenAuthenticator))
 		r.Get("/pet", gameHandler.GetPet)
 		r.Patch("/pet", gameHandler.RenamePet)
 		r.Get("/tasks", gameHandler.ListTasks)

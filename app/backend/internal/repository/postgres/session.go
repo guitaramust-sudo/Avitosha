@@ -64,6 +64,28 @@ WHERE refresh_token_hash = $1
 	return session, nil
 }
 
+func (r *SessionRepository) GetActiveByIDAndUserID(ctx context.Context, sessionID, userID uuid.UUID, now time.Time) (model.Session, error) {
+	session, err := scanSession(executorFromContext(ctx, r.executor).QueryRow(
+		ctx,
+		`
+SELECT id, user_id, refresh_token_hash, expires_at, revoked_at, created_at, last_used_at, user_agent
+FROM sessions
+WHERE id = $1
+  AND user_id = $2
+  AND revoked_at IS NULL
+  AND expires_at > $3
+`,
+		sessionID,
+		userID,
+		now,
+	))
+	if err != nil {
+		return model.Session{}, mapSessionError("get active session by id and user id", err)
+	}
+
+	return session, nil
+}
+
 func (r *SessionRepository) Rotate(ctx context.Context, params usecase.RotateSessionParams) (model.Session, error) {
 	session, err := scanSession(executorFromContext(ctx, r.executor).QueryRow(
 		ctx,

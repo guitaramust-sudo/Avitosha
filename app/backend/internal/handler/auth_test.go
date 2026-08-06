@@ -14,7 +14,6 @@ import (
 
 	"github.com/google/uuid"
 
-	backendauth "github.com/guitaramust-sudo/Avitosha/app/backend/internal/auth"
 	"github.com/guitaramust-sudo/Avitosha/app/backend/internal/model"
 	"github.com/guitaramust-sudo/Avitosha/app/backend/internal/usecase"
 )
@@ -302,9 +301,9 @@ func TestMeWithInvalidToken(t *testing.T) {
 	t.Parallel()
 
 	router := newTestRouter(t, testRouterConfig{
-		verifier: fakeAccessTokenVerifier{
-			verifyFunc: func(_ string) (model.AuthenticatedUser, error) {
-				return model.AuthenticatedUser{}, backendauth.ErrInvalidAccessToken
+		authenticator: fakeAccessTokenAuthenticator{
+			authenticateFunc: func(_ context.Context, _ string) (model.AuthenticatedUser, error) {
+				return model.AuthenticatedUser{}, usecase.ErrUnauthorized
 			},
 		},
 	})
@@ -338,8 +337,8 @@ func TestMeSuccess(t *testing.T) {
 				}, nil
 			},
 		},
-		verifier: fakeAccessTokenVerifier{
-			verifyFunc: func(token string) (model.AuthenticatedUser, error) {
+		authenticator: fakeAccessTokenAuthenticator{
+			authenticateFunc: func(_ context.Context, token string) (model.AuthenticatedUser, error) {
 				if token != "valid-token" {
 					t.Fatalf("token = %q, want valid-token", token)
 				}
@@ -365,6 +364,28 @@ func TestMeSuccess(t *testing.T) {
 	if response.User.Email != "user@example.com" {
 		t.Fatalf("User.Email = %q, want user@example.com", response.User.Email)
 	}
+}
+
+func TestMeWithInactiveSession(t *testing.T) {
+	t.Parallel()
+
+	router := newTestRouter(t, testRouterConfig{
+		authenticator: fakeAccessTokenAuthenticator{
+			authenticateFunc: func(_ context.Context, token string) (model.AuthenticatedUser, error) {
+				if token != "stale-token" {
+					t.Fatalf("token = %q, want stale-token", token)
+				}
+				return model.AuthenticatedUser{}, usecase.ErrUnauthorized
+			},
+		},
+	})
+	req := httptest.NewRequest(http.MethodGet, "/api/me", nil)
+	req.Header.Set("Authorization", "Bearer stale-token")
+	rec := httptest.NewRecorder()
+
+	router.ServeHTTP(rec, req)
+
+	assertErrorResponse(t, rec, http.StatusUnauthorized, unauthorizedCode, "Authentication is required")
 }
 
 func TestInternalErrorsDoNotLeak(t *testing.T) {
@@ -436,7 +457,7 @@ func TestRecoveryMiddlewareReturnsJSON(t *testing.T) {
 type testRouterConfig struct {
 	dbErr               error
 	authService         AuthService
-	verifier            AccessTokenVerifier
+	authenticator       AccessTokenAuthenticator
 	frontendOrigin      string
 	secureRefreshCookie bool
 	refreshTokenTTL     time.Duration
@@ -450,8 +471,8 @@ type fakeAuthService struct {
 	getCurrentUserFunc func(context.Context, usecase.GetCurrentUserParams) (model.User, error)
 }
 
-type fakeAccessTokenVerifier struct {
-	verifyFunc func(string) (model.AuthenticatedUser, error)
+type fakeAccessTokenAuthenticator struct {
+	authenticateFunc func(context.Context, string) (model.AuthenticatedUser, error)
 }
 
 func (f fakeAuthService) Register(ctx context.Context, params usecase.RegisterParams) (usecase.AuthenticationResult, error) {
@@ -489,11 +510,11 @@ func (f fakeAuthService) GetCurrentUser(ctx context.Context, params usecase.GetC
 	return f.getCurrentUserFunc(ctx, params)
 }
 
-func (f fakeAccessTokenVerifier) VerifyAccessToken(token string) (model.AuthenticatedUser, error) {
-	if f.verifyFunc == nil {
+func (f fakeAccessTokenAuthenticator) AuthenticateAccessToken(ctx context.Context, token string) (model.AuthenticatedUser, error) {
+	if f.authenticateFunc == nil {
 		return model.AuthenticatedUser{}, nil
 	}
-	return f.verifyFunc(token)
+	return f.authenticateFunc(ctx, token)
 }
 
 func newTestRouter(t *testing.T, cfg testRouterConfig) http.Handler {
@@ -510,13 +531,13 @@ func newTestRouter(t *testing.T, cfg testRouterConfig) http.Handler {
 	}
 
 	return NewRouter(RouterDependencies{
-		Logger:              slog.New(slog.NewTextHandler(io.Discard, nil)),
-		DB:                  fakeDatabasePinger{err: cfg.dbErr},
-		AuthService:         cfg.authService,
-		AccessTokenVerifier: cfg.verifier,
-		FrontendOrigin:      frontendOrigin,
-		RefreshTokenTTL:     refreshTokenTTL,
-		SecureRefreshCookie: cfg.secureRefreshCookie,
+		Logger:                   slog.New(slog.NewTextHandler(io.Discard, nil)),
+		DB:                       fakeDatabasePinger{err: cfg.dbErr},
+		AuthService:              cfg.authService,
+		AccessTokenAuthenticator: cfg.authenticator,
+		FrontendOrigin:           frontendOrigin,
+		RefreshTokenTTL:          refreshTokenTTL,
+		SecureRefreshCookie:      cfg.secureRefreshCookie,
 	})
 }
 

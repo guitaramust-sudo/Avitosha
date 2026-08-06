@@ -2,17 +2,20 @@ package handler
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"net/http"
 	"strings"
 
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"github.com/google/uuid"
+
+	"github.com/guitaramust-sudo/Avitosha/app/backend/internal/usecase"
 )
 
 type gameUserContextKey struct{}
 
-func GameIdentity(logger *slog.Logger, verifier AccessTokenVerifier) func(http.Handler) http.Handler {
+func GameIdentity(logger *slog.Logger, authenticator AccessTokenAuthenticator) func(http.Handler) http.Handler {
 	if logger == nil {
 		logger = slog.Default()
 	}
@@ -35,14 +38,22 @@ func GameIdentity(logger *slog.Logger, verifier AccessTokenVerifier) func(http.H
 				}
 			}
 			token, err := bearerToken(authorization)
-			if err != nil || verifier == nil {
+			if err != nil {
 				writeErrorResponse(w, http.StatusUnauthorized, unauthorizedCode, "Authentication is required")
 				return
 			}
-			authenticated, err := verifier.VerifyAccessToken(token)
+			authenticated, err := authenticateAccessToken(r, token, authenticator)
 			if err != nil {
-				logger.Warn("game identity verification failed",
-					"request_id", chimiddleware.GetReqID(r.Context()), "path", r.URL.Path)
+				if !errors.Is(err, usecase.ErrUnauthorized) {
+					logger.Error("game identity session check failed",
+						"request_id", chimiddleware.GetReqID(r.Context()), "path", r.URL.Path,
+						"category", "access_token_auth_internal_error", "error", err.Error())
+					writeErrorResponse(w, http.StatusInternalServerError, internalErrorCode, "Internal server error")
+					return
+				}
+				logger.Warn("game identity authentication failed",
+					"request_id", chimiddleware.GetReqID(r.Context()), "path", r.URL.Path,
+					"category", "inactive_or_invalid_access_token")
 				writeErrorResponse(w, http.StatusUnauthorized, unauthorizedCode, "Authentication is required")
 				return
 			}
