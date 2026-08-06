@@ -44,11 +44,13 @@ func (repository *GameRepository) CreditReward(
 	executor := executorFromContext(ctx, repository.executor)
 	tag, err := executor.Exec(ctx, `
 INSERT INTO reward_transactions (
-    id, user_id, action_id, task_id, reward_type, amount, balance_after, created_at
+    id, user_id, action_id, task_id, reward_type, amount, balance_after,
+    source_kind, source_ref, source_title, created_at
 )
-VALUES ($1, $2, $3, $4, $5, $6, $6, $7)
-ON CONFLICT (action_id, task_id, reward_type) DO NOTHING
-`, credit.ID, credit.UserID, credit.ActionID, credit.TaskID, credit.RewardType, credit.Amount, credit.CreatedAt)
+VALUES ($1, $2, $3, $4, $5, $6, $6, $7, $8, $9, $10)
+ON CONFLICT (action_id, reward_type, source_kind, source_ref) DO NOTHING
+`, credit.ID, credit.UserID, credit.ActionID, credit.TaskID, credit.RewardType, credit.Amount,
+		credit.SourceKind, credit.SourceRef, credit.SourceTitle, credit.CreatedAt)
 	if err != nil {
 		return model.RewardBalance{}, false, mapGameStorageError("insert reward transaction", err)
 	}

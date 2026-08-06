@@ -79,6 +79,7 @@ func TestGameAPIContract(t *testing.T) {
 		{path: "/api/v1/leaderboard", method: "GET"},
 		{path: "/api/v1/achievements", method: "GET"},
 		{path: "/api/v1/rewards/balance", method: "GET"},
+		{path: "/api/v1/rewards/wallet", method: "GET"},
 		{path: "/api/v1/ws", method: "GET"},
 	}
 	for _, tt := range tests {
@@ -100,7 +101,7 @@ func TestGameAPIContract(t *testing.T) {
 	for _, schema := range []string{
 		"PetProfile", "RenamePetRequest", "TaskProgress", "ActionRequest", "ActionResult", "RoomResponse",
 		"StoryResponse", "DailySummary", "LeaderboardResponse", "Achievement",
-		"RewardBalance", "RewardBalanceResponse",
+		"RewardBalance", "RewardBalanceResponse", "RewardWallet", "RetentionOverview",
 	} {
 		if _, ok := doc.Components.Schemas[schema]; !ok {
 			t.Errorf("schema %s is missing", schema)

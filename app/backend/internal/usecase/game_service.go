@@ -61,6 +61,7 @@ type CharacterProfile struct {
 type DailySummary struct {
 	Progress       model.DailyProgress
 	WeeklyPosition *int
+	Retention      RetentionOverview
 }
 
 type Leaderboard struct {
@@ -214,6 +215,11 @@ func (service *GameService) GetDailySummary(
 	} else if !errors.Is(err, ErrLeaderboardEntryNotFound) {
 		return DailySummary{}, fmt.Errorf("get daily leaderboard position: %w", err)
 	}
+	retention, err := service.buildRetentionOverview(ctx, userID, now)
+	if err != nil {
+		return DailySummary{}, fmt.Errorf("build retention overview: %w", err)
+	}
+	result.Retention = retention
 	return result, nil
 }
 
@@ -358,6 +364,10 @@ func (service *GameService) ProcessAction(
 		weeklyDelta := WeeklyProgressDelta{}
 		unlockedItems := make([]string, 0, 1)
 		achievementCodes := make([]string, 0, 4)
+		retentionState, _, err := service.ensureRetentionState(txCtx, command.UserID, command.Now, true)
+		if err != nil {
+			return fmt.Errorf("ensure retention state: %w", err)
+		}
 
 		tasks, err := service.repository.FindMatchingActiveTasksForUpdate(
 			txCtx, command.UserID, command.ActionType, command.Category,
@@ -405,6 +415,11 @@ func (service *GameService) ProcessAction(
 				return fmt.Errorf("save task progress: %w", err)
 			}
 		}
+		retentionState, retentionEvents, err := service.applyRetentionForAction(txCtx, action.ID, command, retentionState)
+		if err != nil {
+			return err
+		}
+		events = append(events, retentionEvents...)
 
 		scores, err := service.repository.UpdateActivityScores(
 			txCtx, command.UserID, ActivityDelta(command.ActionType, command.Category), command.Now,
@@ -519,20 +534,25 @@ func (service *GameService) rewardCompletedTask(
 		"amount": task.XPReward, "totalXp": result.Pet.GrowthXP,
 	}))
 	if task.AvitoRewardType != nil && task.AvitoRewardAmount > 0 {
+		title := task.Title
 		balance, credited, creditErr := service.repository.CreditReward(ctx, model.RewardCredit{
-			ID: service.idGenerator(), UserID: userID, ActionID: actionID, TaskID: task.ID,
-			RewardType: *task.AvitoRewardType, Amount: task.AvitoRewardAmount, CreatedAt: now,
+			ID: service.idGenerator(), UserID: userID, ActionID: actionID, TaskID: &task.ID,
+			RewardType: *task.AvitoRewardType, Amount: task.AvitoRewardAmount,
+			SourceKind: model.RewardSourceTaskCompletion, SourceRef: task.ID.String(),
+			SourceTitle: &title, CreatedAt: now,
 		})
 		if creditErr != nil {
 			return taskRewardResult{}, fmt.Errorf("credit task reward: %w", creditErr)
 		}
 		if credited {
-			result.Events = append(result.Events, service.event(
-				actionID, userID, model.DomainEventAvitoRewardEarned, now, map[string]any{
-					"rewardType": balance.RewardType, "amount": task.AvitoRewardAmount,
-					"balance": balance.Balance,
-				},
-			))
+			rewardEvents, rewardErr := service.rewardEventsForCredit(ctx, actionID, userID, model.RewardCredit{
+				TaskID: &task.ID, RewardType: *task.AvitoRewardType, Amount: task.AvitoRewardAmount,
+				SourceKind: model.RewardSourceTaskCompletion, SourceRef: task.ID.String(), SourceTitle: &title,
+			}, balance, now)
+			if rewardErr != nil {
+				return taskRewardResult{}, rewardErr
+			}
+			result.Events = append(result.Events, rewardEvents...)
 		}
 	}
 	if result.Pet.Level > previousLevel {

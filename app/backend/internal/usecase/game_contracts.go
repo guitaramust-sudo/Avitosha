@@ -76,4 +76,15 @@ type GameRepository interface {
 	EnsureRewardBalance(context.Context, uuid.UUID, string, time.Time) (model.RewardBalance, error)
 	CreditReward(context.Context, model.RewardCredit) (model.RewardBalance, bool, error)
 	ListRewardBalances(context.Context, uuid.UUID) ([]model.RewardBalance, error)
+	ListRewardCatalog(context.Context) ([]model.RewardCatalogItem, error)
+
+	GetOrCreateUserStreak(context.Context, model.UserStreak) (model.UserStreak, error)
+	UpdateUserStreak(context.Context, model.UserStreak) error
+
+	ListActiveDailyQuestTemplates(context.Context) ([]model.DailyQuestTemplate, error)
+	ExpireDailyQuestsBefore(context.Context, uuid.UUID, time.Time, time.Time) error
+	AssignDailyQuest(context.Context, model.UserDailyQuest) (model.UserDailyQuest, error)
+	GetDailyQuestProgress(context.Context, uuid.UUID, time.Time) (model.DailyQuestProgress, error)
+	GetDailyQuestProgressForUpdate(context.Context, uuid.UUID, time.Time) (model.DailyQuestProgress, error)
+	UpdateDailyQuest(context.Context, model.UserDailyQuest) error
 }

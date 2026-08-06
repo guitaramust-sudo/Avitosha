@@ -39,19 +39,24 @@ func (publisher *gameTestPublisher) Publish(userID uuid.UUID, events []model.Dom
 
 type gameTestRepository struct {
 	GameRepository
-	pet          model.Pet
-	story        model.UserStoryProgress
-	tasksByStage map[int]model.Task
-	userTasks    map[uuid.UUID]model.UserTask
-	actions      map[uuid.UUID]model.UserAction
-	roomItems    map[string]model.UserRoomItem
-	weekly       model.WeeklyProgress
-	daily        model.DailyProgress
-	scores       model.ActivityScores
-	achievements map[string]model.UserAchievement
-	events       []model.DomainEvent
-	balances     map[string]model.RewardBalance
-	rewarded     map[string]struct{}
+	pet                 model.Pet
+	story               model.UserStoryProgress
+	tasksByStage        map[int]model.Task
+	userTasks           map[uuid.UUID]model.UserTask
+	actions             map[uuid.UUID]model.UserAction
+	roomItems           map[string]model.UserRoomItem
+	weekly              model.WeeklyProgress
+	daily               model.DailyProgress
+	scores              model.ActivityScores
+	achievements        map[string]model.UserAchievement
+	events              []model.DomainEvent
+	balances            map[string]model.RewardBalance
+	rewarded            map[string]struct{}
+	streak              model.UserStreak
+	dailyQuest          model.DailyQuestProgress
+	catalog             []model.RewardCatalogItem
+	templates           []model.DailyQuestTemplate
+	questReadsForUpdate int
 }
 
 func newGameTestRepository(userID uuid.UUID) *gameTestRepository {
@@ -68,6 +73,7 @@ func newGameTestRepository(userID uuid.UUID) *gameTestRepository {
 	chair := "CHAIR"
 	plant := "PLANT"
 	poster := "POSTER"
+	now := time.Date(2026, 8, 1, 0, 0, 0, 0, time.UTC)
 	return &gameTestRepository{
 		tasksByStage: map[int]model.Task{
 			1: {
@@ -107,6 +113,20 @@ func newGameTestRepository(userID uuid.UUID) *gameTestRepository {
 		roomItems: make(map[string]model.UserRoomItem), achievements: make(map[string]model.UserAchievement),
 		balances: make(map[string]model.RewardBalance), rewarded: make(map[string]struct{}),
 		scores: model.ActivityScores{UserID: userID},
+		catalog: []model.RewardCatalogItem{
+			{Code: "FREE_DELIVERY_LIGHT", RewardType: avitoBonus, PerkType: "DELIVERY", Threshold: 20, SortOrder: 1},
+			{Code: "CATEGORY_DISCOUNT_HOME", RewardType: avitoBonus, PerkType: "CATEGORY_DISCOUNT", Threshold: 45, SortOrder: 2},
+			{Code: "PROMO_BOOST", RewardType: avitoBonus, PerkType: "PROMOTION", Threshold: 75, SortOrder: 3},
+			{Code: "AUTOTEKA_CHECK", RewardType: avitoBonus, PerkType: "AUTOTEKA", Threshold: 110, SortOrder: 4},
+			{Code: "SELLER_LIMIT_PACK", RewardType: avitoBonus, PerkType: "LIMIT_PACK", Threshold: 160, SortOrder: 5},
+		},
+		templates: []model.DailyQuestTemplate{
+			{Code: "DAILY_DISCOVER", Title: "Discover", ActionType: model.ActionTypeAdViewed, TargetValue: 3, RewardType: avitoBonus, RewardAmount: 5, SortOrder: 1, IsActive: true, CreatedAt: now, UpdatedAt: now},
+			{Code: "DAILY_FAVORITE", Title: "Favorite", ActionType: model.ActionTypeAdFavorited, TargetValue: 1, RewardType: avitoBonus, RewardAmount: 6, SortOrder: 2, IsActive: true, CreatedAt: now, UpdatedAt: now},
+			{Code: "DAILY_CONTACT", Title: "Contact", ActionType: model.ActionTypeMessageSent, TargetValue: 1, RewardType: avitoBonus, RewardAmount: 8, SortOrder: 3, IsActive: true, CreatedAt: now, UpdatedAt: now},
+			{Code: "DAILY_SELLER_STEP", Title: "Seller step", ActionType: model.ActionTypeAdCreated, TargetValue: 1, RewardType: avitoBonus, RewardAmount: 10, SortOrder: 4, IsActive: true, CreatedAt: now, UpdatedAt: now},
+			{Code: "DAILY_DELIVERY", Title: "Delivery", ActionType: model.ActionTypeDeliveryUsed, TargetValue: 1, RewardType: avitoBonus, RewardAmount: 12, SortOrder: 5, IsActive: true, CreatedAt: now, UpdatedAt: now},
+		},
 	}
 }
 
@@ -130,7 +150,7 @@ func (repository *gameTestRepository) CreditReward(
 	_ context.Context,
 	credit model.RewardCredit,
 ) (model.RewardBalance, bool, error) {
-	key := credit.ActionID.String() + ":" + credit.TaskID.String() + ":" + credit.RewardType
+	key := credit.ActionID.String() + ":" + string(credit.SourceKind) + ":" + credit.SourceRef + ":" + credit.RewardType
 	if _, exists := repository.rewarded[key]; exists {
 		return repository.balances[credit.RewardType], false, nil
 	}
@@ -152,6 +172,80 @@ func (repository *gameTestRepository) ListRewardBalances(
 		balances = append(balances, balance)
 	}
 	return balances, nil
+}
+
+func (repository *gameTestRepository) ListRewardCatalog(_ context.Context) ([]model.RewardCatalogItem, error) {
+	return append([]model.RewardCatalogItem(nil), repository.catalog...), nil
+}
+
+func (repository *gameTestRepository) GetOrCreateUserStreak(
+	_ context.Context,
+	candidate model.UserStreak,
+) (model.UserStreak, error) {
+	if repository.streak.UserID == uuid.Nil {
+		repository.streak = candidate
+	}
+	return repository.streak, nil
+}
+
+func (repository *gameTestRepository) UpdateUserStreak(_ context.Context, streak model.UserStreak) error {
+	repository.streak = streak
+	return nil
+}
+
+func (repository *gameTestRepository) ListActiveDailyQuestTemplates(_ context.Context) ([]model.DailyQuestTemplate, error) {
+	return append([]model.DailyQuestTemplate(nil), repository.templates...), nil
+}
+
+func (repository *gameTestRepository) ExpireDailyQuestsBefore(
+	_ context.Context,
+	_ uuid.UUID,
+	date time.Time,
+	_ time.Time,
+) error {
+	if repository.dailyQuest.Quest.ID != uuid.Nil && repository.dailyQuest.Quest.QuestDate.Before(date) &&
+		(repository.dailyQuest.Quest.Status == model.DailyQuestStatusActive || repository.dailyQuest.Quest.Status == model.DailyQuestStatusCompleted) {
+		repository.dailyQuest.Quest.Status = model.DailyQuestStatusExpired
+	}
+	return nil
+}
+
+func (repository *gameTestRepository) AssignDailyQuest(
+	_ context.Context,
+	quest model.UserDailyQuest,
+) (model.UserDailyQuest, error) {
+	if repository.dailyQuest.Quest.ID == uuid.Nil || !repository.dailyQuest.Quest.QuestDate.Equal(quest.QuestDate) {
+		repository.dailyQuest = model.DailyQuestProgress{
+			Template: repository.questTemplateByCode(quest.TemplateCode),
+			Quest:    quest,
+		}
+	}
+	return repository.dailyQuest.Quest, nil
+}
+
+func (repository *gameTestRepository) GetDailyQuestProgress(
+	_ context.Context,
+	_ uuid.UUID,
+	date time.Time,
+) (model.DailyQuestProgress, error) {
+	if repository.dailyQuest.Quest.ID == uuid.Nil || !repository.dailyQuest.Quest.QuestDate.Equal(date) {
+		return model.DailyQuestProgress{}, ErrDailyQuestNotFound
+	}
+	return repository.dailyQuest, nil
+}
+
+func (repository *gameTestRepository) GetDailyQuestProgressForUpdate(
+	_ context.Context,
+	_ uuid.UUID,
+	date time.Time,
+) (model.DailyQuestProgress, error) {
+	repository.questReadsForUpdate++
+	return repository.GetDailyQuestProgress(context.Background(), uuid.Nil, date)
+}
+
+func (repository *gameTestRepository) UpdateDailyQuest(_ context.Context, quest model.UserDailyQuest) error {
+	repository.dailyQuest.Quest = quest
+	return nil
 }
 
 func (repository *gameTestRepository) GetOrCreateGamePet(_ context.Context, candidate model.Pet) (model.Pet, error) {
@@ -449,8 +543,17 @@ func (repository *gameTestRepository) taskByID(id uuid.UUID) model.Task {
 	return model.Task{}
 }
 
+func (repository *gameTestRepository) questTemplateByCode(code string) model.DailyQuestTemplate {
+	for _, template := range repository.templates {
+		if template.Code == code {
+			return template
+		}
+	}
+	return model.DailyQuestTemplate{}
+}
+
 func TestProcessActionCompletesFirstRoomStageAndIsIdempotent(t *testing.T) {
-	userID := uuid.New()
+	userID := mustGameUUID("00000000-0000-0000-0000-000000000001")
 	repository := newGameTestRepository(userID)
 	txManager := &gameTestTxManager{}
 	publisher := &gameTestPublisher{txManager: txManager}
@@ -497,7 +600,10 @@ func TestProcessActionCompletesFirstRoomStageAndIsIdempotent(t *testing.T) {
 	if repository.daily.ActionsCount != 5 || repository.daily.CompletedTasks != 1 {
 		t.Fatalf("daily progress = %+v", repository.daily)
 	}
-	if balance := repository.balances[DefaultRewardType]; balance.Balance != 10 || balance.EarnedTotal != 10 {
+	if repository.questReadsForUpdate == 0 {
+		t.Fatal("daily quest was not read with a lock in the action flow")
+	}
+	if balance := repository.balances[DefaultRewardType]; balance.Balance != 12 || balance.EarnedTotal != 12 {
 		t.Fatalf("reward balance = %+v", balance)
 	}
 	rewardEventFound := false
@@ -519,7 +625,7 @@ func TestProcessActionCompletesFirstRoomStageAndIsIdempotent(t *testing.T) {
 		t.Fatalf("duplicate result = %+v, error = %v", duplicate, err)
 	}
 	if repository.pet.GrowthXP != 30 || repository.weekly.Score != 100 || repository.daily.ActionsCount != 5 ||
-		repository.balances[DefaultRewardType].Balance != 10 {
+		repository.balances[DefaultRewardType].Balance != 12 {
 		t.Fatal("duplicate action changed rewards or aggregates")
 	}
 	if len(publisher.batches) != 5 {
@@ -528,7 +634,7 @@ func TestProcessActionCompletesFirstRoomStageAndIsIdempotent(t *testing.T) {
 }
 
 func TestEndToEndCompletesFirstRoom(t *testing.T) {
-	userID := uuid.New()
+	userID := mustGameUUID("00000000-0000-0000-0000-000000000001")
 	repository := newGameTestRepository(userID)
 	txManager := &gameTestTxManager{}
 	publisher := &gameTestPublisher{txManager: txManager}
@@ -588,8 +694,8 @@ func TestEndToEndCompletesFirstRoom(t *testing.T) {
 		repository.daily.EarnedXP != 230 || repository.daily.StoryStageAfter != 5 {
 		t.Fatalf("daily = %+v", repository.daily)
 	}
-	if balance := repository.balances[DefaultRewardType]; balance.Balance != 80 || balance.EarnedTotal != 80 {
-		t.Fatalf("reward balance = %+v, want 80", balance)
+	if balance := repository.balances[DefaultRewardType]; balance.Balance != 92 || balance.EarnedTotal != 92 {
+		t.Fatalf("reward balance = %+v, want 92", balance)
 	}
 	for _, code := range []string{"FIRST_STEP", "HOUSEWARMING", "EXPLORER", "IN_TOUCH", "FIRST_AD", "ROOM_COMPLETE"} {
 		if _, ok := repository.achievements[code]; !ok {
@@ -597,7 +703,8 @@ func TestEndToEndCompletesFirstRoom(t *testing.T) {
 		}
 	}
 	summary, err := service.GetDailySummary(context.Background(), userID, last.Now)
-	if err != nil || summary.Progress.EarnedXP != 230 || summary.WeeklyPosition == nil || *summary.WeeklyPosition != 1 {
+	if err != nil || summary.Progress.EarnedXP != 230 || summary.WeeklyPosition == nil || *summary.WeeklyPosition != 1 ||
+		summary.Retention.DailyQuest.Code != "DAILY_SELLER_STEP" || summary.Retention.DailyQuest.Status != model.DailyQuestStatusRewarded {
 		t.Fatalf("daily summary = %+v, error = %v", summary, err)
 	}
 	leaderboard, err := service.GetLeaderboard(context.Background(), userID, 10, last.Now)
@@ -609,8 +716,12 @@ func TestEndToEndCompletesFirstRoom(t *testing.T) {
 		t.Fatalf("achievements = %+v, error = %v", achievements, err)
 	}
 	balances, err := service.GetRewardBalances(context.Background(), userID, last.Now)
-	if err != nil || len(balances) != 1 || balances[0].Balance != 80 {
+	if err != nil || len(balances) != 1 || balances[0].Balance != 92 {
 		t.Fatalf("reward balances = %+v, error = %v", balances, err)
+	}
+	wallet, err := service.GetRewardWallet(context.Background(), userID, last.Now)
+	if err != nil || wallet.Balance.Balance != 92 || wallet.NextGoal == nil || wallet.NextGoal.Item.Code != "AUTOTEKA_CHECK" {
+		t.Fatalf("reward wallet = %+v, error = %v", wallet, err)
 	}
 
 	duplicate, err := service.ProcessAction(context.Background(), last)
@@ -618,11 +729,45 @@ func TestEndToEndCompletesFirstRoom(t *testing.T) {
 		t.Fatalf("duplicate = %+v, error = %v", duplicate, err)
 	}
 	if repository.weekly.Score != 580 || repository.pet.GrowthXP != 230 || repository.daily.ActionsCount != 9 ||
-		repository.balances[DefaultRewardType].Balance != 80 {
+		repository.balances[DefaultRewardType].Balance != 92 {
 		t.Fatal("duplicate final action changed completed room state")
+	}
+}
+
+func TestGetDailySummaryNormalizesBrokenStreakWithoutWaitingForNewAction(t *testing.T) {
+	userID := mustGameUUID("00000000-0000-0000-0000-000000000009")
+	repository := newGameTestRepository(userID)
+	service := NewGameService(GameServiceDependencies{
+		Repository: repository, TxManager: &gameTestTxManager{}, IDGenerator: uuid.New,
+	})
+	now := time.Date(2026, 8, 6, 9, 0, 0, 0, time.UTC)
+	lastActive := time.Date(2026, 8, 4, 0, 0, 0, 0, time.UTC)
+	repository.streak = model.UserStreak{
+		UserID: userID, CurrentStreak: 7, LongestStreak: 7, LastActiveDate: &lastActive,
+		CreatedAt: lastActive, UpdatedAt: lastActive,
+	}
+
+	summary, err := service.GetDailySummary(context.Background(), userID, now)
+	if err != nil {
+		t.Fatalf("GetDailySummary() error = %v", err)
+	}
+	if summary.Retention.Streak.Current != 0 || summary.Retention.Streak.ActiveToday ||
+		summary.Retention.Streak.Reward.Amount != 0 {
+		t.Fatalf("streak = %+v", summary.Retention.Streak)
+	}
+	if summary.Retention.Tomorrow.StreakAfterReturn != 1 || summary.Retention.Tomorrow.StreakReward.Amount != 2 {
+		t.Fatalf("tomorrow preview = %+v", summary.Retention.Tomorrow)
 	}
 }
 
 func gameStringPointer(value string) *string {
 	return &value
+}
+
+func mustGameUUID(value string) uuid.UUID {
+	id, err := uuid.Parse(value)
+	if err != nil {
+		panic(err)
+	}
+	return id
 }

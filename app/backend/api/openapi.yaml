@@ -345,7 +345,7 @@ paths:
       tags: [game]
       operationId: getRewardBalances
       summary: Get the current user's reward balances
-      description: Returns balances actually credited for completed tasks. AVITO_BONUS is initialized with a zero balance during user registration.
+      description: Returns balances actually credited from tasks, streak rewards and daily quests. AVITO_BONUS is initialized with a zero balance during user registration.
       security:
         - bearerAuth: []
         - userIdHeader: []
@@ -356,6 +356,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RewardBalanceResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/v1/rewards/wallet:
+    get:
+      tags: [game]
+      operationId: getRewardWallet
+      summary: Get the current user's reward wallet and perk roadmap
+      security:
+        - bearerAuth: []
+        - userIdHeader: []
+      responses:
+        '200':
+          description: Wallet balance, concrete perk catalog and the nearest unlock target
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RewardWallet'
         '401':
           $ref: '#/components/responses/Unauthorized'
   /api/v1/ws:
@@ -705,7 +722,7 @@ components:
               nullable: true
     DailySummary:
       type: object
-      required: [date, actionsCount, completedTasks, earnedXp, levelBefore, levelAfter, unlockedRoomItems, storyStageBefore, storyStageAfter, weeklyScoreDelta, petMood]
+      required: [date, actionsCount, completedTasks, earnedXp, levelBefore, levelAfter, unlockedRoomItems, storyStageBefore, storyStageAfter, weeklyScoreDelta, petMood, retention]
       properties:
         date:
           type: string
@@ -735,6 +752,8 @@ components:
           nullable: true
         petMood:
           $ref: '#/components/schemas/PetMood'
+        retention:
+          $ref: '#/components/schemas/RetentionOverview'
     LeaderboardEntry:
       type: object
       required: [position, userId, petName, level, score, completedTasks]
@@ -809,3 +828,168 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RewardBalance'
+    RewardOffer:
+      type: object
+      required: [type, amount, source]
+      properties:
+        type:
+          type: string
+        amount:
+          type: integer
+        source:
+          type: string
+          enum: [TASK_COMPLETION, DAILY_QUEST, STREAK]
+    StreakOverview:
+      type: object
+      required: [current, longest, activeToday, reward]
+      properties:
+        current:
+          type: integer
+        longest:
+          type: integer
+        lastActiveDate:
+          type: string
+          format: date
+          nullable: true
+        activeToday:
+          type: boolean
+        reward:
+          $ref: '#/components/schemas/RewardOffer'
+    DailyQuest:
+      type: object
+      required: [date, code, title, description, actionType, progress, target, status, reward]
+      properties:
+        date:
+          type: string
+          format: date
+        code:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        actionType:
+          type: string
+          enum: [AD_VIEWED, AD_FAVORITED, MESSAGE_SENT, AD_CREATED, DELIVERY_USED, REVIEW_LEFT, BOOKING_CREATED]
+        category:
+          type: string
+          nullable: true
+        progress:
+          type: integer
+        target:
+          type: integer
+        status:
+          type: string
+          enum: [ACTIVE, COMPLETED, REWARDED, EXPIRED]
+        reward:
+          $ref: '#/components/schemas/RewardOffer'
+    TomorrowDailyQuest:
+      type: object
+      required: [code, title, description, actionType, target, reward]
+      properties:
+        code:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        actionType:
+          type: string
+          enum: [AD_VIEWED, AD_FAVORITED, MESSAGE_SENT, AD_CREATED, DELIVERY_USED, REVIEW_LEFT, BOOKING_CREATED]
+        category:
+          type: string
+          nullable: true
+        target:
+          type: integer
+        reward:
+          $ref: '#/components/schemas/RewardOffer'
+    RewardGoal:
+      type: object
+      required: [code, title, rewardType, perkType, current, target, remaining]
+      properties:
+        code:
+          type: string
+        title:
+          type: string
+        rewardType:
+          type: string
+        perkType:
+          type: string
+        current:
+          type: integer
+          format: int64
+        target:
+          type: integer
+          format: int64
+        remaining:
+          type: integer
+          format: int64
+    TomorrowPreview:
+      type: object
+      required: [date, streakAfterReturn, streakReward, dailyQuest]
+      properties:
+        date:
+          type: string
+          format: date
+        streakAfterReturn:
+          type: integer
+        streakReward:
+          $ref: '#/components/schemas/RewardOffer'
+        dailyQuest:
+          $ref: '#/components/schemas/TomorrowDailyQuest'
+        nextGoal:
+          allOf:
+            - $ref: '#/components/schemas/RewardGoal'
+          nullable: true
+    RetentionOverview:
+      type: object
+      required: [streak, dailyQuest, tomorrow]
+      properties:
+        streak:
+          $ref: '#/components/schemas/StreakOverview'
+        dailyQuest:
+          $ref: '#/components/schemas/DailyQuest'
+        tomorrow:
+          $ref: '#/components/schemas/TomorrowPreview'
+    RewardCatalogEntry:
+      type: object
+      required: [code, title, description, rewardType, perkType, threshold, unlocked, progressCurrent, progressTarget, remaining]
+      properties:
+        code:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        rewardType:
+          type: string
+        perkType:
+          type: string
+        threshold:
+          type: integer
+          format: int64
+        unlocked:
+          type: boolean
+        progressCurrent:
+          type: integer
+          format: int64
+        progressTarget:
+          type: integer
+          format: int64
+        remaining:
+          type: integer
+          format: int64
+    RewardWallet:
+      type: object
+      required: [balance, catalog]
+      properties:
+        balance:
+          $ref: '#/components/schemas/RewardBalance'
+        catalog:
+          type: array
+          items:
+            $ref: '#/components/schemas/RewardCatalogEntry'
+        nextGoal:
+          allOf:
+            - $ref: '#/components/schemas/RewardGoal'
+          nullable: true

@@ -49,6 +49,9 @@ Auth-инфраструктура использует `users` и `sessions`. И
 - `room_items`, `user_room_items` — справочник и размещённые предметы;
 - `stories`, `user_story_progress` — долгосрочная цель и текущий этап;
 - `weekly_progress`, `daily_progress` — рейтинг и дневная сводка;
+- `user_reward_balances`, `reward_transactions` — reward wallet, lifetime earned и auditable ledger для наград из задач, streak и daily quest;
+- `reward_catalog_items` — каталог конкретных Avito-perks и их порогов;
+- `user_streaks`, `daily_quest_templates`, `user_daily_quests` — retention-слой для streak, одной daily quest на день и tomorrow preview;
 - `achievements`, `user_achievements` — достижения без отдельной валюты;
 - `pet_activity_scores` — buyer/seller/category-счётчики характера;
 - `domain_events` — события, сформированные внутри транзакции.
@@ -112,9 +115,11 @@ X-User-ID: <existing-user-uuid>
 | POST | `/api/v1/actions` | mock-событие Авито |
 | GET | `/api/v1/room` | открытые и заблокированные предметы |
 | GET | `/api/v1/story` | прогресс `FIRST_ROOM` и следующая цель |
-| GET | `/api/v1/daily-summary` | дневной агрегат |
+| GET | `/api/v1/daily-summary` | дневной агрегат + retention block (`streak`, `dailyQuest`, `tomorrow`) |
 | GET | `/api/v1/leaderboard?period=weekly&limit=10` | недельный топ и позиция пользователя |
 | GET | `/api/v1/achievements` | открытые и будущие достижения |
+| GET | `/api/v1/rewards/balance` | raw reward balances и lifetime earned totals |
+| GET | `/api/v1/rewards/wallet` | видимый reward wallet, каталог бонусов, ближайший unlock и progress до него |
 | GET | `/api/v1/ws` | realtime-события |
 
 Полный контракт доступен в `app/backend/api/openapi.yaml` и через `/swagger/`.
@@ -145,6 +150,8 @@ curl -X POST http://localhost:8080/api/v1/actions \
 
 - `TASK_PROGRESS_UPDATED`, `TASK_COMPLETED`;
 - `XP_EARNED`, `PET_LEVEL_UP`, `PET_MOOD_CHANGED`;
+- `AVITO_REWARD_EARNED`, `REWARD_CATALOG_UNLOCKED`;
+- `DAILY_QUEST_UPDATED`, `DAILY_QUEST_COMPLETED`, `STREAK_UPDATED`;
 - `ROOM_ITEM_UNLOCKED`;
 - `STORY_STAGE_COMPLETED`, `STORY_COMPLETED`;
 - `LEADERBOARD_SCORE_UPDATED`;
