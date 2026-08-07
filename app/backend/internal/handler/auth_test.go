@@ -434,6 +434,9 @@ func TestCORSPreflightUsesConcreteOrigin(t *testing.T) {
 	if credentials := rec.Header().Get("Access-Control-Allow-Credentials"); credentials != "true" {
 		t.Fatalf("Access-Control-Allow-Credentials = %q, want true", credentials)
 	}
+	if allowMethods := rec.Header().Get("Access-Control-Allow-Methods"); !strings.Contains(allowMethods, http.MethodPatch) {
+		t.Fatalf("Access-Control-Allow-Methods = %q, want %s", allowMethods, http.MethodPatch)
+	}
 }
 
 func TestRecoveryMiddlewareReturnsJSON(t *testing.T) {
