@@ -196,7 +196,7 @@ function FirstVisitOnboarding() {
           <strong>
             {stepIndex === tourSteps.length - 1
               ? 'Нажмите, чтобы закончить'
-              : 'Нажмите на экран дальше'}
+              : 'Далее'}
           </strong>
         </div>
       </section>

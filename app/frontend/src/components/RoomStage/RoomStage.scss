@@ -79,6 +79,18 @@
   line-height: 1.4;
   transform: translateX(-50%);
 
+  &-ai {
+    display: inline-flex;
+    margin-left: h.rem(7px);
+    padding: h.rem(2px) h.rem(6px);
+    border-radius: h.$radius-round;
+    color: h.$color-primary;
+    background: h.$color-primary-light;
+    font-size: h.rem(9px);
+    font-weight: h.$font-weight-bold;
+    vertical-align: middle;
+  }
+
   &.is-hiding {
     animation: speech-hide 220ms ease forwards;
     pointer-events: none;

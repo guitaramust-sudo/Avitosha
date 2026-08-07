@@ -3,10 +3,12 @@ import {
   type CSSProperties,
   type KeyboardEvent,
   type MouseEvent,
+  useEffect,
   useState,
 } from 'react'
 
 import { useAppSelector } from '../../hooks/redux'
+import { useTaskAdvice } from '../../hooks/useGameDashboard'
 import {
   ROOM_DROP_ID,
   useRoomItemControls,
@@ -15,6 +17,7 @@ import {
   selectGamePet,
   selectGameRoom,
   selectGameStory,
+  selectGameTasks,
 } from '../../store/gameSlice'
 import type { RoomItem, RoomItemCode } from '../../types/game'
 import {
@@ -98,17 +101,51 @@ function RoomObject({
 }
 
 function RoomStage() {
-  const [dismissedSpeechKey, setDismissedSpeechKey] = useState<string | null>(
+  const [dismissedAdviceKey, setDismissedAdviceKey] = useState<string | null>(
     null,
   )
+  const [dismissedGoalKey, setDismissedGoalKey] = useState<string | null>(null)
   const [hidingSpeechKey, setHidingSpeechKey] = useState<string | null>(null)
+  const [readyAdviceKey, setReadyAdviceKey] = useState<string | null>(null)
+  const accessToken = useAppSelector((state) => state.auth.accessToken)
+  const userId = useAppSelector((state) => state.auth.user?.id)
   const pet = useAppSelector(selectGamePet)
   const room = useAppSelector(selectGameRoom)
   const story = useAppSelector(selectGameStory)
+  const tasks = useAppSelector(selectGameTasks)
+  const phrase = !story
+    ? null
+    : story.status === 'COMPLETED'
+      ? null
+      : story.nextTask
+        ? `Следующая цель: ${story.nextTask.title}`
+        : 'Давай обустроим нашу первую комнату!'
+  const goalKey = story?.nextTask?.id ?? 'room-intro'
+  const activeTaskId = tasks.find((task) => task.status === 'ACTIVE')?.id
+  const completedTaskId = [...tasks]
+    .reverse()
+    .find((task) => ['COMPLETED', 'REWARDED'].includes(task.status))?.id
+  const adviceTaskId =
+    story?.nextTask?.id ?? activeTaskId ?? completedTaskId ?? null
+  const adviceQuery = useTaskAdvice(accessToken, userId, adviceTaskId)
   const items = room?.items ?? emptyRoomItems
   const { isOver, setNodeRef } = useDroppable({ id: ROOM_DROP_ID })
   const { nudgeItem, placeAtPoint, placements, selectedItemCode, selectItem } =
     useRoomItemControls(items)
+
+  useEffect(() => {
+    const isGoalDismissed = !phrase || dismissedGoalKey === goalKey
+
+    if (!adviceTaskId || !isGoalDismissed) {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setReadyAdviceKey(adviceTaskId)
+    }, 5000)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [adviceTaskId, dismissedGoalKey, goalKey, phrase])
 
   if (!pet || !room || !story) {
     return null
@@ -117,20 +154,30 @@ function RoomStage() {
   const visibleItems = items.filter(
     (item) => item.status === 'PLACED' || placements[item.code],
   )
-  const phrase =
-    story.status === 'COMPLETED'
-      ? null
-      : story.nextTask
-        ? `Следующая цель: ${story.nextTask.title}`
-        : 'Давай обустроим нашу первую комнату!'
-  const speechKey = story.nextTask?.id ?? 'room-intro'
-  const isSpeechVisible = Boolean(phrase && dismissedSpeechKey !== speechKey)
+  const isGoalVisible = Boolean(phrase && dismissedGoalKey !== goalKey)
+  const isAdviceVisible = Boolean(
+    adviceTaskId &&
+    (!phrase || dismissedGoalKey === goalKey) &&
+    readyAdviceKey === adviceTaskId &&
+    dismissedAdviceKey !== adviceTaskId &&
+    adviceQuery.data?.text,
+  )
+  const activeSpeechKey = isGoalVisible
+    ? `goal:${goalKey}`
+    : isAdviceVisible
+      ? `advice:${adviceTaskId}`
+      : null
+  const speechText = isGoalVisible
+    ? phrase
+    : isAdviceVisible
+      ? adviceQuery.data?.text
+      : null
   const selectedItem = items.find(
     (item) => item.code === selectedItemCode && item.status !== 'LOCKED',
   )
   const handleRoomClick = (event: MouseEvent<HTMLElement>) => {
-    if (isSpeechVisible && hidingSpeechKey !== speechKey) {
-      setHidingSpeechKey(speechKey)
+    if (activeSpeechKey && hidingSpeechKey !== activeSpeechKey) {
+      setHidingSpeechKey(activeSpeechKey)
     }
 
     if (!selectedItem || event.target !== event.currentTarget) {
@@ -177,17 +224,24 @@ function RoomStage() {
         )
       })}
 
-      {isSpeechVisible && (
+      {activeSpeechKey && speechText && (
         <div
-          className={`room-stage__speech ${hidingSpeechKey === speechKey ? 'is-hiding' : ''}`}
+          className={`room-stage__speech ${hidingSpeechKey === activeSpeechKey ? 'is-hiding' : ''}`}
           onAnimationEnd={() => {
-            if (hidingSpeechKey === speechKey) {
-              setDismissedSpeechKey(speechKey)
+            if (hidingSpeechKey === activeSpeechKey) {
+              if (activeSpeechKey.startsWith('goal:')) {
+                setDismissedGoalKey(goalKey)
+              } else if (adviceTaskId) {
+                setDismissedAdviceKey(adviceTaskId)
+              }
               setHidingSpeechKey(null)
             }
           }}
         >
-          {phrase}
+          {speechText}
+          {isAdviceVisible && adviceQuery.data?.generatedByAi && (
+            <small className="room-stage__speech-ai">ИИ</small>
+          )}
         </div>
       )}
       {selectedItem && (
