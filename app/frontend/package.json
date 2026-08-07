@@ -11,6 +11,7 @@
     "format": "prettier . --write",
     "format:check": "prettier . --check",
     "preview": "vite preview",
+    "profile:bundle": "npm run build && node scripts/profile-bundle.mjs",
     "test": "vitest run",
     "typecheck": "tsc -b"
   },

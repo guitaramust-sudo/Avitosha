@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -118,24 +119,53 @@ func newTaskAdviceDTO(advice usecase.TaskAdvice) taskAdviceDTO {
 type actionResultDTO struct {
 	ActionID  uuid.UUID        `json:"actionId"`
 	Duplicate bool             `json:"duplicate"`
-	Events    []map[string]any `json:"events"`
+	Events    []domainEventDTO `json:"events"`
 }
 
 func newActionResultDTO(result usecase.ProcessActionResult) actionResultDTO {
-	events := make([]map[string]any, len(result.Events))
+	events := make([]domainEventDTO, len(result.Events))
 	for index, event := range result.Events {
 		events[index] = newDomainEventDTO(event)
 	}
 	return actionResultDTO{ActionID: result.ActionID, Duplicate: result.Duplicate, Events: events}
 }
 
-func newDomainEventDTO(event model.DomainEvent) map[string]any {
-	payload := make(map[string]any)
-	_ = json.Unmarshal(event.Payload, &payload)
-	payload["id"] = event.ID
-	payload["type"] = event.Type
-	payload["occurredAt"] = event.OccurredAt.UTC().Format(time.RFC3339Nano)
-	return payload
+type domainEventDTO struct {
+	model.DomainEvent
+}
+
+func newDomainEventDTO(event model.DomainEvent) domainEventDTO {
+	return domainEventDTO{DomainEvent: event}
+}
+
+func (event domainEventDTO) MarshalJSON() ([]byte, error) {
+	envelope, err := json.Marshal(struct {
+		ID         uuid.UUID             `json:"id"`
+		Type       model.DomainEventType `json:"type"`
+		OccurredAt string                `json:"occurredAt"`
+	}{
+		ID: event.ID, Type: event.Type,
+		OccurredAt: event.OccurredAt.UTC().Format(time.RFC3339Nano),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	payload := bytes.TrimSpace(event.Payload)
+	if len(payload) < 2 || payload[0] != '{' || payload[len(payload)-1] != '}' || !json.Valid(payload) {
+		return envelope, nil
+	}
+	payloadFields := bytes.TrimSpace(payload[1 : len(payload)-1])
+	if len(payloadFields) == 0 {
+		return envelope, nil
+	}
+
+	flattened := make([]byte, 0, len(payloadFields)+len(envelope)+2)
+	flattened = append(flattened, '{')
+	flattened = append(flattened, payloadFields...)
+	flattened = append(flattened, ',')
+	flattened = append(flattened, envelope[1:]...)
+	return flattened, nil
 }
 
 type roomDTO struct {

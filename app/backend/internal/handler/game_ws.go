@@ -117,8 +117,8 @@ func readWebSocket(connection *websocket.Conn, disconnected chan<- struct{}) {
 
 func writeWebSocketEvents(connection *websocket.Conn, events []model.DomainEvent) error {
 	payload := struct {
-		Events []map[string]any `json:"events"`
-	}{Events: make([]map[string]any, len(events))}
+		Events []domainEventDTO `json:"events"`
+	}{Events: make([]domainEventDTO, len(events))}
 	for index, event := range events {
 		payload.Events[index] = newDomainEventDTO(event)
 	}
