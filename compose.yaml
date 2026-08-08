@@ -1,3 +1,9 @@
+x-common-backend: &common-backend
+  build:
+    context: ./app/backend
+    dockerfile: Dockerfile
+  restart: unless-stopped
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -40,10 +46,9 @@ services:
     command: ["up"]
     restart: "no"
 
-  backend:
-    build:
-      context: ./app/backend
-      dockerfile: Dockerfile
+  auth-service:
+    <<: *common-backend
+    command: ["/usr/local/bin/auth-service"]
     depends_on:
       postgres:
         condition: service_healthy
@@ -51,20 +56,55 @@ services:
         condition: service_completed_successfully
     environment:
       APP_ENV: ${APP_ENV:-dev}
-      HTTP_ADDR: :${BACKEND_PORT:-8080}
       DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-avitosha}?sslmode=disable
-      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:3000}
+      GRPC_ADDR: :9091
       JWT_SIGNING_KEY: ${JWT_SIGNING_KEY:-change-me-dev-signing-key}
       JWT_ISSUER: ${JWT_ISSUER:-avitosha}
       JWT_AUDIENCE: ${JWT_AUDIENCE:-avitosha-web}
-      LOG_LEVEL: ${LOG_LEVEL:-info}
-      SHUTDOWN_TIMEOUT: ${SHUTDOWN_TIMEOUT:-5s}
       ACCESS_TOKEN_TTL: ${ACCESS_TOKEN_TTL:-15m}
       REFRESH_TOKEN_TTL: ${REFRESH_TOKEN_TTL:-720h}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      SHUTDOWN_TIMEOUT: ${SHUTDOWN_TIMEOUT:-5s}
+    expose:
+      - "9091"
+
+  game-service:
+    <<: *common-backend
+    command: ["/usr/local/bin/game-service"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      APP_ENV: ${APP_ENV:-dev}
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-avitosha}?sslmode=disable
+      GRPC_ADDR: :9092
       PROXYAPI_API_KEY: ${PROXYAPI_API_KEY:-}
       PROXYAPI_BASE_URL: ${PROXYAPI_BASE_URL:-https://api.proxyapi.ru/openrouter/v1}
       PROXYAPI_MODEL: ${PROXYAPI_MODEL:-qwen/qwen-2.5-7b-instruct}
       PROXYAPI_TIMEOUT: ${PROXYAPI_TIMEOUT:-4s}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      SHUTDOWN_TIMEOUT: ${SHUTDOWN_TIMEOUT:-5s}
+    expose:
+      - "9092"
+
+  api-gateway:
+    <<: *common-backend
+    depends_on:
+      auth-service:
+        condition: service_started
+      game-service:
+        condition: service_started
+    environment:
+      APP_ENV: ${APP_ENV:-dev}
+      HTTP_ADDR: :${BACKEND_PORT:-8080}
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:3000}
+      REFRESH_TOKEN_TTL: ${REFRESH_TOKEN_TTL:-720h}
+      AUTH_GRPC_ADDR: auth-service:9091
+      GAME_GRPC_ADDR: game-service:9092
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      SHUTDOWN_TIMEOUT: ${SHUTDOWN_TIMEOUT:-5s}
     ports:
       - "${BACKEND_PORT:-8080}:${BACKEND_PORT:-8080}"
     healthcheck:
@@ -73,17 +113,16 @@ services:
       timeout: 3s
       retries: 10
       start_period: 5s
-    restart: unless-stopped
 
   frontend:
     build:
       context: ./app/frontend
       dockerfile: Dockerfile
     depends_on:
-      backend:
+      api-gateway:
         condition: service_healthy
     environment:
-      VITE_API_PROXY_TARGET: ${VITE_API_PROXY_TARGET:-http://backend:8080}
+      VITE_API_PROXY_TARGET: ${VITE_API_PROXY_TARGET:-http://api-gateway:8080}
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     restart: unless-stopped

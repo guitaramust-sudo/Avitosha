@@ -23,19 +23,33 @@
 
 ```text
 React dashboard
-  ├── HTTP /api/v1
+  ├── HTTP /api, /api/v1
   └── WebSocket /api/v1/ws
               ↓
-Go HTTP handlers → GameService → GameRepository → PostgreSQL
-                         ↓ commit
-                   in-memory Hub
+         API Gateway
+          ├── gRPC unary ──────→ Auth Service ──→ users/sessions
+          ├── gRPC unary ──────→ Game Service ──→ game/retention
+          └── gRPC server stream ← Game Service event hub
+                                      ↓
+                                  PostgreSQL
 ```
 
-- `handler` отвечает за HTTP, DTO и валидацию транспорта;
-- `usecase` содержит игровой цикл, XP, настроение, последовательность истории, достижения и характер;
-- `repository/postgres` содержит SQL и использует общий transaction context;
-- `realtime.Hub` публикует события только после успешного commit;
+- `api-gateway` — единственная публичная точка входа; он сохраняет REST/OpenAPI и WebSocket-контракты, но не обращается к PostgreSQL;
+- `auth-service` владеет регистрацией, сессиями и проверкой access token;
+- `game-service` владеет игровым циклом, XP, комнатой, наградами, retention и генерацией советов;
+- `api/proto/avitosha/v1/services.proto` — versioned internal contract; сгенерированный Go-код хранится в репозитории;
+- `realtime.Hub` находится в game-service и публикует события после commit, а gateway получает их отдельным server-streaming RPC на WebSocket-клиента;
 - React Query хранит серверное состояние, а WebSocket инвалидирует game-query cache.
+
+Сервисы используют unary gRPC для команд и запросов, стандартный gRPC Health Checking Protocol для readiness и server streaming для realtime. Deadline HTTP-запроса автоматически передаётся downstream через `context.Context`. Подробные границы, модель отказов и план дальнейшей изоляции данных описаны в [`docs/avitosha-v2-audit.md`](docs/avitosha-v2-audit.md).
+
+После изменения protobuf сгенерируйте stubs и проверьте контракт:
+
+```bash
+cd app/backend
+buf lint
+buf generate
+```
 
 `POST /api/v1/actions` атомарно сохраняет действие, блокирует подходящие `user_tasks`, обновляет все награды и сохраняет доменные события. `eventId` уникален: повтор того же запроса возвращает сохранённый результат без повторной награды.
 
@@ -181,22 +195,24 @@ docker compose up --build
 После запуска:
 
 - frontend: <http://localhost:3000>;
-- backend: <http://localhost:8080>;
+- API gateway: <http://localhost:8080>;
 - Swagger: <http://localhost:8080/swagger/>;
 - PostgreSQL на host: `localhost:5433`.
 
-Миграции и seed применяет отдельный сервис `migrate` до старта backend.
+Внутренние `auth-service:9091` и `game-service:9092` доступны только в Compose-сети. Миграции и seed применяет отдельный сервис `migrate` до старта доменных сервисов.
 
 ## Запуск без Compose
 
-Backend:
+Backend без Compose (в трёх терминалах):
 
 ```bash
 cd app/backend
 set -a
 . ../../.env
 set +a
-go run ./cmd/api
+GRPC_ADDR=:9091 go run ./cmd/auth
+GRPC_ADDR=:9092 go run ./cmd/game
+AUTH_GRPC_ADDR=127.0.0.1:9091 GAME_GRPC_ADDR=127.0.0.1:9092 go run ./cmd/api
 ```
 
 Frontend:
@@ -215,7 +231,7 @@ VITE_API_PROXY_TARGET=http://127.0.0.1:8080 npm run dev
 ./app/backend/scripts/smoke-game.sh
 ```
 
-Скрипт регистрирует нового пользователя, получает уже созданный во время регистрации стартовый профиль Авитоши, пять раз отправляет `AD_VIEWED`, затем проверяет задание, 30 XP, `DESK`, этап истории, дневную сводку и weekly score 100.
+Скрипт регистрирует нового пользователя, лениво создаёт стартовый профиль Авитоши первым игровым запросом, пять раз отправляет `AD_VIEWED`, затем проверяет задание, 30 XP, `DESK`, этап истории, дневную сводку, weekly score 100 и 12 бонусов: 10 за задание плюс 2 за первый день streak.
 
 ## Тестирование
 
@@ -259,7 +275,7 @@ npm run build
 
 - действия Авито поступают через публичный mock endpoint, а не из production event bus;
 - `X-User-ID` допустим только для демонстрации и должен быть удалён при реальной интеграции;
-- WebSocket hub не разделяет состояние между несколькими экземплярами backend;
+- in-memory hub game-service не разделяет события между несколькими репликами game-service; перед горизонтальным масштабированием нужен Redis Streams, NATS JetStream или Kafka;
 - события сохраняются в БД, но доставка WebSocket не является durable outbox;
 - история и позиции мебели фиксированы; редактора комнаты нет;
 - реализована одна сюжетная линия и один питомец на пользователя;

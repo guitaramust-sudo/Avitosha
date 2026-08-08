@@ -34,7 +34,7 @@ type RouterDependencies struct {
 	RefreshTokenTTL          time.Duration
 	SecureRefreshCookie      bool
 	GameService              GameUseCase
-	EventHub                 *realtime.Hub
+	EventHub                 realtime.EventSubscriber
 	Now                      func() time.Time
 }
 

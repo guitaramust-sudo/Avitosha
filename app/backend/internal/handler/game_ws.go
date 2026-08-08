@@ -20,13 +20,13 @@ const (
 
 type GameWebSocketHandler struct {
 	logger   *slog.Logger
-	hub      *realtime.Hub
+	hub      realtime.EventSubscriber
 	upgrader websocket.Upgrader
 }
 
 func NewGameWebSocketHandler(
 	logger *slog.Logger,
-	hub *realtime.Hub,
+	hub realtime.EventSubscriber,
 	frontendOrigin string,
 ) GameWebSocketHandler {
 	if logger == nil {

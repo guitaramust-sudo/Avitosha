@@ -237,6 +237,49 @@ func TestLoadFromEnvRequiresJWTConfig(t *testing.T) {
 	}
 }
 
+func TestRoleValidationKeepsSecretsScopedToOwningService(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name     string
+		env      map[string]string
+		validate func(Config) error
+	}{
+		{
+			name: "gateway does not need database or JWT",
+			env: map[string]string{
+				"HTTP_ADDR": ":8080", "FRONTEND_ORIGIN": "http://localhost:3000",
+				"AUTH_GRPC_ADDR": "auth:9091", "GAME_GRPC_ADDR": "game:9092",
+			},
+			validate: Config.ValidateGateway,
+		},
+		{
+			name: "auth does not need HTTP or ProxyAPI key",
+			env: map[string]string{
+				"DATABASE_URL": "postgres://auth", "GRPC_ADDR": ":9091",
+				"JWT_SIGNING_KEY": "secret", "JWT_ISSUER": "avitosha", "JWT_AUDIENCE": "web",
+			},
+			validate: Config.ValidateAuthService,
+		},
+		{
+			name: "game does not need HTTP or JWT",
+			env: map[string]string{
+				"DATABASE_URL": "postgres://game", "GRPC_ADDR": ":9092",
+			},
+			validate: Config.ValidateGameService,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			if _, err := loadForRole(mapGetter(test.env), test.validate); err != nil {
+				t.Fatalf("loadForRole() error = %v", err)
+			}
+		})
+	}
+}
+
 func mapGetter(values map[string]string) func(string) string {
 	return func(key string) string {
 		return values[key]

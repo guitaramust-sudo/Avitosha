@@ -46,13 +46,32 @@ type Config struct {
 	ProxyAPIBaseURL  string
 	ProxyAPIModel    string
 	ProxyAPITimeout  time.Duration
+	GRPCAddr         string
+	AuthGRPCAddr     string
+	GameGRPCAddr     string
 }
 
 func Load() (Config, error) {
 	return LoadFromEnv(os.Getenv)
 }
 
+func LoadGateway() (Config, error) {
+	return loadForRole(os.Getenv, Config.ValidateGateway)
+}
+
+func LoadAuthService() (Config, error) {
+	return loadForRole(os.Getenv, Config.ValidateAuthService)
+}
+
+func LoadGameService() (Config, error) {
+	return loadForRole(os.Getenv, Config.ValidateGameService)
+}
+
 func LoadFromEnv(getenv func(string) string) (Config, error) {
+	return loadForRole(getenv, Config.Validate)
+}
+
+func loadForRole(getenv func(string) string, validate func(Config) error) (Config, error) {
 	cfg := Config{
 		AppEnv:           envOrDefault(getenv, "APP_ENV", AppEnvDev),
 		HTTPAddr:         strings.TrimSpace(getenv("HTTP_ADDR")),
@@ -72,6 +91,9 @@ func LoadFromEnv(getenv func(string) string) (Config, error) {
 		ProxyAPIBaseURL:  envOrDefault(getenv, "PROXYAPI_BASE_URL", defaultProxyAPIBaseURL),
 		ProxyAPIModel:    envOrDefault(getenv, "PROXYAPI_MODEL", defaultProxyAPIModel),
 		ProxyAPITimeout:  defaultProxyAPITimeout,
+		GRPCAddr:         envOrDefault(getenv, "GRPC_ADDR", ":9090"),
+		AuthGRPCAddr:     envOrDefault(getenv, "AUTH_GRPC_ADDR", "127.0.0.1:9091"),
+		GameGRPCAddr:     envOrDefault(getenv, "GAME_GRPC_ADDR", "127.0.0.1:9092"),
 	}
 
 	if value := strings.TrimSpace(getenv("SHUTDOWN_TIMEOUT")); value != "" {
@@ -103,11 +125,88 @@ func LoadFromEnv(getenv func(string) string) (Config, error) {
 		cfg.ProxyAPITimeout = timeout
 	}
 
-	if err := cfg.Validate(); err != nil {
+	if err := validate(cfg); err != nil {
 		return Config{}, err
 	}
 
 	return cfg, nil
+}
+
+func (cfg Config) ValidateGateway() error {
+	if err := cfg.validateRuntime(); err != nil {
+		return err
+	}
+	if cfg.HTTPAddr == "" {
+		return fmt.Errorf("HTTP_ADDR is required")
+	}
+	if cfg.FrontendOrigin == "" {
+		return fmt.Errorf("FRONTEND_ORIGIN is required")
+	}
+	if cfg.RefreshTokenTTL <= 0 {
+		return fmt.Errorf("REFRESH_TOKEN_TTL must be positive")
+	}
+	if cfg.AuthGRPCAddr == "" || cfg.GameGRPCAddr == "" {
+		return fmt.Errorf("AUTH_GRPC_ADDR and GAME_GRPC_ADDR must not be empty")
+	}
+	return nil
+}
+
+func (cfg Config) ValidateAuthService() error {
+	if err := cfg.validateRuntime(); err != nil {
+		return err
+	}
+	if cfg.DatabaseURL == "" {
+		return fmt.Errorf("DATABASE_URL is required")
+	}
+	if cfg.JWTSigningKey == "" {
+		return fmt.Errorf("JWT_SIGNING_KEY is required")
+	}
+	if cfg.JWTIssuer == "" {
+		return fmt.Errorf("JWT_ISSUER is required")
+	}
+	if cfg.JWTAudience == "" {
+		return fmt.Errorf("JWT_AUDIENCE is required")
+	}
+	if cfg.AccessTokenTTL <= 0 || cfg.RefreshTokenTTL <= 0 {
+		return fmt.Errorf("ACCESS_TOKEN_TTL and REFRESH_TOKEN_TTL must be positive")
+	}
+	if cfg.GRPCAddr == "" {
+		return fmt.Errorf("GRPC_ADDR must not be empty")
+	}
+	return nil
+}
+
+func (cfg Config) ValidateGameService() error {
+	if err := cfg.validateRuntime(); err != nil {
+		return err
+	}
+	if cfg.DatabaseURL == "" {
+		return fmt.Errorf("DATABASE_URL is required")
+	}
+	if cfg.GRPCAddr == "" {
+		return fmt.Errorf("GRPC_ADDR must not be empty")
+	}
+	if cfg.ProxyAPIBaseURL == "" || cfg.ProxyAPIModel == "" || cfg.ProxyAPITimeout <= 0 {
+		return fmt.Errorf("ProxyAPI URL/model must not be empty and timeout must be positive")
+	}
+	return nil
+}
+
+func (cfg Config) validateRuntime() error {
+	switch cfg.AppEnv {
+	case AppEnvDev, AppEnvTest, AppEnvProd:
+	default:
+		return fmt.Errorf("APP_ENV must be one of: dev, test, prod")
+	}
+	switch cfg.LogLevel {
+	case LogLevelDebug, LogLevelInfo, LogLevelWarn, LogLevelError:
+	default:
+		return fmt.Errorf("LOG_LEVEL must be one of: debug, info, warn, error")
+	}
+	if cfg.ShutdownTimeout <= 0 {
+		return fmt.Errorf("SHUTDOWN_TIMEOUT must be positive")
+	}
+	return nil
 }
 
 func (cfg Config) Validate() error {
@@ -159,6 +258,9 @@ func (cfg Config) Validate() error {
 	}
 	if cfg.ProxyAPITimeout <= 0 {
 		return fmt.Errorf("PROXYAPI_TIMEOUT must be positive")
+	}
+	if cfg.GRPCAddr == "" || cfg.AuthGRPCAddr == "" || cfg.GameGRPCAddr == "" {
+		return fmt.Errorf("GRPC_ADDR, AUTH_GRPC_ADDR and GAME_GRPC_ADDR must not be empty")
 	}
 
 	return nil
