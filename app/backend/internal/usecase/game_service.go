@@ -443,7 +443,7 @@ func (service *GameService) ProcessAction(
 				return fmt.Errorf("save task progress: %w", err)
 			}
 		}
-		retentionState, retentionEvents, err := service.applyRetentionForAction(txCtx, action.ID, command, retentionState)
+		_, retentionEvents, err := service.applyRetentionForAction(txCtx, action.ID, command, retentionState)
 		if err != nil {
 			return err
 		}

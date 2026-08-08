@@ -1,1 +1,23 @@
 .idea/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+
+# Build and cache artifacts
+dist/
+coverage/
+.vite/
+
+# Go local artifacts
+*.test
+*.out
+coverage.out
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
