@@ -1,18 +1,13 @@
 import { useDraggable, useDroppable } from '@dnd-kit/core'
-import {
-  type CSSProperties,
-  type KeyboardEvent,
-  type MouseEvent,
-  useEffect,
-  useState,
-} from 'react'
+import { type CSSProperties, type KeyboardEvent, type MouseEvent } from 'react'
 
-import { useAppSelector } from '../../hooks/redux'
+import { useAppSelector, useAuthCredentials } from '../../hooks/redux'
 import { useTaskAdvice } from '../../hooks/useGameDashboard'
 import {
   ROOM_DROP_ID,
   useRoomItemControls,
 } from '../../hooks/useRoomDragAndDrop'
+import { useRoomSpeech } from '../../hooks/useRoomSpeech'
 import {
   selectGamePet,
   selectGameRoom,
@@ -101,14 +96,7 @@ function RoomObject({
 }
 
 function RoomStage() {
-  const [dismissedAdviceKey, setDismissedAdviceKey] = useState<string | null>(
-    null,
-  )
-  const [dismissedGoalKey, setDismissedGoalKey] = useState<string | null>(null)
-  const [hidingSpeechKey, setHidingSpeechKey] = useState<string | null>(null)
-  const [readyAdviceKey, setReadyAdviceKey] = useState<string | null>(null)
-  const accessToken = useAppSelector((state) => state.auth.accessToken)
-  const userId = useAppSelector((state) => state.auth.user?.id)
+  const { accessToken, userId } = useAuthCredentials()
   const pet = useAppSelector(selectGamePet)
   const room = useAppSelector(selectGameRoom)
   const story = useAppSelector(selectGameStory)
@@ -128,24 +116,23 @@ function RoomStage() {
   const adviceTaskId =
     story?.nextTask?.id ?? activeTaskId ?? completedTaskId ?? null
   const adviceQuery = useTaskAdvice(accessToken, userId, adviceTaskId)
+  const {
+    activeSpeechKey,
+    finishHidingSpeech,
+    hideSpeech,
+    isAdviceVisible,
+    isHiding,
+    speechText,
+  } = useRoomSpeech({
+    adviceTaskId,
+    adviceText: adviceQuery.data?.text,
+    goalKey,
+    goalText: phrase,
+  })
   const items = room?.items ?? emptyRoomItems
   const { isOver, setNodeRef } = useDroppable({ id: ROOM_DROP_ID })
   const { nudgeItem, placeAtPoint, placements, selectedItemCode, selectItem } =
     useRoomItemControls(items)
-
-  useEffect(() => {
-    const isGoalDismissed = !phrase || dismissedGoalKey === goalKey
-
-    if (!adviceTaskId || !isGoalDismissed) {
-      return
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      setReadyAdviceKey(adviceTaskId)
-    }, 5000)
-
-    return () => window.clearTimeout(timeoutId)
-  }, [adviceTaskId, dismissedGoalKey, goalKey, phrase])
 
   if (!pet || !room || !story) {
     return null
@@ -154,31 +141,11 @@ function RoomStage() {
   const visibleItems = items.filter(
     (item) => item.status === 'PLACED' || placements[item.code],
   )
-  const isGoalVisible = Boolean(phrase && dismissedGoalKey !== goalKey)
-  const isAdviceVisible = Boolean(
-    adviceTaskId &&
-    (!phrase || dismissedGoalKey === goalKey) &&
-    readyAdviceKey === adviceTaskId &&
-    dismissedAdviceKey !== adviceTaskId &&
-    adviceQuery.data?.text,
-  )
-  const activeSpeechKey = isGoalVisible
-    ? `goal:${goalKey}`
-    : isAdviceVisible
-      ? `advice:${adviceTaskId}`
-      : null
-  const speechText = isGoalVisible
-    ? phrase
-    : isAdviceVisible
-      ? adviceQuery.data?.text
-      : null
   const selectedItem = items.find(
     (item) => item.code === selectedItemCode && item.status !== 'LOCKED',
   )
   const handleRoomClick = (event: MouseEvent<HTMLElement>) => {
-    if (activeSpeechKey && hidingSpeechKey !== activeSpeechKey) {
-      setHidingSpeechKey(activeSpeechKey)
-    }
+    hideSpeech()
 
     if (!selectedItem || event.target !== event.currentTarget) {
       return
@@ -226,17 +193,8 @@ function RoomStage() {
 
       {activeSpeechKey && speechText && (
         <div
-          className={`room-stage__speech ${hidingSpeechKey === activeSpeechKey ? 'is-hiding' : ''}`}
-          onAnimationEnd={() => {
-            if (hidingSpeechKey === activeSpeechKey) {
-              if (activeSpeechKey.startsWith('goal:')) {
-                setDismissedGoalKey(goalKey)
-              } else if (adviceTaskId) {
-                setDismissedAdviceKey(adviceTaskId)
-              }
-              setHidingSpeechKey(null)
-            }
-          }}
+          className={`room-stage__speech ${isHiding ? 'is-hiding' : ''}`}
+          onAnimationEnd={finishHidingSpeech}
         >
           {speechText}
           {isAdviceVisible && adviceQuery.data?.generatedByAi && (

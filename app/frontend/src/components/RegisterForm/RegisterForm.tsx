@@ -5,12 +5,10 @@ import { Link } from 'react-router-dom'
 
 import { useRegisterMutation } from '../../hooks/useRegisterMutation'
 import { getRegistrationError } from '../../utils/apiErrors'
+import AuthFormField from '../AuthForm/AuthFormField'
 import { type RegisterFormValues, registerSchema } from './registerSchema'
 
-import './RegisterForm.scss'
-
-const fieldErrorId = (field: keyof RegisterFormValues) =>
-  `register-${field}-error`
+import '../AuthForm/AuthForm.scss'
 
 function RegisterForm() {
   const registerMutation = useRegisterMutation()
@@ -28,9 +26,7 @@ function RegisterForm() {
   })
 
   const onSubmit: SubmitHandler<RegisterFormValues> = async (values) => {
-    if (isSubmissionLocked || registerMutation.isPending) {
-      return
-    }
+    if (isSubmissionLocked || registerMutation.isPending) return
 
     setIsSubmissionLocked(true)
     setServerError(null)
@@ -62,90 +58,52 @@ function RegisterForm() {
     isSubmitting || isSubmissionLocked || registerMutation.isPending
 
   return (
-    <form
-      className="register-form"
-      onSubmit={handleSubmit(onSubmit)}
-      noValidate
-    >
-      <div className="register-form__heading">
+    <form className="auth-form" onSubmit={handleSubmit(onSubmit)} noValidate>
+      <div className="auth-form__heading">
         <span>Добро пожаловать!</span>
         <h1>Создайте аккаунт</h1>
         <p>Зарегистрируйтесь, чтобы заботиться об Авитоше.</p>
       </div>
 
       {serverError && (
-        <div className="register-form__server-error" role="alert">
+        <div className="auth-form__server-error" role="alert">
           {serverError}
         </div>
       )}
 
-      <div className="form-field">
-        <label htmlFor="register-email">Email</label>
-        <input
-          id="register-email"
-          type="email"
-          autoComplete="email"
-          placeholder="name@example.com"
-          aria-invalid={Boolean(errors.email)}
-          aria-describedby={errors.email ? fieldErrorId('email') : undefined}
-          {...register('email')}
-        />
-        {errors.email && (
-          <span id={fieldErrorId('email')} role="alert">
-            {errors.email.message}
-          </span>
-        )}
-      </div>
+      <AuthFormField
+        id="register-email"
+        label="Email"
+        type="email"
+        autoComplete="email"
+        placeholder="name@example.com"
+        field={register('email')}
+        error={errors.email?.message}
+      />
+      <AuthFormField
+        id="register-password"
+        label="Пароль"
+        type="password"
+        autoComplete="new-password"
+        placeholder="Минимум 8 символов"
+        field={register('password')}
+        error={errors.password?.message}
+      />
+      <AuthFormField
+        id="register-confirm-password"
+        label="Повторите пароль"
+        type="password"
+        autoComplete="new-password"
+        placeholder="Повторите пароль"
+        field={register('confirmPassword')}
+        error={errors.confirmPassword?.message}
+      />
 
-      <div className="form-field">
-        <label htmlFor="register-password">Пароль</label>
-        <input
-          id="register-password"
-          type="password"
-          autoComplete="new-password"
-          placeholder="Минимум 8 символов"
-          aria-invalid={Boolean(errors.password)}
-          aria-describedby={
-            errors.password ? fieldErrorId('password') : undefined
-          }
-          {...register('password')}
-        />
-        {errors.password && (
-          <span id={fieldErrorId('password')} role="alert">
-            {errors.password.message}
-          </span>
-        )}
-      </div>
-
-      <div className="form-field">
-        <label htmlFor="register-confirm-password">Повторите пароль</label>
-        <input
-          id="register-confirm-password"
-          type="password"
-          autoComplete="new-password"
-          placeholder="Повторите пароль"
-          aria-invalid={Boolean(errors.confirmPassword)}
-          aria-describedby={
-            errors.confirmPassword ? fieldErrorId('confirmPassword') : undefined
-          }
-          {...register('confirmPassword')}
-        />
-        {errors.confirmPassword && (
-          <span id={fieldErrorId('confirmPassword')} role="alert">
-            {errors.confirmPassword.message}
-          </span>
-        )}
-      </div>
-
-      <button
-        className="register-form__submit"
-        type="submit"
-        disabled={isPending}
-      >
+      <button className="auth-form__submit" type="submit" disabled={isPending}>
         {isPending ? 'Создаём аккаунт…' : 'Зарегистрироваться'}
       </button>
 
-      <p className="register-form__login">
+      <p className="auth-form__footer">
         Уже есть аккаунт? <Link to="/login">Войти</Link>
       </p>
     </form>

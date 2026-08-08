@@ -5,11 +5,10 @@ import { Link } from 'react-router-dom'
 
 import { useLoginMutation } from '../../hooks/useLoginMutation'
 import { getLoginError } from '../../utils/apiErrors'
+import AuthFormField from '../AuthForm/AuthFormField'
 import { type LoginFormValues, loginSchema } from './loginSchema'
 
-import './LoginForm.scss'
-
-const fieldErrorId = (field: keyof LoginFormValues) => `login-${field}-error`
+import '../AuthForm/AuthForm.scss'
 
 function LoginForm() {
   const loginMutation = useLoginMutation()
@@ -26,9 +25,7 @@ function LoginForm() {
   })
 
   const onSubmit: SubmitHandler<LoginFormValues> = async (values) => {
-    if (loginMutation.isPending) {
-      return
-    }
+    if (loginMutation.isPending) return
 
     setServerError(null)
     clearErrors(['email', 'password'])
@@ -56,62 +53,43 @@ function LoginForm() {
   const isPending = isSubmitting || loginMutation.isPending
 
   return (
-    <form className="login-form" onSubmit={handleSubmit(onSubmit)} noValidate>
-      <div className="login-form__heading">
+    <form className="auth-form" onSubmit={handleSubmit(onSubmit)} noValidate>
+      <div className="auth-form__heading">
         <span>С возвращением!</span>
         <h1>Войдите в аккаунт</h1>
         <p>Продолжайте заботиться об Авитоше.</p>
       </div>
 
       {serverError && (
-        <div className="login-form__server-error" role="alert">
+        <div className="auth-form__server-error" role="alert">
           {serverError}
         </div>
       )}
 
-      <div className="login-field">
-        <label htmlFor="login-email">Email</label>
-        <input
-          id="login-email"
-          type="email"
-          autoComplete="email"
-          placeholder="name@example.com"
-          aria-invalid={Boolean(errors.email)}
-          aria-describedby={errors.email ? fieldErrorId('email') : undefined}
-          {...register('email')}
-        />
-        {errors.email && (
-          <span id={fieldErrorId('email')} role="alert">
-            {errors.email.message}
-          </span>
-        )}
-      </div>
+      <AuthFormField
+        id="login-email"
+        label="Email"
+        type="email"
+        autoComplete="email"
+        placeholder="name@example.com"
+        field={register('email')}
+        error={errors.email?.message}
+      />
+      <AuthFormField
+        id="login-password"
+        label="Пароль"
+        type="password"
+        autoComplete="current-password"
+        placeholder="Введите пароль"
+        field={register('password')}
+        error={errors.password?.message}
+      />
 
-      <div className="login-field">
-        <label htmlFor="login-password">Пароль</label>
-        <input
-          id="login-password"
-          type="password"
-          autoComplete="current-password"
-          placeholder="Введите пароль"
-          aria-invalid={Boolean(errors.password)}
-          aria-describedby={
-            errors.password ? fieldErrorId('password') : undefined
-          }
-          {...register('password')}
-        />
-        {errors.password && (
-          <span id={fieldErrorId('password')} role="alert">
-            {errors.password.message}
-          </span>
-        )}
-      </div>
-
-      <button className="login-form__submit" type="submit" disabled={isPending}>
+      <button className="auth-form__submit" type="submit" disabled={isPending}>
         {isPending ? 'Входим…' : 'Войти'}
       </button>
 
-      <p className="login-form__register">
+      <p className="auth-form__footer">
         Нет аккаунта? <Link to="/register">Зарегистрироваться</Link>
       </p>
     </form>

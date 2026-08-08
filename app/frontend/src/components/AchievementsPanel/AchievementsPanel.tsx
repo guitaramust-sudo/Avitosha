@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react'
 
-import { useAppSelector } from '../../hooks/redux'
+import { useAppSelector, useAuthCredentials } from '../../hooks/redux'
 import { useTaskAction } from '../../hooks/useTaskAction'
 import { selectGameAchievements, selectGameTasks } from '../../store/gameSlice'
 import {
@@ -17,8 +17,7 @@ import './AchievementsPanel.scss'
 
 function AchievementsPanel() {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
-  const accessToken = useAppSelector((state) => state.auth.accessToken)
-  const userId = useAppSelector((state) => state.auth.user?.id)
+  const { accessToken, userId } = useAuthCredentials()
   const achievements = useAppSelector(selectGameAchievements)
   const tasks = useAppSelector(selectGameTasks)
   const { isPending, performTaskAction } = useTaskAction(accessToken, userId)

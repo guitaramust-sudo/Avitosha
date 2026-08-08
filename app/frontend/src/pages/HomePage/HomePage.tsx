@@ -4,7 +4,7 @@ import FrequentlyAskedQuestions from '../../components/FrequentlyAskedQuestions/
 import HomeHeader from '../../components/HomeHeader/HomeHeader'
 import ProgressOverview from '../../components/ProgressOverview/ProgressOverview'
 import RoomWorkspace from '../../components/RoomWorkspace/RoomWorkspace'
-import { useAppSelector } from '../../hooks/redux'
+import { useAuthCredentials } from '../../hooks/redux'
 import { useGameDashboard } from '../../hooks/useGameDashboard'
 import { useGameDashboardSync } from '../../hooks/useGameDashboardSync'
 import { useGameSessionGuard } from '../../hooks/useGameSessionGuard'
@@ -13,8 +13,7 @@ import { useGameSocket } from '../../hooks/useGameSocket'
 import './HomePage.scss'
 
 function HomePage() {
-  const accessToken = useAppSelector((state) => state.auth.accessToken)
-  const userId = useAppSelector((state) => state.auth.user?.id)
+  const { accessToken, userId } = useAuthCredentials()
   const dashboard = useGameDashboard(accessToken, userId)
   const isGameReady = useGameDashboardSync(userId, dashboard)
   const hasAuthenticationError = useGameSessionGuard(dashboard)

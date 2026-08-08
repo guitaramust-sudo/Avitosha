@@ -1,12 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { renamePet } from '../api/game'
-import { useAppSelector } from './redux'
+import { useAuthCredentials } from './redux'
 import { gameQueryKeys } from './useGameDashboard'
 
 export const useRenamePetMutation = () => {
-  const accessToken = useAppSelector((state) => state.auth.accessToken)
-  const userId = useAppSelector((state) => state.auth.user?.id)
+  const { accessToken, userId } = useAuthCredentials()
   const queryClient = useQueryClient()
 
   return useMutation({

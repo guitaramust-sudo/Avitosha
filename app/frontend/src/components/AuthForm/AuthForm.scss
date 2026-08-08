@@ -1,6 +1,6 @@
 @use '../../../helpers' as h;
 
-.register-form {
+.auth-form {
   display: grid;
   gap: h.rem(20px);
 
@@ -68,7 +68,7 @@
     }
   }
 
-  &__login {
+  &__footer {
     margin: 0;
     color: h.$color-text-secondary;
     font-size: h.rem(14px);
@@ -82,7 +82,7 @@
   }
 }
 
-.form-field {
+.auth-field {
   display: grid;
   gap: h.rem(8px);
 
@@ -127,7 +127,7 @@
 }
 
 @include h.mobile-small {
-  .register-form {
+  .auth-form {
     gap: h.rem(16px);
 
     &__heading h1 {

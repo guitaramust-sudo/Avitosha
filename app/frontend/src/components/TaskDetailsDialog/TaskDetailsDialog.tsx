@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 
-import { useAppSelector } from '../../hooks/redux'
+import { useAuthCredentials } from '../../hooks/redux'
 import { useGameTask, useTaskAdvice } from '../../hooks/useGameDashboard'
 import {
   roomItemLabels,
@@ -16,8 +16,7 @@ interface TaskDetailsDialogProps {
 }
 
 function TaskDetailsDialog({ onClose, taskId }: TaskDetailsDialogProps) {
-  const accessToken = useAppSelector((state) => state.auth.accessToken)
-  const userId = useAppSelector((state) => state.auth.user?.id)
+  const { accessToken, userId } = useAuthCredentials()
   const closeButtonRef = useRef<HTMLButtonElement>(null)
   const taskQuery = useGameTask(accessToken, userId, taskId)
   const adviceQuery = useTaskAdvice(accessToken, userId, taskId)
