@@ -19,6 +19,10 @@ function ProgressOverview() {
 
   if (!daily || !leaderboard || !pet) return null
 
+  const topLeaders = [...leaderboard.leaders]
+    .sort((left, right) => left.position - right.position)
+    .slice(0, 10)
+
   return (
     <section className="progress-grid" aria-label="Прогресс Авитоши">
       <CollapsibleSection
@@ -112,7 +116,7 @@ function ProgressOverview() {
             {leaderboard.currentUser.completedTasks}
           </p>
           <ol>
-            {leaderboard.leaders.map((leader) => (
+            {topLeaders.map((leader) => (
               <li
                 key={leader.userId}
                 aria-current={

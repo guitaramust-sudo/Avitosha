@@ -1,0 +1,142 @@
+@use '../../../helpers' as h;
+
+.faq {
+  display: grid;
+  grid-template-columns: minmax(h.rem(210px), 0.32fr) minmax(0, 1fr);
+  gap: h.rem(28px);
+  margin: 0 h.rem(14px) h.rem(14px);
+  padding: h.rem(24px);
+  border: h.rem(1px) solid h.$color-border;
+  border-radius: h.$radius-large;
+  background: h.$color-surface;
+  box-shadow: h.$shadow-card;
+
+  &__heading {
+    align-content: start;
+    display: grid;
+    gap: h.rem(7px);
+
+    span {
+      color: h.$color-primary;
+      font-size: h.rem(11px);
+      font-weight: h.$font-weight-bold;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h2,
+    p {
+      margin: 0;
+    }
+
+    h2 {
+      font-size: h.rem(22px);
+    }
+
+    p {
+      color: h.$color-text-secondary;
+      font-size: h.rem(12px);
+      line-height: 1.5;
+    }
+  }
+
+  &__list {
+    display: grid;
+    gap: h.rem(8px);
+  }
+}
+
+.faq-item {
+  overflow: hidden;
+  border: h.rem(1px) solid h.$color-border;
+  border-radius: h.$radius-medium;
+  background: h.$color-surface-soft;
+
+  summary {
+    display: flex;
+    min-height: h.rem(52px);
+    align-items: center;
+    justify-content: space-between;
+    gap: h.rem(16px);
+    padding: h.rem(12px) h.rem(15px);
+    cursor: pointer;
+    font-size: h.rem(14px);
+    font-weight: h.$font-weight-semibold;
+    list-style: none;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+
+    i {
+      display: grid;
+      width: h.rem(26px);
+      height: h.rem(26px);
+      flex: 0 0 auto;
+      place-items: center;
+      border: h.rem(1px) solid h.$color-border;
+      border-radius: 50%;
+      color: h.$color-primary;
+      background: h.$color-surface;
+      font-size: h.rem(18px);
+      font-style: normal;
+      transition: transform 180ms ease;
+    }
+  }
+
+  p {
+    margin: 0;
+    padding: 0 h.rem(56px) h.rem(15px) h.rem(15px);
+    color: h.$color-text-secondary;
+    font-size: h.rem(13px);
+    line-height: 1.55;
+  }
+
+  &[open] {
+    border-color: h.$color-primary;
+    background: h.$color-primary-light;
+
+    summary i {
+      transform: rotate(45deg);
+    }
+  }
+}
+
+@include h.tablet {
+  .faq {
+    grid-template-columns: 1fr;
+    gap: h.rem(18px);
+  }
+}
+
+@include h.mobile {
+  .faq {
+    gap: h.rem(14px);
+    margin: 0 h.rem(10px) h.rem(10px);
+    padding: h.rem(16px);
+
+    &__heading h2 {
+      font-size: h.rem(19px);
+    }
+  }
+
+  .faq-item {
+    summary {
+      min-height: h.rem(48px);
+      padding: h.rem(10px) h.rem(12px);
+      font-size: h.rem(13px);
+    }
+
+    p {
+      padding: 0 h.rem(48px) h.rem(12px) h.rem(12px);
+      font-size: h.rem(12px);
+    }
+  }
+}
+
+@include h.mobile-small {
+  .faq {
+    margin: 0 h.rem(8px) h.rem(8px);
+    padding: h.rem(13px);
+  }
+}
