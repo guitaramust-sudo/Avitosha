@@ -20,6 +20,8 @@
 - [Технологии](#технологии)
 - [Структура проекта](#структура-проекта)
 - [Особенности реализации](#особенности-реализации)
+- [Технические детали](#технические-детали)
+- [Дополнительная документация](#дополнительная-документация)
 - [Локальный запуск](#локальный-запуск-через-docker-compose)
 - [Тестирование](#тестирование)
 - [Ограничения MVP](#ограничения-mvp)
@@ -183,23 +185,10 @@ buf generate
 
 - **Контролируемые границы MVP.** Демонстрационные механизмы, такие как `X-User-ID` и in-memory realtime hub, явно отделены от решений, которые потребовались бы для production-среды.
 
-
-## Дополнительная документация
-
-| Раздел              | Ссылка                                                   |
-| ------------------- | -------------------------------------------------------- |
-| Frontend            | [Документация React-приложения](app/frontend/README.md)  |
-| Backend             | [Исходный код сервисов](app/backend)                     |
-| OpenAPI             | [HTTP-контракт](app/backend/api/openapi.yaml)            |
-| AI-советы           | [Интеграция ProxyAPI](docs/ai-advice.md)                 |
-| Архитектурный аудит | [Avitosha v2](docs/avitosha-v2-audit.md)                 |
-| Производительность  | [Результаты профилирования](docs/performance-profile.md) |
-
-## Модель данных
-
+## Технические детали
 
 <details>
-<summary><strong>Показать модель данных</strong></summary>
+<summary><strong>Модель данных</strong></summary>
 
 Auth-инфраструктура использует `users` и `sessions`. Игровой слой использует:
 
@@ -220,19 +209,16 @@ Auth-инфраструктура использует `users` и `sessions`. И
 
 </details>
 
-## XP, настроение и рейтинг
-
-
 <details>
-<summary><strong>Показать детали про XP, настроение и рейтинг</strong></summary>
+<summary><strong>XP, настроение и рейтинг</strong></summary>
 
 | Уровень | Общий XP |
 | ------: | -------: |
-|       1 |     0–99 |
-|       2 |  100–249 |
-|       3 |  250–449 |
-|       4 |  450–699 |
-|       5 |     700+ |
+| 1 | 0–99 |
+| 2 | 100–249 |
+| 3 | 250–449 |
+| 4 | 450–699 |
+| 5 | 700+ |
 
 XP не сбрасывается. После пятого уровня он продолжает расти. Настроения только нейтральные и позитивные: `CALM`, `CURIOUS`, `HAPPY`, `EXCITED`, `PROUD`, `SLEEPING`.
 
@@ -246,11 +232,8 @@ score = earned_xp + completed_tasks * 20 + completed_stages * 50
 
 </details>
 
-## Характер
-
-
 <details>
-<summary><strong>Показать детали системы характера</strong></summary>
+<summary><strong>Характер питомца</strong></summary>
 
 Каждое действие увеличивает buyer/seller или категорийный score. При пяти действиях открывается ведущий характер:
 
@@ -265,11 +248,8 @@ API возвращает название, описание, icon key, progress 
 
 </details>
 
-## HTTP API
-
-
 <details>
-<summary><strong>Показать HTTP API, AI-советы и пример запроса</strong></summary>
+<summary><strong>HTTP API, AI-советы и пример запроса</strong></summary>
 
 Игровые endpoints принимают короткоживущий JWT:
 
@@ -283,24 +263,24 @@ Authorization: Bearer <access_token>
 X-User-ID: <existing-user-uuid>
 ```
 
-| Метод | Endpoint                                     | Назначение                                                                  |
-| ----- | -------------------------------------------- | --------------------------------------------------------------------------- |
-| GET   | `/healthz`                                   | liveness                                                                    |
-| GET   | `/health/ready`                              | PostgreSQL readiness                                                        |
-| GET   | `/api/v1/pet`                                | питомец, XP, настроение, характер и текущая история                         |
-| PATCH | `/api/v1/pet`                                | безопасное переименование питомца                                           |
-| GET   | `/api/v1/tasks`                              | назначенные задания и награды                                               |
-| GET   | `/api/v1/tasks/{task_id}`                    | одно задание                                                                |
-| GET   | `/api/v1/tasks/{task_id}/advice`             | короткий персональный совет Авитоши по заданию                              |
-| POST  | `/api/v1/actions`                            | mock-событие Авито                                                          |
-| GET   | `/api/v1/room`                               | открытые и заблокированные предметы                                         |
-| GET   | `/api/v1/story`                              | прогресс `FIRST_ROOM` и следующая цель                                      |
-| GET   | `/api/v1/daily-summary`                      | дневной агрегат + retention block (`streak`, `dailyQuest`, `tomorrow`)      |
-| GET   | `/api/v1/leaderboard?period=weekly&limit=10` | недельный топ и позиция пользователя                                        |
-| GET   | `/api/v1/achievements`                       | открытые и будущие достижения                                               |
-| GET   | `/api/v1/rewards/balance`                    | raw reward balances и lifetime earned totals                                |
-| GET   | `/api/v1/rewards/wallet`                     | видимый reward wallet, каталог бонусов, ближайший unlock и progress до него |
-| GET   | `/api/v1/ws`                                 | realtime-события                                                            |
+| Метод | Endpoint | Назначение |
+| ----- | -------- | ---------- |
+| GET | `/healthz` | liveness |
+| GET | `/health/ready` | PostgreSQL readiness |
+| GET | `/api/v1/pet` | питомец, XP, настроение, характер и текущая история |
+| PATCH | `/api/v1/pet` | безопасное переименование питомца |
+| GET | `/api/v1/tasks` | назначенные задания и награды |
+| GET | `/api/v1/tasks/{task_id}` | одно задание |
+| GET | `/api/v1/tasks/{task_id}/advice` | короткий персональный совет Авитоши по заданию |
+| POST | `/api/v1/actions` | mock-событие Авито |
+| GET | `/api/v1/room` | открытые и заблокированные предметы |
+| GET | `/api/v1/story` | прогресс `FIRST_ROOM` и следующая цель |
+| GET | `/api/v1/daily-summary` | дневной агрегат + retention block (`streak`, `dailyQuest`, `tomorrow`) |
+| GET | `/api/v1/leaderboard?period=weekly&limit=10` | недельный топ и позиция пользователя |
+| GET | `/api/v1/achievements` | открытые и будущие достижения |
+| GET | `/api/v1/rewards/balance` | raw reward balances и lifetime earned totals |
+| GET | `/api/v1/rewards/wallet` | видимый reward wallet, каталог бонусов, ближайший unlock и progress до него |
+| GET | `/api/v1/ws` | realtime-события |
 
 Полный контракт доступен в `app/backend/api/openapi.yaml` и через `/swagger/`.
 
@@ -332,11 +312,8 @@ curl -X POST http://localhost:8080/api/v1/actions \
 
 </details>
 
-## WebSocket
-
-
 <details>
-<summary><strong>Показать WebSocket и realtime-события</strong></summary>
+<summary><strong>WebSocket и realtime-события</strong></summary>
 
 Соединение открывается по `/api/v1/ws`. Для CLI можно передать `X-User-ID` или `Authorization`; browser-клиент передаёт короткоживущий access token в query-параметре `access_token`, потому что стандартный WebSocket API не позволяет задать Authorization header.
 
@@ -355,6 +332,19 @@ Hub хранится в памяти процесса, имеет огранич
 
 </details>
 
+
+## Дополнительная документация
+
+| Раздел              | Ссылка                                                   |
+| ------------------- | -------------------------------------------------------- |
+| Frontend            | [Документация React-приложения](app/frontend/README.md)  |
+| Backend             | [Исходный код сервисов](app/backend)                     |
+| OpenAPI             | [HTTP-контракт](app/backend/api/openapi.yaml)            |
+| AI-советы           | [Интеграция ProxyAPI](docs/ai-advice.md)                 |
+| Архитектурный аудит | [Avitosha v2](docs/avitosha-v2-audit.md)                 |
+| Производительность  | [Результаты профилирования](docs/performance-profile.md) |
+
+
 ## Локальный запуск через Docker Compose
 
 Требуются Docker и Docker Compose.
@@ -372,7 +362,60 @@ docker compose up --build
 - Swagger: <http://localhost:8080/swagger/>;
 - PostgreSQL на host: `localhost:5433`.
 
+Для быстрой автоматической проверки основного backend-сценария после запуска
+стека используйте [smoke-сценарий](#smoke-сценарий).
+
 Внутренние `auth-service:9091` и `game-service:9092` доступны только в Compose-сети. Миграции и seed применяет отдельный сервис `migrate` до старта доменных сервисов.
+
+## Smoke-сценарий
+
+После запуска стека установите `curl`, `jq`, `uuidgen` и выполните:
+
+```bash
+./app/backend/scripts/smoke-game.sh
+```
+
+Скрипт регистрирует нового пользователя, лениво создаёт стартовый профиль Авитоши первым игровым запросом, пять раз отправляет `AD_VIEWED`, затем проверяет задание, 30 XP, `DESK`, этап истории, дневную сводку, weekly score 100 и 12 бонусов: 10 за задание плюс 2 за первый день streak.
+
+## Тестирование
+
+### Backend
+
+Основные тесты и проверки:
+
+```bash
+cd app/backend
+go test ./...
+go vet ./...
+go mod verify
+golangci-lint run
+```
+
+PostgreSQL integration-тесты выполняются при наличии отдельной тестовой БД:
+
+```bash
+TEST_DATABASE_URL=postgres://postgres:postgres@localhost:5433/avitosha_test?sslmode=disable \
+  go test ./internal/repository/postgres
+```
+
+Имя базы должно содержать `test`: во время запуска integration-тестов её содержимое очищается.
+
+### Frontend
+
+```bash
+cd app/frontend
+npm test
+npm run lint
+npm run format:check
+npm run build
+```
+
+### Линтеры и статические проверки
+
+На backend используется `golangci-lint` с конфигурацией из [`.golangci.yaml`](.golangci.yaml).
+На frontend линтинг запускается через `npm run lint`, а форматирование отдельно проверяется командой `npm run format:check`.
+
+Эти проверки помогают находить потенциальные ошибки и нарушения стиля, поддерживать единый формат кода и не допускать в проект очевидные проблемы, которые можно обнаружить автоматически.
 
 ## Запуск без Compose
 
@@ -398,58 +441,6 @@ Frontend:
 cd app/frontend
 npm ci
 VITE_API_PROXY_TARGET=http://127.0.0.1:8080 npm run dev
-```
-
-</details>
-
-## Smoke-сценарий
-
-
-<details>
-<summary><strong>Показать smoke-сценарий</strong></summary>
-
-После запуска стека установите `curl`, `jq`, `uuidgen` и выполните:
-
-```bash
-./app/backend/scripts/smoke-game.sh
-```
-
-Скрипт регистрирует нового пользователя, лениво создаёт стартовый профиль Авитоши первым игровым запросом, пять раз отправляет `AD_VIEWED`, затем проверяет задание, 30 XP, `DESK`, этап истории, дневную сводку, weekly score 100 и 12 бонусов: 10 за задание плюс 2 за первый день streak.
-
-</details>
-
-## Тестирование
-
-
-<details>
-<summary><strong>Показать команды тестирования</strong></summary>
-
-Backend:
-
-```bash
-cd app/backend
-go test ./...
-go vet ./...
-go mod verify
-golangci-lint run
-```
-
-PostgreSQL integration-тесты выполняются при наличии безопасной тестовой БД:
-
-```bash
-TEST_DATABASE_URL=postgres://postgres:postgres@localhost:5433/avitosha_test?sslmode=disable go test ./internal/repository/postgres
-```
-
-Имя БД обязано содержать `test`. Тесты очищают её содержимое.
-
-Frontend:
-
-```bash
-cd app/frontend
-npm test
-npm run lint
-npm run format:check
-npm run build
 ```
 
 </details>
