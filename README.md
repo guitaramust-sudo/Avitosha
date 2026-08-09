@@ -2,6 +2,37 @@
 
 Авитоша — MVP эмоционального и визуального слоя поверх полезных действий пользователя на Авито. Проект не создаёт вторую валюту, магазин или систему наказаний: реальные действия продвигают задания, развивают виртуального питомца и постепенно обустраивают его комнату. Стартовый игровой профиль создаётся сразу во время регистрации пользователя.
 
+<p align="center">
+  <img src="app/frontend/images/screenshots/desktop-home.png" alt="Игровой кабинет Авитоши" width="100%" />
+</p>
+
+<p align="center">
+  <strong>Задания · питомец · комната · награды · realtime · AI-советы</strong>
+</p>
+
+## Быстрая навигация
+
+| Раздел              | Ссылка                                                   |
+| ------------------- | -------------------------------------------------------- |
+| Frontend            | [Документация React-приложения](app/frontend/README.md)  |
+| Backend             | [Исходный код сервисов](app/backend)                     |
+| OpenAPI             | [HTTP-контракт](app/backend/api/openapi.yaml)            |
+| AI-советы           | [Интеграция ProxyAPI](docs/ai-advice.md)                 |
+| Архитектурный аудит | [Avitosha v2](docs/avitosha-v2-audit.md)                 |
+| Производительность  | [Результаты профилирования](docs/performance-profile.md) |
+
+## Интерфейс
+
+Интерфейс адаптирован под desktop, tablet и phone. На небольших экранах кабинет перестраивается в одну колонку, а комната, питомец и предметы сохраняют рабочую область.
+
+| Tablet                                                                                              | Phone                                                                                              |
+| --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| <img src="app/frontend/images/screenshots/tablet-home.png" alt="Авитоша на планшете" width="620" /> | <img src="app/frontend/images/screenshots/phone-home.png" alt="Авитоша на телефоне" width="280" /> |
+
+| Регистрация                                                                                                | Вход                                                                                             |
+| ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| <img src="app/frontend/images/screenshots/desktop-register.png" alt="Регистрация в Авитоше" width="620" /> | <img src="app/frontend/images/screenshots/desktop-login.png" alt="Вход в Авитошу" width="620" /> |
+
 ## Основной цикл
 
 ```text
@@ -75,12 +106,12 @@ Auth-инфраструктура использует `users` и `sessions`. И
 ## XP, настроение и рейтинг
 
 | Уровень | Общий XP |
-|---:|---:|
-| 1 | 0–99 |
-| 2 | 100–249 |
-| 3 | 250–449 |
-| 4 | 450–699 |
-| 5 | 700+ |
+| ------: | -------: |
+|       1 |     0–99 |
+|       2 |  100–249 |
+|       3 |  250–449 |
+|       4 |  450–699 |
+|       5 |     700+ |
 
 XP не сбрасывается. После пятого уровня он продолжает расти. Настроения только нейтральные и позитивные: `CALM`, `CURIOUS`, `HAPPY`, `EXCITED`, `PROUD`, `SLEEPING`.
 
@@ -119,23 +150,24 @@ Authorization: Bearer <access_token>
 X-User-ID: <existing-user-uuid>
 ```
 
-| Метод | Endpoint | Назначение |
-|---|---|---|
-| GET | `/healthz` | liveness |
-| GET | `/health/ready` | PostgreSQL readiness |
-| GET | `/api/v1/pet` | питомец, XP, настроение, характер и текущая история |
-| GET | `/api/v1/tasks` | назначенные задания и награды |
-| GET | `/api/v1/tasks/{task_id}` | одно задание |
-| GET | `/api/v1/tasks/{task_id}/advice` | короткий персональный совет Авитоши по заданию |
-| POST | `/api/v1/actions` | mock-событие Авито |
-| GET | `/api/v1/room` | открытые и заблокированные предметы |
-| GET | `/api/v1/story` | прогресс `FIRST_ROOM` и следующая цель |
-| GET | `/api/v1/daily-summary` | дневной агрегат + retention block (`streak`, `dailyQuest`, `tomorrow`) |
-| GET | `/api/v1/leaderboard?period=weekly&limit=10` | недельный топ и позиция пользователя |
-| GET | `/api/v1/achievements` | открытые и будущие достижения |
-| GET | `/api/v1/rewards/balance` | raw reward balances и lifetime earned totals |
-| GET | `/api/v1/rewards/wallet` | видимый reward wallet, каталог бонусов, ближайший unlock и progress до него |
-| GET | `/api/v1/ws` | realtime-события |
+| Метод | Endpoint                                     | Назначение                                                                  |
+| ----- | -------------------------------------------- | --------------------------------------------------------------------------- |
+| GET   | `/healthz`                                   | liveness                                                                    |
+| GET   | `/health/ready`                              | PostgreSQL readiness                                                        |
+| GET   | `/api/v1/pet`                                | питомец, XP, настроение, характер и текущая история                         |
+| PATCH | `/api/v1/pet`                                | безопасное переименование питомца                                           |
+| GET   | `/api/v1/tasks`                              | назначенные задания и награды                                               |
+| GET   | `/api/v1/tasks/{task_id}`                    | одно задание                                                                |
+| GET   | `/api/v1/tasks/{task_id}/advice`             | короткий персональный совет Авитоши по заданию                              |
+| POST  | `/api/v1/actions`                            | mock-событие Авито                                                          |
+| GET   | `/api/v1/room`                               | открытые и заблокированные предметы                                         |
+| GET   | `/api/v1/story`                              | прогресс `FIRST_ROOM` и следующая цель                                      |
+| GET   | `/api/v1/daily-summary`                      | дневной агрегат + retention block (`streak`, `dailyQuest`, `tomorrow`)      |
+| GET   | `/api/v1/leaderboard?period=weekly&limit=10` | недельный топ и позиция пользователя                                        |
+| GET   | `/api/v1/achievements`                       | открытые и будущие достижения                                               |
+| GET   | `/api/v1/rewards/balance`                    | raw reward balances и lifetime earned totals                                |
+| GET   | `/api/v1/rewards/wallet`                     | видимый reward wallet, каталог бонусов, ближайший unlock и progress до него |
+| GET   | `/api/v1/ws`                                 | realtime-события                                                            |
 
 Полный контракт доступен в `app/backend/api/openapi.yaml` и через `/swagger/`.
 
@@ -277,7 +309,7 @@ npm run build
 - `X-User-ID` допустим только для демонстрации и должен быть удалён при реальной интеграции;
 - in-memory hub game-service не разделяет события между несколькими репликами game-service; перед горизонтальным масштабированием нужен Redis Streams, NATS JetStream или Kafka;
 - события сохраняются в БД, но доставка WebSocket не является durable outbox;
-- история и позиции мебели фиксированы; редактора комнаты нет;
+- история и стартовые позиции мебели фиксированы; редактор комнаты работает локально, но раскладка пока не сохраняется на backend;
 - реализована одна сюжетная линия и один питомец на пользователя;
 - нет отдельной валюты, магазина, голода, болезней, наказаний, PvP и платежей.
 
