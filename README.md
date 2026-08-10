@@ -33,16 +33,17 @@
 
 Проект развернут и доступен в интернете: вы можете открыть демо по ссылке и проверить основной пользовательский сценарий без локального запуска.
 
-**Демо проекта:** [avitosha.timurgilyazov.ru](https://avitosha.timurgilyazov.ru)
+**Демо проекта:** [avitosha.timurgilyazov.ru](https://avitosha.timurgilyazov.ru/)<br />
+**Документация API (Swagger):** [avitosha.timurgilyazov.ru/swagger/](https://avitosha.timurgilyazov.ru/swagger/)
 
-**Swagger API:** [avitosha.timurgilyazov.ru/swagger/](https://avitosha.timurgilyazov.ru/swagger/)
+> Swagger опубликован для просмотра HTTP-контракта API. Интерактивные запросы через `Try it out` используют локальный backend `http://localhost:8080` и не отправляются на production-сервер. Для проверки пользовательского-сценария используйте веб-интерфейс демо (ссылка представлена выше).
 
 Что можно быстро проверить:
 
 - регистрацию нового пользователя;
 - вход и повторный вход после выхода;
 - обновление прогресса задач и состояния интерфейса;
-- доступность backend API через Swagger.
+- структуру и контракт backend API через Swagger.
 
 ## Интерфейс
 
@@ -489,6 +490,7 @@ VITE_API_PROXY_TARGET=http://127.0.0.1:8080 npm run dev
 - Спроектировал полный безопасный контур авторизации: регистрацию, вход, refresh, logout и получение текущего пользователя. Реализовал bcrypt, короткоживущие JWT access-токены, opaque refresh-токены с хранением SHA-256-хешей, атомарную ротацию, отзыв и поддержку нескольких сессий.
 - Построил HTTP-слой авторизации с Bearer middleware, HttpOnly cookies, CORS, request logging, recovery middleware, единым отображением ошибок, OpenAPI-контрактом и Swagger UI.
 - Реализовал retention и reward-механики: серии активности, ежедневные задания, прогноз следующего дня, дополнительные награды, кошелёк и каталог бонусов. Интегрировал их в транзакционный игровой контур и покрыл unit-, repository-, handler-, migration- и smoke-тестами.
+- Реализовал production-деплой приложения в Yandex Cloud и обеспечил его доступность по адресу [avitosha.timurgilyazov.ru](https://avitosha.timurgilyazov.ru/). Настроил отдельный Docker Compose-стек, multi-stage сборку frontend, nginx, автоматический HTTPS и reverse proxy через Caddy. Изолировал PostgreSQL, API gateway и gRPC-сервисы во внутренних сетях, оставив публичными только порты 80/443, а также добавил persistent volumes, миграции и health checks.
 
 ### Стас Михалев — ядро виртуального питомца
 
