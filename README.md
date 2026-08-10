@@ -482,7 +482,7 @@ VITE_API_PROXY_TARGET=http://127.0.0.1:8080 npm run dev
 
 ## Команда и вклад участников
 
-### Тимур Гилязов — backend foundation, авторизация и retention
+### Тимур Гилязов — основа бэкенда, авторизация, retention и деплой приложения
 
 Репозиторий: [timur-developer/avitosha-backend-contribution](https://github.com/timur-developer/avitosha-backend-contribution)
 
