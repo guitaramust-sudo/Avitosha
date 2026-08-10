@@ -1,3 +1,5 @@
+name: avitosha-prod
+
 x-common-backend: &common-backend
   build:
     context: ./app/backend

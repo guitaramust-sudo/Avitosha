@@ -8,6 +8,7 @@
 
 # Production data and certificate material
 *.sql
+!app/backend/migrations/*.sql
 *.dump
 *.backup
 backups/

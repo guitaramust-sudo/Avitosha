@@ -7,11 +7,13 @@
 </p>
 
 <p align="center">
-  <strong>Задания · питомец · комната · награды · realtime · AI-советы</strong>
+  <strong>Задания · питомец · комната · награды · realtime · AI-советы</strong><br />
+  <strong>Проект доступен по ссылке: <a href="https://avitosha.timurgilyazov.ru">avitosha.timurgilyazov.ru</a></strong>
 </p>
 
 ## Содержание
 
+- [Демо](#демо)
 - [Интерфейс](#интерфейс)
 - [Возможности MVP](#возможности-mvp)
 - [Основной цикл](#основной-цикл)
@@ -26,6 +28,20 @@
 - [Тестирование](#тестирование)
 - [Ограничения MVP](#ограничения-mvp)
 - [Команда и вклад участников](#команда-и-вклад-участников)
+
+## Демо
+
+Проект развернут и доступен в интернете: жюри может открыть демо по ссылке и проверить основной пользовательский сценарий без локального запуска.
+
+**Демо проекта:** [avitosha.timurgilyazov.ru](https://avitosha.timurgilyazov.ru)
+**Swagger API:** [avitosha.timurgilyazov.ru/swagger/](https://avitosha.timurgilyazov.ru/swagger/)
+
+Что можно быстро проверить:
+
+- регистрацию нового пользователя;
+- вход и повторный вход после выхода;
+- обновление прогресса задач и состояния интерфейса;
+- доступность backend API через Swagger.
 
 ## Интерфейс
 
@@ -334,15 +350,14 @@ Hub хранится в памяти процесса, имеет огранич
 
 ## Дополнительная документация
 
-| Раздел                | Ссылка                                                           |
-| --------------------- | ---------------------------------------------------------------- |
-| Frontend              | [Документация React-приложения](app/frontend/README.md)          |
-| Backend               | [Исходный код сервисов](app/backend)                             |
-| OpenAPI               | [HTTP-контракт](app/backend/api/openapi.yaml)                    |
-| AI-советы             | [Интеграция ProxyAPI](docs/ai-advice.md)                         |
-| Архитектурный аудит   | [Avitosha v2](docs/avitosha-v2-audit.md)                         |
-| Производительность    | [Результаты профилирования](docs/performance-profile.md)         |
-| Production deployment | [Yandex Cloud и Docker Compose](docs/yandex-cloud-deployment.md) |
+| Раздел              | Ссылка                                                   |
+| ------------------- | -------------------------------------------------------- |
+| Frontend            | [Документация React-приложения](app/frontend/README.md)  |
+| Backend             | [Исходный код сервисов](app/backend)                     |
+| OpenAPI             | [HTTP-контракт](app/backend/api/openapi.yaml)            |
+| AI-советы           | [Интеграция ProxyAPI](docs/ai-advice.md)                 |
+| Архитектурный аудит | [Avitosha v2](docs/avitosha-v2-audit.md)                 |
+| Производительность  | [Результаты профилирования](docs/performance-profile.md) |
 
 ## Локальный запуск через Docker Compose
 
@@ -360,24 +375,6 @@ docker compose up --build
 - API gateway: <http://localhost:8080>;
 - Swagger: <http://localhost:8080/swagger/>;
 - PostgreSQL на host: `localhost:5433`.
-
-## Production-запуск
-
-Production-конфигурация отделена от локальной и запускается только явной командой:
-
-```bash
-cp .env.prod.example .env.prod
-# заполните .env.prod реальными секретами, не добавляя файл в Git
-docker compose --env-file .env.prod -f compose.prod.yaml up -d --build
-```
-
-Caddy — единственная публичная точка входа на 80/443. PostgreSQL, frontend,
-API gateway и gRPC-сервисы доступны только внутри Docker-сетей. 
-
-Для быстрой автоматической проверки основного backend-сценария после запуска
-стека используйте [smoke-сценарий](#smoke-сценарий).
-
-Внутренние `auth-service:9091` и `game-service:9092` доступны только в Compose-сети. Миграции и seed применяет отдельный сервис `migrate` до старта доменных сервисов.
 
 ## Smoke-сценарий
 
@@ -424,7 +421,7 @@ npm run build
 
 ### Линтеры и статические проверки
 
-На backend используется `golangci-lint` с конфигурацией из [`.golangci.yaml`](.golangci.yaml).
+На backend используется `golangci-lint` с конфигурацией из [`app/backend/.golangci.yml`](app/backend/.golangci.yml).
 На frontend линтинг запускается через `npm run lint`, а форматирование отдельно проверяется командой `npm run format:check`.
 
 Эти проверки помогают находить потенциальные ошибки и нарушения стиля, поддерживать единый формат кода и не допускать в проект очевидные проблемы, которые можно обнаружить автоматически.
