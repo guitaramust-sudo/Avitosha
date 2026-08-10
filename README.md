@@ -213,12 +213,12 @@ Auth-инфраструктура использует `users` и `sessions`. И
 <summary><strong>XP, настроение и рейтинг</strong></summary>
 
 | Уровень | Общий XP |
-| ------: | -------: |
-|       1 |     0–99 |
-|       2 |  100–249 |
-|       3 |  250–449 |
-|       4 |  450–699 |
-|       5 |     700+ |
+| -------:| --------:|
+| 1       | 0–99     |
+| 2       | 100–249  |
+| 3       | 250–449  |
+| 4       | 450–699  |
+| 5       | 700+     |
 
 XP не сбрасывается. После пятого уровня он продолжает расти. Настроения только нейтральные и позитивные: `CALM`, `CURIOUS`, `HAPPY`, `EXCITED`, `PROUD`, `SLEEPING`.
 
@@ -334,14 +334,15 @@ Hub хранится в памяти процесса, имеет огранич
 
 ## Дополнительная документация
 
-| Раздел              | Ссылка                                                   |
-| ------------------- | -------------------------------------------------------- |
-| Frontend            | [Документация React-приложения](app/frontend/README.md)  |
-| Backend             | [Исходный код сервисов](app/backend)                     |
-| OpenAPI             | [HTTP-контракт](app/backend/api/openapi.yaml)            |
-| AI-советы           | [Интеграция ProxyAPI](docs/ai-advice.md)                 |
-| Архитектурный аудит | [Avitosha v2](docs/avitosha-v2-audit.md)                 |
-| Производительность  | [Результаты профилирования](docs/performance-profile.md) |
+| Раздел                | Ссылка                                                           |
+| --------------------- | ---------------------------------------------------------------- |
+| Frontend              | [Документация React-приложения](app/frontend/README.md)          |
+| Backend               | [Исходный код сервисов](app/backend)                             |
+| OpenAPI               | [HTTP-контракт](app/backend/api/openapi.yaml)                    |
+| AI-советы             | [Интеграция ProxyAPI](docs/ai-advice.md)                         |
+| Архитектурный аудит   | [Avitosha v2](docs/avitosha-v2-audit.md)                         |
+| Производительность    | [Результаты профилирования](docs/performance-profile.md)         |
+| Production deployment | [Yandex Cloud и Docker Compose](docs/yandex-cloud-deployment.md) |
 
 ## Локальный запуск через Docker Compose
 
@@ -359,6 +360,19 @@ docker compose up --build
 - API gateway: <http://localhost:8080>;
 - Swagger: <http://localhost:8080/swagger/>;
 - PostgreSQL на host: `localhost:5433`.
+
+## Production-запуск
+
+Production-конфигурация отделена от локальной и запускается только явной командой:
+
+```bash
+cp .env.prod.example .env.prod
+# заполните .env.prod реальными секретами, не добавляя файл в Git
+docker compose --env-file .env.prod -f compose.prod.yaml up -d --build
+```
+
+Caddy — единственная публичная точка входа на 80/443. PostgreSQL, frontend,
+API gateway и gRPC-сервисы доступны только внутри Docker-сетей. 
 
 Для быстрой автоматической проверки основного backend-сценария после запуска
 стека используйте [smoke-сценарий](#smoke-сценарий).

@@ -4,6 +4,17 @@
 .env
 .env.*
 !.env.example
+!.env.prod.example
+
+# Production data and certificate material
+*.sql
+*.dump
+*.backup
+backups/
+caddy_data/
+caddy_config/
+*.pem
+*.key
 
 # Dependencies
 node_modules/
