@@ -484,7 +484,7 @@ VITE_API_PROXY_TARGET=http://127.0.0.1:8080 npm run dev
 
 ### Тимур Гилязов — основа бэкенда, авторизация, retention и деплой приложения
 
-Репозиторий: [timur-developer/avitosha-backend-contribution](https://github.com/timur-developer/avitosha-backend-contribution)
+Репозиторий: [timur-developer/gamification-backend](https://github.com/timur-developer/gamification-backend)
 
 - С нуля заложил фундамент первоначального Go-backend: конфигурацию и bootstrap приложения, структурированное логирование через `slog`, graceful shutdown, health endpoints, подключение к PostgreSQL через `pgxpool`, транзакционный менеджер и первое Docker-окружение проекта.
 - Спроектировал полный безопасный контур авторизации: регистрацию, вход, refresh, logout и получение текущего пользователя. Реализовал bcrypt, короткоживущие JWT access-токены, opaque refresh-токены с хранением SHA-256-хешей, атомарную ротацию, отзыв и поддержку нескольких сессий.
