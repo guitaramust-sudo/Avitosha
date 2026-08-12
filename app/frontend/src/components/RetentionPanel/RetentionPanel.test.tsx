@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { Provider } from 'react-redux'
+import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it } from 'vitest'
 
 import { createAppStore } from '../../store/store'
@@ -85,9 +86,11 @@ describe('RetentionPanel', () => {
     })
 
     render(
-      <Provider store={store}>
-        <RetentionPanel />
-      </Provider>,
+      <MemoryRouter>
+        <Provider store={store}>
+          <RetentionPanel />
+        </Provider>
+      </MemoryRouter>,
     )
 
     expect(
@@ -97,5 +100,8 @@ describe('RetentionPanel', () => {
     expect(screen.getAllByText('Продавец')).toHaveLength(2)
     expect(screen.getByText('Для всех')).toBeVisible()
     expect(screen.getByText(/5 новых заданий/)).toBeVisible()
+    expect(
+      screen.getAllByRole('link', { name: /Посмотреть объявление/ }),
+    ).toHaveLength(4)
   })
 })

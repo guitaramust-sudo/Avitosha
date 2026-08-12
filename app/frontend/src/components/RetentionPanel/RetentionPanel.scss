@@ -114,6 +114,26 @@
       background: h.$color-primary;
     }
   }
+
+  &__action {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: h.rem(8px);
+    margin-top: h.rem(10px);
+    padding: h.rem(8px) h.rem(10px);
+    border-radius: h.$radius-small;
+    color: h.$color-primary;
+    background: h.$color-primary-light;
+    font-size: h.rem(10px);
+    font-weight: h.$font-weight-bold;
+    text-decoration: none;
+
+    &:hover {
+      color: h.$color-white;
+      background: h.$color-primary;
+    }
+  }
 }
 
 .balanced-day {

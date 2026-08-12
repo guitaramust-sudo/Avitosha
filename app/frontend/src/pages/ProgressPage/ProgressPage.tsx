@@ -9,8 +9,8 @@ function ProgressPage() {
     <section className="game-section-page">
       <GamePageHeader
         eyebrow="Путь развития"
-        title="Прогресс Авитоши"
-        description="Выполняйте текущую просьбу, следите за историей и наблюдайте, как действия формируют характер питомца."
+        title="Задания"
+        description="Выполняйте сюжетные и ежедневные задания, следите за историей и наблюдайте, как действия формируют характер питомца."
       />
       <div className="game-section-page__progress-layout">
         <AchievementsPanel view="tasks" />

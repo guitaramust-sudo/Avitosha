@@ -16,10 +16,10 @@ import './GameNavigation.scss'
 
 const navigation = [
   { end: true, icon: '⌂', label: 'Дом', to: '/' },
-  { end: false, icon: '↗', label: 'Прогресс', to: '/progress' },
+  { end: false, icon: '↗', label: 'Задания', to: '/progress' },
   { end: false, icon: '◇', label: 'Награды', to: '/rewards' },
   { end: false, icon: '☆', label: 'Достижения', to: '/achievements' },
-  { end: false, icon: '♛', label: 'Лидерборд', to: '/leaderboard' },
+  { end: false, icon: '♛', label: 'Таблица лидеров', to: '/leaderboard' },
   { end: false, icon: '▦', label: 'Объявления', to: '/marketplace' },
 ] as const
 

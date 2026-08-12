@@ -30,7 +30,10 @@ function ProgressOverview({ view = 'all' }: ProgressOverviewProps) {
   const showLeaderboard = view !== 'overview'
 
   return (
-    <section className="progress-grid" aria-label="Прогресс Авитоши">
+    <section
+      className="progress-grid"
+      aria-label="Задания и статистика Авитоши"
+    >
       {showOverview && (
         <CollapsibleSection
           className="progress-card character-card"
@@ -112,7 +115,7 @@ function ProgressOverview({ view = 'all' }: ProgressOverviewProps) {
       {showLeaderboard && (
         <CollapsibleSection
           className="progress-card leaderboard-card"
-          title="Лидерборд"
+          title="Таблица лидеров"
           tourId="leaderboard"
         >
           <span className="progress-card__icon" aria-hidden="true">
