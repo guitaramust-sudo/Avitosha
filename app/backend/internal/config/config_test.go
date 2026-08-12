@@ -99,6 +99,41 @@ func TestLoadFromEnvUsesDefaults(t *testing.T) {
 	}
 }
 
+func TestLoadFromEnvLoadsObjectStorage(t *testing.T) {
+	t.Parallel()
+
+	cfg, err := LoadFromEnv(mapGetter(map[string]string{
+		"HTTP_ADDR": "127.0.0.1:8080", "DATABASE_URL": "postgres://test",
+		"FRONTEND_ORIGIN": "http://localhost:3000", "JWT_SIGNING_KEY": "test-key",
+		"JWT_ISSUER": "avitosha", "JWT_AUDIENCE": "avitosha-web",
+		"S3_BUCKET": "photos", "S3_ACCESS_KEY_ID": "access", "S3_SECRET_ACCESS_KEY": "secret",
+		"S3_PUBLIC_BASE_URL": "https://cdn.example.test/photos/", "S3_UPLOAD_TTL": "5m",
+		"S3_MAX_FILE_SIZE": "2048",
+	}))
+	if err != nil {
+		t.Fatalf("LoadFromEnv() error = %v", err)
+	}
+	if !cfg.ObjectStorageEnabled() || cfg.S3Bucket != "photos" || cfg.S3UploadTTL != 5*time.Minute || cfg.S3MaxFileSize != 2048 {
+		t.Fatalf("object storage config = %+v", cfg)
+	}
+	if cfg.S3PublicBaseURL != "https://cdn.example.test/photos" {
+		t.Fatalf("S3PublicBaseURL = %q", cfg.S3PublicBaseURL)
+	}
+}
+
+func TestLoadFromEnvRejectsPartialObjectStorageConfig(t *testing.T) {
+	t.Parallel()
+
+	_, err := LoadFromEnv(mapGetter(map[string]string{
+		"HTTP_ADDR": "127.0.0.1:8080", "DATABASE_URL": "postgres://test",
+		"FRONTEND_ORIGIN": "http://localhost:3000", "JWT_SIGNING_KEY": "test-key",
+		"JWT_ISSUER": "avitosha", "JWT_AUDIENCE": "avitosha-web", "S3_BUCKET": "photos",
+	}))
+	if err == nil || !strings.Contains(err.Error(), "S3_ACCESS_KEY_ID") {
+		t.Fatalf("error = %v, want incomplete S3 config error", err)
+	}
+}
+
 func TestLoadFromEnvRejectsInvalidProxyAPITimeout(t *testing.T) {
 	t.Parallel()
 	_, err := LoadFromEnv(mapGetter(map[string]string{

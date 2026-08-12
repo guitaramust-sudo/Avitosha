@@ -358,6 +358,7 @@ Hub хранится в памяти процесса, имеет огранич
 | Backend             | [Исходный код сервисов](app/backend)                     |
 | OpenAPI             | [HTTP-контракт](app/backend/api/openapi.yaml)            |
 | AI-советы           | [Интеграция ProxyAPI](docs/ai-advice.md)                 |
+| Загрузка фотографий | [MinIO Object Storage](docs/frontend-photo-uploads.md)    |
 | Архитектурный аудит | [Avitosha v2](docs/avitosha-v2-audit.md)                 |
 | Производительность  | [Результаты профилирования](docs/performance-profile.md) |
 
@@ -376,6 +377,8 @@ docker compose up --build
 - frontend: <http://localhost:3000>;
 - API gateway: <http://localhost:8080>;
 - Swagger: <http://localhost:8080/swagger/>;
+- MinIO S3 API: <http://localhost:9000>;
+- MinIO Console: <http://localhost:9001>;
 - PostgreSQL на host: `localhost:5433`.
 
 ## Smoke-сценарий

@@ -22,6 +22,7 @@ import {
   removeListingFavorite,
   unpublishListing,
   updateListing,
+  uploadListingPhoto,
 } from '../api/marketplace'
 import { acceptGameEvents } from '../store/gameSlice'
 import { showToast } from '../store/toastSlice'
@@ -153,6 +154,16 @@ export const useCreateListing = () => {
     mutationFn: (request: ListingWriteRequest) =>
       createListing(accessToken ?? '', request),
     onSuccess: refreshMarketplace,
+  })
+}
+
+export const useUploadListingPhotos = () => {
+  const { accessToken } = useAuthCredentials()
+  return useMutation({
+    mutationFn: (files: File[]) =>
+      Promise.all(
+        files.map((file) => uploadListingPhoto(accessToken ?? '', file)),
+      ),
   })
 }
 

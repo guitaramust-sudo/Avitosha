@@ -11,6 +11,62 @@ x-common-backend: &common-backend
     - backend
 
 services:
+  minio:
+    image: quay.io/minio/minio:RELEASE.2025-04-22T22-12-26Z
+    command: server /data --console-address :9001
+    restart: unless-stopped
+    init: true
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in .env.prod}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env.prod}
+      MINIO_REGION_NAME: us-east-1
+      MINIO_API_CORS_ALLOW_ORIGIN: ${FRONTEND_ORIGIN:?Set FRONTEND_ORIGIN in .env.prod}
+    expose:
+      - "9000"
+      - "9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - storage
+
+  minio-seed-download:
+    image: curlimages/curl:8.16.0
+    user: "0:0"
+    entrypoint: ["/bin/sh", "/scripts/download-minio-seed.sh"]
+    volumes:
+      - ./deploy/download-minio-seed.sh:/scripts/download-minio-seed.sh:ro
+      - minio_seed:/seed
+    restart: "no"
+    networks:
+      - outbound
+
+  minio-init:
+    image: quay.io/minio/mc:RELEASE.2025-04-16T18-13-26Z
+    depends_on:
+      minio:
+        condition: service_started
+      minio-seed-download:
+        condition: service_completed_successfully
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in .env.prod}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env.prod}
+      MINIO_APP_ACCESS_KEY: ${MINIO_APP_ACCESS_KEY:?Set MINIO_APP_ACCESS_KEY in .env.prod}
+      MINIO_APP_SECRET_KEY: ${MINIO_APP_SECRET_KEY:?Set MINIO_APP_SECRET_KEY in .env.prod}
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        until mc alias set local http://minio:9000 "$${MINIO_ROOT_USER}" "$${MINIO_ROOT_PASSWORD}"; do sleep 1; done
+        mc mb --ignore-existing local/avitosha-photos
+        mc anonymous set download local/avitosha-photos
+        mc admin user add local "$${MINIO_APP_ACCESS_KEY}" "$${MINIO_APP_SECRET_KEY}" || true
+        mc admin policy attach local writeonly --user "$${MINIO_APP_ACCESS_KEY}"
+        mc mirror --overwrite /seed local/avitosha-photos/demo
+    volumes:
+      - minio_seed:/seed:ro
+    restart: "no"
+    networks:
+      - storage
+
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
@@ -101,6 +157,8 @@ services:
         condition: service_started
       game-service:
         condition: service_started
+      minio-init:
+        condition: service_completed_successfully
     environment:
       APP_ENV: prod
       HTTP_ADDR: :8080
@@ -108,6 +166,13 @@ services:
       REFRESH_TOKEN_TTL: ${REFRESH_TOKEN_TTL:?Set REFRESH_TOKEN_TTL in .env.prod}
       AUTH_GRPC_ADDR: auth-service:9091
       GAME_GRPC_ADDR: game-service:9092
+      S3_ENDPOINT: /storage
+      S3_REGION: us-east-1
+      S3_BUCKET: avitosha-photos
+      S3_ACCESS_KEY_ID: ${MINIO_APP_ACCESS_KEY:?Set MINIO_APP_ACCESS_KEY in .env.prod}
+      S3_SECRET_ACCESS_KEY: ${MINIO_APP_SECRET_KEY:?Set MINIO_APP_SECRET_KEY in .env.prod}
+      S3_UPLOAD_TTL: ${S3_UPLOAD_TTL:-10m}
+      S3_MAX_FILE_SIZE: ${S3_MAX_FILE_SIZE:-10485760}
       LOG_LEVEL: ${LOG_LEVEL:?Set LOG_LEVEL in .env.prod}
       SHUTDOWN_TIMEOUT: ${SHUTDOWN_TIMEOUT:?Set SHUTDOWN_TIMEOUT in .env.prod}
     expose:
@@ -146,6 +211,8 @@ services:
         condition: service_healthy
       frontend:
         condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
     environment:
       CADDY_ACME_EMAIL: ${CADDY_ACME_EMAIL:?Set CADDY_ACME_EMAIL in .env.prod}
     ports:
@@ -158,6 +225,7 @@ services:
       - caddy_config:/config
     networks:
       - edge
+      - storage
 
 volumes:
   postgres_data:
@@ -166,9 +234,15 @@ volumes:
     name: avitosha_prod_caddy_data
   caddy_config:
     name: avitosha_prod_caddy_config
+  minio_data:
+    name: avitosha_prod_minio_data
+  minio_seed:
+    name: avitosha_prod_minio_seed
 
 networks:
   backend:
     internal: true
   edge:
   outbound:
+  storage:
+    internal: true

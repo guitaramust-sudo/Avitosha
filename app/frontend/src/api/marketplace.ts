@@ -6,8 +6,9 @@ import type {
   ListingPage,
   ListingWriteRequest,
   MarketplaceActionResponse,
+  PhotoUploadForm,
 } from '../types/marketplace'
-import { apiRequest } from './client'
+import { ApiError, apiRequest } from './client'
 
 const authorized = (accessToken: string): RequestInit => ({
   headers: { Authorization: `Bearer ${accessToken}` },
@@ -82,6 +83,45 @@ export const createListing = (
       method: 'POST',
     }),
   )
+
+export const uploadListingPhoto = async (accessToken: string, file: File) => {
+  const upload = await apiRequest<PhotoUploadForm>(
+    '/api/v1/uploads/listing-photos',
+    withAuthorization(accessToken, {
+      body: JSON.stringify({
+        contentType: file.type,
+        fileName: file.name,
+        size: file.size,
+      }),
+      method: 'POST',
+    }),
+  )
+  const body = new FormData()
+  Object.entries(upload.fields).forEach(([key, value]) =>
+    body.append(key, value),
+  )
+  body.append('file', file)
+
+  let response: Response
+  try {
+    response = await fetch(upload.url, { body, method: 'POST' })
+  } catch {
+    throw new ApiError(
+      0,
+      'network_error',
+      'Не удалось загрузить фотографию. Проверьте подключение к интернету.',
+    )
+  }
+  if (!response.ok) {
+    throw new ApiError(
+      response.status,
+      'unknown_error',
+      'Хранилище не приняло фотографию. Попробуйте ещё раз.',
+    )
+  }
+
+  return upload.publicUrl
+}
 
 export const updateListing = (
   accessToken: string,

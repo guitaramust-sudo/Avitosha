@@ -44,7 +44,7 @@ function ListingDetailPage() {
   )
   const [deliveryUsed, setDeliveryUsed] = useState(true)
   const [actionError, setActionError] = useState<string | null>(null)
-	const [purchaseCompleted, setPurchaseCompleted] = useState(false)
+  const [purchaseCompleted, setPurchaseCompleted] = useState(false)
 
   useEffect(() => {
     if (!listing || !isAuthenticated || isOwner || viewRegistered.current)
@@ -64,11 +64,14 @@ function ListingDetailPage() {
     try {
       await action()
     } catch (error) {
-		if (error instanceof ApiError && error.code === 'demo_purchase_already_completed') {
-			setPurchaseCompleted(true)
-			setActionError('Вы уже купили этот демо-товар.')
-			return
-		}
+      if (
+        error instanceof ApiError &&
+        error.code === 'demo_purchase_already_completed'
+      ) {
+        setPurchaseCompleted(true)
+        setActionError('Вы уже купили этот демо-товар.')
+        return
+      }
       setActionError(
         error instanceof ApiError
           ? error.message
@@ -181,37 +184,39 @@ function ListingDetailPage() {
                 </button>
               </form>
 
-              {listing.isDemo && listing.status === 'PUBLISHED' && !purchaseCompleted && (
-                <section className="listing-purchase">
-                  <strong>Демо-покупка</strong>
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={deliveryUsed}
-                      onChange={(event) =>
-                        setDeliveryUsed(event.target.checked)
-                      }
-                    />
-                    Использовать Авито Доставку
-                  </label>
-                  <button
-                    type="button"
-                    disabled={purchase.isPending}
-                    onClick={() => {
-                      if (!requireAuthentication()) return
-                      void runAction(() =>
-                        purchase.mutateAsync({
-                          deliveryUsed,
-                          eventId: crypto.randomUUID(),
-                          listingId: listing.id,
-                        }),
-						).then(() => setPurchaseCompleted(true))
-                    }}
-                  >
-                    {purchase.isPending ? 'Оформляем…' : 'Купить демо-товар'}
-                  </button>
-                </section>
-              )}
+              {listing.isDemo &&
+                listing.status === 'PUBLISHED' &&
+                !purchaseCompleted && (
+                  <section className="listing-purchase">
+                    <strong>Демо-покупка</strong>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={deliveryUsed}
+                        onChange={(event) =>
+                          setDeliveryUsed(event.target.checked)
+                        }
+                      />
+                      Использовать Авито Доставку
+                    </label>
+                    <button
+                      type="button"
+                      disabled={purchase.isPending}
+                      onClick={() => {
+                        if (!requireAuthentication()) return
+                        void runAction(() =>
+                          purchase.mutateAsync({
+                            deliveryUsed,
+                            eventId: crypto.randomUUID(),
+                            listingId: listing.id,
+                          }),
+                        ).then(() => setPurchaseCompleted(true))
+                      }}
+                    >
+                      {purchase.isPending ? 'Оформляем…' : 'Купить демо-товар'}
+                    </button>
+                  </section>
+                )}
             </>
           )}
 

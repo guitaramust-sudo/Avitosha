@@ -7,6 +7,7 @@ import {
   publishListing,
   registerListingView,
   updateListing,
+  uploadListingPhoto,
 } from './marketplace'
 
 const jsonResponse = (body: unknown, status = 200) =>
@@ -118,5 +119,42 @@ describe('marketplace API', () => {
         method: 'PATCH',
       }),
     )
+  })
+
+  it('uploads a photo directly using every signed form field', async () => {
+    const uploadForm = {
+      expiresAt: '2026-08-12T10:40:00Z',
+      fields: {
+        key: 'listing-photos/user/photo.jpg',
+        policy: 'signed-policy',
+        'x-amz-signature': 'signature',
+      },
+      maxFileSize: 10_485_760,
+      objectKey: 'listing-photos/user/photo.jpg',
+      publicUrl: '/storage/avitosha-photos/listing-photos/user/photo.jpg',
+      url: '/storage/avitosha-photos',
+    }
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse(uploadForm, 201))
+      .mockResolvedValueOnce(jsonResponse(null, 204))
+    vi.stubGlobal('fetch', fetchMock)
+    const file = new File(['image'], 'photo.jpg', { type: 'image/jpeg' })
+
+    await expect(uploadListingPhoto('access-token', file)).resolves.toBe(
+      uploadForm.publicUrl,
+    )
+
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('/api/v1/uploads/listing-photos')
+    const storageRequest = fetchMock.mock.calls[1]
+    expect(storageRequest?.[0]).toBe(uploadForm.url)
+    const body = (storageRequest?.[1] as RequestInit).body as FormData
+    expect(Array.from(body.keys())).toEqual([
+      'key',
+      'policy',
+      'x-amz-signature',
+      'file',
+    ])
+    expect(body.get('file')).toBe(file)
   })
 })

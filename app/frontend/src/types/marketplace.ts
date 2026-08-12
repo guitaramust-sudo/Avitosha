@@ -45,6 +45,21 @@ export interface ListingWriteRequest {
   photoUrls: string[]
 }
 
+export interface PhotoUploadRequest {
+  fileName: string
+  contentType: string
+  size: number
+}
+
+export interface PhotoUploadForm {
+  url: string
+  fields: Record<string, string>
+  publicUrl: string
+  objectKey: string
+  expiresAt: string
+  maxFileSize: number
+}
+
 export interface ListingMessage {
   id: string
   listingId: string

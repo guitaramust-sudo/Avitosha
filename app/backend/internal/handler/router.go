@@ -35,6 +35,7 @@ type RouterDependencies struct {
 	SecureRefreshCookie      bool
 	GameService              GameUseCase
 	MarketplaceService       MarketplaceUseCase
+	PhotoUploadService       PhotoUploadUseCase
 	EventHub                 realtime.EventSubscriber
 	Now                      func() time.Time
 }
@@ -88,6 +89,7 @@ func mountAPIRoutes(r chi.Router, logger *slog.Logger, deps RouterDependencies) 
 	})
 
 	marketplaceHandler := NewMarketplaceHandler(logger, deps.MarketplaceService, deps.Now)
+	photoUploadHandler := NewPhotoUploadHandler(logger, deps.PhotoUploadService, deps.Now)
 	r.Get("/api/v1/listing-categories", marketplaceHandler.ListCategories)
 	r.Get("/api/v1/listings", marketplaceHandler.ListPublic)
 	r.Get("/api/v1/listings/{listing_id}", marketplaceHandler.GetPublic)
@@ -99,6 +101,7 @@ func mountAPIRoutes(r chi.Router, logger *slog.Logger, deps RouterDependencies) 
 		r.Get("/me/listings", marketplaceHandler.ListMine)
 		r.Get("/me/favorites", marketplaceHandler.ListFavorites)
 		r.Post("/listings", marketplaceHandler.Create)
+		r.Post("/uploads/listing-photos", photoUploadHandler.Create)
 		r.Patch("/listings/{listing_id}", marketplaceHandler.Update)
 		r.Post("/listings/{listing_id}/publish", marketplaceHandler.Publish)
 		r.Post("/listings/{listing_id}/unpublish", marketplaceHandler.Unpublish)

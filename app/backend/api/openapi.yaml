@@ -113,6 +113,22 @@ paths:
       parameters: [ { $ref: '#/components/parameters/PageLimit' }, { $ref: '#/components/parameters/PageOffset' } ]
       responses:
         '200': { description: Own listings, content: { application/json: { schema: { $ref: '#/components/schemas/ListingPage' } } } }
+  /api/v1/uploads/listing-photos:
+    post:
+      tags: [marketplace]
+      operationId: createListingPhotoUpload
+      summary: Create a signed MinIO upload form
+      description: Requires authentication. The returned fields are sent directly to the self-hosted S3-compatible MinIO storage as multipart/form-data; append the file field last. The form accepts one JPEG, PNG or WebP file within the configured size limit.
+      security: [ { bearerAuth: [] }, { userIdHeader: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PhotoUploadRequest' }
+      responses:
+        '201': { description: Signed upload form, content: { application/json: { schema: { $ref: '#/components/schemas/PhotoUploadForm' } } } }
+        '400': { $ref: '#/components/responses/InvalidRequest' }
+        '503': { $ref: '#/components/responses/InternalError' }
   /api/v1/listings/{listing_id}/favorite:
     parameters: [ { $ref: '#/components/parameters/ListingID' } ]
     put:
@@ -842,6 +858,27 @@ components:
         priceKopecks: { type: integer, format: int64, minimum: 0 }
         photoUrls: { type: array, maxItems: 10, items: { type: string, format: uri } }
         eventId: { type: string, format: uuid }
+    PhotoUploadRequest:
+      type: object
+      additionalProperties: false
+      required: [fileName, contentType, size]
+      properties:
+        fileName: { type: string, minLength: 1, example: sofa.jpg }
+        contentType: { type: string, enum: [image/jpeg, image/png, image/webp] }
+        size: { type: integer, format: int64, minimum: 1, example: 524288 }
+    PhotoUploadForm:
+      type: object
+      required: [url, fields, publicUrl, objectKey, expiresAt, maxFileSize]
+      properties:
+        url: { type: string, format: uri-reference, example: '/storage/avitosha-photos' }
+        fields:
+          type: object
+          additionalProperties: { type: string }
+          description: Signed multipart fields. Send every field unchanged and append the binary `file` part last.
+        publicUrl: { type: string, format: uri-reference }
+        objectKey: { type: string, example: 'listing-photos/user-id/object-id.jpg' }
+        expiresAt: { type: string, format: date-time }
+        maxFileSize: { type: integer, format: int64 }
     ListingUpdateRequest:
       allOf:
         - $ref: '#/components/schemas/ListingWriteRequest'

@@ -12,6 +12,13 @@ avitosha.timurgilyazov.ru {
 		Referrer-Policy "strict-origin-when-cross-origin"
 	}
 
+	handle_path /storage/* {
+		reverse_proxy minio:9000 {
+			header_up Host {upstream_hostport}
+			header_up X-Real-IP {remote_host}
+		}
+	}
+
 	@backend path /api/* /swagger /swagger/* /health/* /healthz
 	reverse_proxy @backend api-gateway:8080 {
 		header_up Host {host}

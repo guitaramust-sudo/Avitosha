@@ -59,10 +59,17 @@ func NewGateway(cfg config.Config, logger *slog.Logger) (*GatewayApp, error) {
 	ready := grpcServicesPinger{
 		healthv1.NewHealthClient(authConnection), healthv1.NewHealthClient(gameConnection),
 	}
+	photoUploads, err := newPhotoUploadService(cfg)
+	if err != nil {
+		_ = authConnection.Close()
+		_ = gameConnection.Close()
+		return nil, fmt.Errorf("create photo upload service: %w", err)
+	}
 	router := handler.NewRouter(handler.RouterDependencies{
 		Logger: logger, DB: ready, AuthService: auth, AccessTokenAuthenticator: auth,
 		FrontendOrigin: cfg.FrontendOrigin, RefreshTokenTTL: cfg.RefreshTokenTTL,
 		SecureRefreshCookie: cfg.AppEnv == config.AppEnvProd, GameService: game, MarketplaceService: game, EventHub: game,
+		PhotoUploadService: photoUploads,
 	})
 	return &GatewayApp{
 		logger: logger, connections: []*grpc.ClientConn{authConnection, gameConnection},

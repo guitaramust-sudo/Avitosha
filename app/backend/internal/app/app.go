@@ -70,6 +70,10 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, err
 	}
 	game := newGameService(pool, txManager, eventHub, adviceGenerator)
 	marketplace := usecase.NewMarketplaceService(postgres.NewGameRepository(pool), txManager, uuid.New, game)
+	photoUploads, err := newPhotoUploadService(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("create photo upload service: %w", err)
+	}
 
 	authService, err := usecase.NewAuthService(usecase.AuthConfig{
 		AccessTokenTTL:  cfg.AccessTokenTTL,
@@ -104,6 +108,7 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, err
 		SecureRefreshCookie:      cfg.AppEnv == config.AppEnvProd,
 		GameService:              game,
 		MarketplaceService:       marketplace,
+		PhotoUploadService:       photoUploads,
 		EventHub:                 eventHub,
 	})
 	server := &http.Server{
@@ -115,6 +120,17 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, err
 	}
 
 	return newApp(logger, server, pool, cfg.ShutdownTimeout), nil
+}
+
+func newPhotoUploadService(cfg config.Config) (*usecase.PhotoUploadService, error) {
+	if !cfg.ObjectStorageEnabled() {
+		return nil, nil
+	}
+	return usecase.NewPhotoUploadService(usecase.PhotoUploadConfig{
+		Endpoint: cfg.S3Endpoint, Region: cfg.S3Region, Bucket: cfg.S3Bucket,
+		AccessKeyID: cfg.S3AccessKeyID, SecretAccessKey: cfg.S3SecretAccessKey,
+		PublicBaseURL: cfg.S3PublicBaseURL, TTL: cfg.S3UploadTTL, MaxFileSize: cfg.S3MaxFileSize,
+	}, uuid.New)
 }
 
 func newGameService(
