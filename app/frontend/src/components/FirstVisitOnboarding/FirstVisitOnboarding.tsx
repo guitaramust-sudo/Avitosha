@@ -1,4 +1,5 @@
 import { type CSSProperties, useCallback, useEffect, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 
 import { useAppDispatch, useAppSelector } from '../../hooks/redux'
 import { selectGamePet } from '../../store/gameSlice'
@@ -18,42 +19,49 @@ import './FirstVisitOnboarding.scss'
 
 const tourSteps = [
   {
+    path: '/progress',
     target: 'tasks',
     title: 'Задания и достижения',
     description:
       'Выполняйте задания, получайте опыт, предметы для комнаты и достижения.',
   },
   {
+    path: '/',
     target: 'room',
     title: 'Комната Авитоши',
     description:
       'Здесь живёт питомец. Открытые предметы можно свободно расставлять по комнате.',
   },
   {
+    path: '/',
     target: 'collection',
     title: 'Коллекция предметов',
     description:
       'Перетаскивайте доступные предметы в комнату. Заблокированные откроются за задания.',
   },
   {
+    path: '/progress',
     target: 'character',
     title: 'Характер питомца',
     description:
       'Действия на Avito формируют характер Авитоши и открывают новые особенности.',
   },
   {
+    path: '/leaderboard',
     target: 'leaderboard',
     title: 'Лидерборд',
     description:
       'Сравнивайте недельный прогресс и место Авитоши с другими игроками.',
   },
   {
+    path: '/rewards',
     target: 'wallet',
     title: 'Кошелёк наград',
     description:
       'Здесь видны Avito-бонусы, открытые награды и прогресс до следующей цели.',
   },
   {
+    path: '/rewards',
     target: 'retention',
     title: 'Возвращайтесь каждый день',
     description:
@@ -70,6 +78,8 @@ interface HighlightRect {
 
 function FirstVisitOnboarding() {
   const dispatch = useAppDispatch()
+  const location = useLocation()
+  const navigate = useNavigate()
   const userId = useAppSelector((state) => state.auth.user?.id)
   const pet = useAppSelector(selectGamePet)
   const onboarding = useAppSelector(selectOnboarding)
@@ -99,8 +109,14 @@ function FirstVisitOnboarding() {
   useEffect(() => {
     if (onboarding.stage !== 'tour') return
 
+    const step = tourSteps[stepIndex]
+    if (location.pathname !== step.path) {
+      void navigate(step.path)
+      return
+    }
+
     const target = document.querySelector<HTMLElement>(
-      `[data-tour="${tourSteps[stepIndex].target}"]`,
+      `[data-tour="${step.target}"]`,
     )
     if (!target) return
 
@@ -125,7 +141,7 @@ function FirstVisitOnboarding() {
       window.removeEventListener('resize', updateHighlight)
       window.removeEventListener('scroll', updateHighlight, true)
     }
-  }, [onboarding.stage, stepIndex])
+  }, [location.pathname, navigate, onboarding.stage, stepIndex])
 
   useEffect(() => {
     if (onboarding.stage !== 'tour') return

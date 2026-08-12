@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Provider } from 'react-redux'
+import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { setUser } from '../../store/authSlice'
@@ -34,20 +35,22 @@ describe('FirstVisitOnboarding', () => {
     markOnboardingPending(userId)
 
     render(
-      <Provider store={store}>
-        {[
-          'tasks',
-          'room',
-          'collection',
-          'character',
-          'leaderboard',
-          'wallet',
-          'retention',
-        ].map((target) => (
-          <div data-tour={target} key={target} />
-        ))}
-        <FirstVisitOnboarding />
-      </Provider>,
+      <MemoryRouter>
+        <Provider store={store}>
+          {[
+            'tasks',
+            'room',
+            'collection',
+            'character',
+            'leaderboard',
+            'wallet',
+            'retention',
+          ].map((target) => (
+            <div data-tour={target} key={target} />
+          ))}
+          <FirstVisitOnboarding />
+        </Provider>
+      </MemoryRouter>,
     )
 
     expect(

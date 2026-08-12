@@ -1,0 +1,47 @@
+@use '../../helpers' as h;
+
+.game-section-page {
+  display: grid;
+  gap: h.rem(28px);
+
+  &__progress-layout {
+    display: grid;
+    grid-template-columns: minmax(h.rem(360px), 0.8fr) minmax(0, 1.2fr);
+    align-items: start;
+    gap: h.rem(16px);
+  }
+
+  &__cards {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: h.rem(16px);
+  }
+
+  .progress-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .progress-card {
+    background: h.$color-surface;
+  }
+
+  .leaderboard-card {
+    grid-column: 1 / -1;
+  }
+}
+
+@include h.laptop-small {
+  .game-section-page__progress-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@include h.tablet {
+  .game-section-page {
+    &__cards,
+    .progress-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+}

@@ -1,0 +1,74 @@
+@use '../../../helpers' as h;
+
+.game-layout {
+  display: grid;
+  width: min(100%, h.rem(1580px));
+  min-height: 100vh;
+  grid-template-columns: h.rem(252px) minmax(0, 1fr);
+  gap: h.rem(18px);
+  margin: 0 auto;
+  padding: h.rem(14px);
+
+  &__content {
+    min-width: 0;
+    padding: h.rem(38px) h.rem(28px) h.rem(56px);
+  }
+}
+
+.game-state {
+  display: grid;
+  min-height: 100vh;
+  place-content: center;
+  place-items: center;
+  gap: h.rem(12px);
+  padding: h.rem(24px);
+  background: h.$color-page;
+  text-align: center;
+
+  h1,
+  p {
+    margin: 0;
+  }
+
+  button {
+    min-height: h.rem(42px);
+    padding: 0 h.rem(18px);
+    border: 0;
+    border-radius: h.$radius-medium;
+    color: h.$color-white;
+    background: h.$color-primary;
+    cursor: pointer;
+  }
+
+  &__loader {
+    width: h.rem(38px);
+    height: h.rem(38px);
+    border: h.rem(4px) solid h.$color-primary-light;
+    border-top-color: h.$color-primary;
+    border-radius: 50%;
+    animation: game-spin 800ms linear infinite;
+  }
+}
+
+@keyframes game-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@include h.tablet {
+  .game-layout {
+    display: block;
+    padding: 0;
+
+    &__content {
+      padding: h.rem(28px) h.rem(18px) h.rem(110px);
+    }
+  }
+}
+
+@include h.mobile {
+  .game-layout__content {
+    padding: h.rem(24px) h.rem(10px) h.rem(104px);
+  }
+}

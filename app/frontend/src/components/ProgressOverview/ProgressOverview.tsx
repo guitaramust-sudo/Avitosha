@@ -12,7 +12,11 @@ import RewardWallet from '../RewardWallet/RewardWallet'
 
 import './ProgressOverview.scss'
 
-function ProgressOverview() {
+interface ProgressOverviewProps {
+  view?: 'all' | 'leaderboard' | 'overview'
+}
+
+function ProgressOverview({ view = 'all' }: ProgressOverviewProps) {
   const daily = useAppSelector(selectGameDaily)
   const leaderboard = useAppSelector(selectGameLeaderboard)
   const pet = useAppSelector(selectGamePet)
@@ -22,127 +26,135 @@ function ProgressOverview() {
   const topLeaders = [...leaderboard.leaders]
     .sort((left, right) => left.position - right.position)
     .slice(0, 10)
+  const showOverview = view !== 'leaderboard'
+  const showLeaderboard = view !== 'overview'
 
   return (
     <section className="progress-grid" aria-label="Прогресс Авитоши">
-      <CollapsibleSection
-        className="progress-card character-card"
-        title="Характер Авитоши"
-        tourId="character"
-      >
-        <span className="progress-card__icon" aria-hidden="true">
-          <img
-            src={
-              characterIconAssets[pet.characterProfile.iconKey] ??
-              iconAssets.magnifier
-            }
-            alt=""
-          />
-        </span>
-        <div>
-          <small>Характер Авитоши</small>
-          <h2>{pet.characterProfile.name}</h2>
-          <p>{pet.characterProfile.description}</p>
-          <strong>
-            {pet.characterProfile.unlocked
-              ? 'Характер открыт'
-              : `${pet.characterProfile.progress}/${pet.characterProfile.target} действий`}
-          </strong>
-        </div>
-      </CollapsibleSection>
+      {showOverview && (
+        <CollapsibleSection
+          className="progress-card character-card"
+          title="Характер Авитоши"
+          tourId="character"
+        >
+          <span className="progress-card__icon" aria-hidden="true">
+            <img
+              src={
+                characterIconAssets[pet.characterProfile.iconKey] ??
+                iconAssets.magnifier
+              }
+              alt=""
+            />
+          </span>
+          <div>
+            <small>Характер Авитоши</small>
+            <h2>{pet.characterProfile.name}</h2>
+            <p>{pet.characterProfile.description}</p>
+            <strong>
+              {pet.characterProfile.unlocked
+                ? 'Характер открыт'
+                : `${pet.characterProfile.progress}/${pet.characterProfile.target} действий`}
+            </strong>
+          </div>
+        </CollapsibleSection>
+      )}
 
-      <CollapsibleSection
-        className="progress-card"
-        title="Дневная сводка"
-        tourId="daily-summary"
-      >
-        <span className="progress-card__icon" aria-hidden="true">
-          <img src={iconAssets.sun} alt="" />
-        </span>
-        <div>
-          <small>Сводка за {formatGameDate(daily.date)}</small>
-          <h2>+{daily.earnedXp} XP</h2>
-          <dl className="progress-card__facts">
-            <div>
-              <dt>Действия</dt>
-              <dd>{daily.actionsCount}</dd>
-            </div>
-            <div>
-              <dt>Задания</dt>
-              <dd>{daily.completedTasks}</dd>
-            </div>
-            <div>
-              <dt>Новые предметы</dt>
-              <dd>{daily.unlockedRoomItems.length}</dd>
-            </div>
-            <div>
-              <dt>Уровень</dt>
-              <dd>
-                {daily.levelBefore} → {daily.levelAfter}
-              </dd>
-            </div>
-            <div>
-              <dt>Этап истории</dt>
-              <dd>
-                {daily.storyStageBefore} → {daily.storyStageAfter}
-              </dd>
-            </div>
-            <div>
-              <dt>Рейтинг</dt>
-              <dd>
-                {daily.weeklyScoreDelta >= 0 ? '+' : ''}
-                {daily.weeklyScoreDelta} · место {daily.weeklyPosition ?? '—'}
-              </dd>
-            </div>
-          </dl>
-          <strong>Настроение: {moodLabels[daily.petMood]}</strong>
-        </div>
-      </CollapsibleSection>
+      {showOverview && (
+        <CollapsibleSection
+          className="progress-card"
+          title="Дневная сводка"
+          tourId="daily-summary"
+        >
+          <span className="progress-card__icon" aria-hidden="true">
+            <img src={iconAssets.sun} alt="" />
+          </span>
+          <div>
+            <small>Сводка за {formatGameDate(daily.date)}</small>
+            <h2>+{daily.earnedXp} XP</h2>
+            <dl className="progress-card__facts">
+              <div>
+                <dt>Действия</dt>
+                <dd>{daily.actionsCount}</dd>
+              </div>
+              <div>
+                <dt>Задания</dt>
+                <dd>{daily.completedTasks}</dd>
+              </div>
+              <div>
+                <dt>Новые предметы</dt>
+                <dd>{daily.unlockedRoomItems.length}</dd>
+              </div>
+              <div>
+                <dt>Уровень</dt>
+                <dd>
+                  {daily.levelBefore} → {daily.levelAfter}
+                </dd>
+              </div>
+              <div>
+                <dt>Этап истории</dt>
+                <dd>
+                  {daily.storyStageBefore} → {daily.storyStageAfter}
+                </dd>
+              </div>
+              <div>
+                <dt>Рейтинг</dt>
+                <dd>
+                  {daily.weeklyScoreDelta >= 0 ? '+' : ''}
+                  {daily.weeklyScoreDelta} · место {daily.weeklyPosition ?? '—'}
+                </dd>
+              </div>
+            </dl>
+            <strong>Настроение: {moodLabels[daily.petMood]}</strong>
+          </div>
+        </CollapsibleSection>
+      )}
 
-      <CollapsibleSection
-        className="progress-card leaderboard-card"
-        title="Лидерборд"
-        tourId="leaderboard"
-      >
-        <span className="progress-card__icon" aria-hidden="true">
-          <img src={iconAssets.crown} alt="" />
-        </span>
-        <div>
-          <small>Неделя с {formatGameDate(leaderboard.weekStart)}</small>
-          <h2>Ваше место: {leaderboard.currentUser.position}</h2>
-          <p>
-            {leaderboard.currentUser.score} очков · уровень{' '}
-            {leaderboard.currentUser.level} · заданий{' '}
-            {leaderboard.currentUser.completedTasks}
-          </p>
-          <ol>
-            {topLeaders.map((leader) => (
-              <li
-                key={leader.userId}
-                aria-current={
-                  leader.userId === leaderboard.currentUser.userId
-                    ? 'true'
-                    : undefined
-                }
-              >
-                <span className="leaderboard-card__player">
-                  <strong>{leader.position}</strong>
-                  <span>
-                    {leader.petName}
-                    <small>
-                      Ур. {leader.level} · {leader.completedTasks} заданий
-                    </small>
+      {showLeaderboard && (
+        <CollapsibleSection
+          className="progress-card leaderboard-card"
+          title="Лидерборд"
+          tourId="leaderboard"
+        >
+          <span className="progress-card__icon" aria-hidden="true">
+            <img src={iconAssets.crown} alt="" />
+          </span>
+          <div>
+            <small>Неделя с {formatGameDate(leaderboard.weekStart)}</small>
+            <h2>Ваше место: {leaderboard.currentUser.position}</h2>
+            <p>
+              {leaderboard.currentUser.score} очков · уровень{' '}
+              {leaderboard.currentUser.level} · заданий{' '}
+              {leaderboard.currentUser.completedTasks}
+            </p>
+            <ol>
+              {topLeaders.map((leader) => (
+                <li
+                  key={leader.userId}
+                  aria-current={
+                    leader.userId === leaderboard.currentUser.userId
+                      ? 'true'
+                      : undefined
+                  }
+                >
+                  <span className="leaderboard-card__player">
+                    <strong>{leader.position}</strong>
+                    <span>
+                      {leader.petName}
+                      <small>
+                        Ур. {leader.level} · {leader.completedTasks} заданий
+                      </small>
+                    </span>
                   </span>
-                </span>
-                <strong>{leader.score}</strong>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </CollapsibleSection>
+                  <strong>{leader.score}</strong>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </CollapsibleSection>
+      )}
 
-      <RewardWallet />
-      <RetentionPanel />
+      {view === 'all' && <RewardWallet />}
+      {view === 'all' && <RetentionPanel />}
     </section>
   )
 }

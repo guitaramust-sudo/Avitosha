@@ -1,0 +1,46 @@
+@use '../../../helpers' as h;
+
+.game-page-header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: h.rem(24px);
+
+  > div {
+    max-width: h.rem(720px);
+  }
+
+  span {
+    color: h.$color-primary;
+    font-size: h.rem(12px);
+    font-weight: h.$font-weight-extrabold;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    margin: h.rem(8px) 0 h.rem(6px);
+    font-size: clamp(h.rem(30px), 4vw, h.rem(48px));
+    line-height: 1.02;
+    letter-spacing: -0.045em;
+  }
+
+  p {
+    margin: 0;
+    color: h.$color-text-secondary;
+    font-size: h.rem(15px);
+    line-height: 1.55;
+  }
+}
+
+@include h.mobile {
+  .game-page-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: h.rem(14px);
+
+    h1 {
+      font-size: h.rem(32px);
+    }
+  }
+}

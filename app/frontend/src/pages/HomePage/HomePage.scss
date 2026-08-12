@@ -1,141 +1,91 @@
 @use '../../../helpers' as h;
 
 .home-page {
-  min-height: 100vh;
-  padding: h.rem(14px);
-  background:
-    radial-gradient(circle at 18% 0%, rgb(255 255 255 / 90%), transparent 30%),
-    h.$color-page;
-
-  &__shell {
-    width: min(100%, h.rem(1500px));
-    min-height: calc(100vh - h.rem(28px));
-    overflow: hidden;
-    margin: 0 auto;
-    border: h.rem(1px) solid rgb(255 255 255 / 80%);
-    border-radius: h.$radius-shell;
-    background: h.$color-surface;
-    box-shadow: h.$shadow-shell;
-  }
-}
-
-.game-state {
   display: grid;
-  min-height: 100vh;
-  place-content: center;
-  place-items: center;
-  gap: h.rem(12px);
-  padding: h.rem(24px);
-  background: h.$color-page;
-  text-align: center;
+  gap: h.rem(28px);
 
-  h1,
-  p {
-    margin: 0;
-  }
-
-  button {
-    min-height: h.rem(42px);
-    padding: 0 h.rem(18px);
-    border: 0;
+  &__primary-action {
+    display: inline-flex;
+    min-height: h.rem(46px);
+    flex: 0 0 auto;
+    align-items: center;
+    gap: h.rem(10px);
+    padding: 0 h.rem(20px);
     border-radius: h.$radius-medium;
     color: h.$color-white;
     background: h.$color-primary;
+    box-shadow: 0 h.rem(10px) h.rem(24px) rgb(0 170 255 / 22%);
+    font-size: h.rem(13px);
+    font-weight: h.$font-weight-bold;
+    text-decoration: none;
   }
 
-  &__loader {
-    width: h.rem(38px);
-    height: h.rem(38px);
-    border: h.rem(4px) solid h.$color-primary-light;
-    border-top-color: h.$color-primary;
-    border-radius: 50%;
-    animation: game-spin 800ms linear infinite;
-  }
-}
-
-@keyframes game-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.home-dashboard {
-  display: grid;
-  grid-template-columns: h.rem(285px) minmax(0, 1fr);
-  gap: h.rem(14px);
-  padding: h.rem(14px);
-
-  &__content {
+  &__status-grid {
     display: grid;
-    min-width: 0;
-    align-content: start;
-    gap: h.rem(14px);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: h.rem(12px);
+
+    article {
+      display: grid;
+      min-width: 0;
+      gap: h.rem(6px);
+      padding: h.rem(16px);
+      border: h.rem(1px) solid h.$color-border;
+      border-radius: h.$radius-large;
+      background: h.$color-surface;
+      box-shadow: h.$shadow-card;
+    }
+
+    span,
+    small {
+      color: h.$color-text-muted;
+      font-size: h.rem(10px);
+    }
+
+    strong {
+      overflow: hidden;
+      font-size: h.rem(15px);
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
   }
-}
 
-@include h.media-max(1250px) {
-  .home-dashboard {
-    grid-template-areas:
-      'content'
-      'achievements';
-    grid-template-columns: minmax(0, 1fr);
-
-    > .achievements-panel {
-      grid-area: achievements;
-    }
-
-    &__content {
-      grid-area: content;
-    }
+  &__room {
+    padding: h.rem(10px);
+    border: h.rem(1px) solid h.$color-border;
+    border-radius: h.$radius-xlarge;
+    background: h.$color-surface;
+    box-shadow: h.$shadow-card;
   }
 }
 
 @include h.laptop-small {
-  .home-dashboard {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-
-@include h.tablet {
-  .home-dashboard {
-    grid-template-areas:
-      'content'
-      'achievements';
-    grid-template-columns: minmax(0, 1fr);
-
-    > .achievements-panel {
-      grid-area: achievements;
-    }
-
-    &__content {
-      grid-area: content;
-    }
+  .home-page__status-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @include h.mobile {
   .home-page {
-    padding: 0;
+    gap: h.rem(20px);
 
-    &__shell {
-      min-height: 100vh;
-      border: 0;
-      border-radius: 0;
+    &__status-grid {
+      grid-template-columns: 1fr 1fr;
+
+      article {
+        padding: h.rem(12px);
+      }
     }
-  }
 
-  .home-dashboard {
-    gap: h.rem(10px);
-    padding: h.rem(10px);
-
-    &__content {
-      gap: h.rem(10px);
+    &__room {
+      padding: h.rem(5px);
+      border-radius: h.$radius-large;
     }
   }
 }
 
 @include h.mobile-small {
-  .home-dashboard {
-    padding: h.rem(8px);
+  .home-page__status-grid {
+    grid-template-columns: 1fr;
   }
 }

@@ -1,80 +1,76 @@
-import AchievementsPanel from '../../components/AchievementsPanel/AchievementsPanel'
-import FirstVisitOnboarding from '../../components/FirstVisitOnboarding/FirstVisitOnboarding'
+import { Link } from 'react-router-dom'
+
 import FrequentlyAskedQuestions from '../../components/FrequentlyAskedQuestions/FrequentlyAskedQuestions'
-import HomeHeader from '../../components/HomeHeader/HomeHeader'
-import ProgressOverview from '../../components/ProgressOverview/ProgressOverview'
+import GamePageHeader from '../../components/GamePageHeader/GamePageHeader'
 import RoomWorkspace from '../../components/RoomWorkspace/RoomWorkspace'
-import { useAuthCredentials } from '../../hooks/redux'
-import { useGameDashboard } from '../../hooks/useGameDashboard'
-import { useGameDashboardSync } from '../../hooks/useGameDashboardSync'
-import { useGameSessionGuard } from '../../hooks/useGameSessionGuard'
-import { useGameSocket } from '../../hooks/useGameSocket'
+import { useAppSelector } from '../../hooks/redux'
+import {
+  selectGameDaily,
+  selectGamePet,
+  selectGameTasks,
+  selectGameWallet,
+} from '../../store/gameSlice'
+import { moodLabels } from '../../utils/gamePresentation'
 
 import './HomePage.scss'
 
 function HomePage() {
-  const { accessToken, userId } = useAuthCredentials()
-  const dashboard = useGameDashboard(accessToken, userId)
-  const isGameReady = useGameDashboardSync(userId, dashboard)
-  const hasAuthenticationError = useGameSessionGuard(dashboard)
-  useGameSocket(accessToken, userId)
-
-  const queries = Object.values(dashboard)
-  const hasQueryError = queries.some((query) => query.isError)
-
-  if (hasAuthenticationError) {
-    return null
-  }
-
-  if (
-    queries.some((query) => query.isPending) ||
-    (!hasQueryError && !isGameReady)
-  ) {
-    return (
-      <main className="game-state" aria-live="polite">
-        <span className="game-state__loader" />
-        <h1>Авитоша обустраивает комнату…</h1>
-      </main>
-    )
-  }
-  if (hasQueryError) {
-    return (
-      <main className="game-state">
-        <h1>Не удалось открыть комнату</h1>
-        <p>Проверьте backend и попробуйте обновить страницу.</p>
-        <button
-          type="button"
-          onClick={() => {
-            void Promise.all(
-              queries
-                .filter((query) => query.isError)
-                .map((query) => query.refetch()),
-            )
-          }}
-        >
-          Повторить
-        </button>
-      </main>
-    )
-  }
+  const daily = useAppSelector(selectGameDaily)
+  const pet = useAppSelector(selectGamePet)
+  const tasks = useAppSelector(selectGameTasks)
+  const wallet = useAppSelector(selectGameWallet)
+  const activeTask = tasks.find((task) => task.status === 'ACTIVE')
 
   return (
-    <main className="home-page">
-      <div className="home-page__shell">
-        <HomeHeader />
+    <section className="home-page">
+      <GamePageHeader
+        eyebrow="Дом Авитоши"
+        title={`Привет, я ${pet?.name ?? 'Авитоша'}`}
+        description="Развивайте питомца полезными действиями на Авито и создавайте его личное пространство."
+        action={
+          <Link className="home-page__primary-action" to="/progress">
+            Открыть задания <span aria-hidden="true">→</span>
+          </Link>
+        }
+      />
 
-        <div className="home-dashboard">
-          <AchievementsPanel />
-
-          <div className="home-dashboard__content">
-            <RoomWorkspace />
-            <ProgressOverview />
-          </div>
-        </div>
-        <FrequentlyAskedQuestions />
+      <div className="home-page__status-grid">
+        <article>
+          <span>Текущая цель</span>
+          <strong>{activeTask?.title ?? 'Первая комната готова'}</strong>
+          <small>
+            {activeTask
+              ? `${activeTask.progress}/${activeTask.target} · +${activeTask.xpReward} XP`
+              : 'Все сюжетные задания выполнены'}
+          </small>
+        </article>
+        <article>
+          <span>Сегодня</span>
+          <strong>+{daily?.earnedXp ?? 0} XP</strong>
+          <small>{daily?.actionsCount ?? 0} полезных действий</small>
+        </article>
+        <article>
+          <span>Настроение</span>
+          <strong>{pet ? moodLabels[pet.mood] : 'Загрузка…'}</strong>
+          <small>{pet?.characterProfile.name ?? 'Характер формируется'}</small>
+        </article>
+        <article>
+          <span>Баланс</span>
+          <strong>{wallet?.balance.balance ?? 0} бонусов</strong>
+          <small>
+            {wallet?.nextGoal
+              ? `${wallet.nextGoal.remaining} до следующей награды`
+              : 'Каталог наград открыт'}
+          </small>
+        </article>
       </div>
-      <FirstVisitOnboarding />
-    </main>
+
+      <div className="home-page__room">
+        <RoomWorkspace />
+      </div>
+
+      <FrequentlyAskedQuestions />
+    </section>
   )
 }
 

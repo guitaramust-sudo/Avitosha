@@ -21,6 +21,19 @@ body {
   min-width: h.rem(320px);
   min-height: 100vh;
   margin: 0;
+  background:
+    radial-gradient(circle at 82% 12%, rgb(0 170 255 / 8%), transparent 25%),
+    radial-gradient(circle at 95% 48%, rgb(34 189 104 / 7%), transparent 20%),
+    h.$color-page;
+}
+
+a {
+  color: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
 }
 
 button,

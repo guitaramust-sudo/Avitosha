@@ -1,18 +1,18 @@
 // Palette extracted from the Avito Tamagotchi reference.
 $color-white: #ffffff;
-$color-background: #f7f8fa;
-$color-page: #eef0f3;
+$color-background: #f8fbfd;
+$color-page: #f4f9fc;
 $color-surface: #ffffff;
-$color-surface-muted: #f1f3f7;
-$color-surface-soft: #fafbfc;
+$color-surface-muted: #edf7fc;
+$color-surface-soft: #f8fbfd;
 $color-text: #0d0e12;
 $color-text-secondary: #646872;
 $color-text-muted: #9297a1;
-$color-border: #e2e5ea;
-$color-border-strong: #d5d9df;
+$color-border: #dfeaf0;
+$color-border-strong: #c9dce6;
 
-$color-primary: #8b3ff2;
-$color-primary-light: #eee5ff;
+$color-primary: #00aaff;
+$color-primary-light: #e5f6ff;
 $color-info: #2f80ed;
 $color-info-bright: #00a5f5;
 $color-info-light: #e7f1ff;
@@ -28,12 +28,7 @@ $color-warning-dark: #a86624;
 $color-warning-light: #fff4d9;
 $color-room: #e9e2dc;
 
-$gradient-brand: linear-gradient(
-  90deg,
-  $color-primary 0%,
-  $color-info 48%,
-  $color-success 100%
-);
+$gradient-brand: linear-gradient(90deg, #00aaff 0%, #2f80ed 52%, #22bd68 100%);
 
 // Typography.
 $font-family-base:
@@ -54,11 +49,11 @@ $radius-small: 8px;
 $radius-medium: 12px;
 $radius-large: 20px;
 $radius-xlarge: 28px;
-$radius-shell: 34px;
+$radius-shell: 28px;
 $radius-round: 999px;
-$shadow-card: 0 8px 30px rgb(20 25 35 / 10%);
-$shadow-control: 0 4px 14px rgb(20 25 35 / 8%);
-$shadow-shell: 0 18px 60px rgb(29 36 50 / 10%);
+$shadow-card: 0 12px 34px rgb(35 76 96 / 8%);
+$shadow-control: 0 5px 16px rgb(35 76 96 / 8%);
+$shadow-shell: 0 24px 70px rgb(35 76 96 / 9%);
 
 // Adaptive breakpoints.
 $breakpoint-laptop: 1440px;
