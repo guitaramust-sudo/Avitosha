@@ -376,7 +376,7 @@ func mapMarketplaceError(err error) (int, string, string) {
 	case errors.Is(err, usecase.ErrListingOwnAction):
 		return 409, "own_listing_action", "You cannot interact with your own listing"
 	case errors.Is(err, usecase.ErrListingNotEligible):
-		return 409, "listing_not_eligible", "Listing needs a price, photo and description of at least 150 characters"
+		return 409, "listing_not_eligible", "Listing needs a price greater than zero"
 	case errors.Is(err, usecase.ErrListingInvalidTransition):
 		return 409, "listing_invalid_transition", "Listing status transition is not allowed"
 	case errors.Is(err, usecase.ErrDemoPurchaseCompleted):

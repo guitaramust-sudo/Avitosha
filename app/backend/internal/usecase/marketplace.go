@@ -40,6 +40,7 @@ type marketplaceGameRepository interface {
 	CreateMarketplaceGameRequest(context.Context, model.MarketplaceGameRequest) (bool, error)
 	CompleteMarketplaceGameRequest(context.Context, uuid.UUID, json.RawMessage, time.Time) error
 	AwardListingQualityCriteria(context.Context, uuid.UUID, []string, time.Time) ([]string, error)
+	ClaimListingFavoriteReward(context.Context, uuid.UUID, uuid.UUID, time.Time) (bool, error)
 }
 
 type ListingQuality struct {
@@ -143,7 +144,9 @@ func EvaluateListingQuality(listing model.Listing) ListingQuality {
 	if len(missing) > 0 {
 		hint = listingQualityHint(missing[0])
 	}
-	return ListingQuality{Score: score, IsEligible: score == 3, MissingFields: missing, NextActionHint: hint}
+	// Price is the only publication requirement. Photo and detailed description
+	// remain useful quality recommendations, but must not block a listing.
+	return ListingQuality{Score: score, IsEligible: listing.PriceKopecks > 0, MissingFields: missing, NextActionHint: hint}
 }
 
 func (s *MarketplaceService) ListCategories(ctx context.Context) ([]model.ListingCategory, error) {
@@ -408,6 +411,10 @@ func (s *MarketplaceService) PublishWithGame(ctx context.Context, userID, listin
 }
 
 func (s *MarketplaceService) AddFavoriteWithGame(ctx context.Context, userID, listingID, eventID uuid.UUID, now time.Time) (MarketplaceActionResult, error) {
+	gameRepository, ok := s.repository.(marketplaceGameRepository)
+	if !ok {
+		return MarketplaceActionResult{}, ErrUnexpectedStorage
+	}
 	return s.product(ctx, userID, listingID, eventID, "FAVORITE", now, func(txCtx context.Context) (MarketplaceActionResult, *ProcessActionCommand, error) {
 		listing, err := s.repository.GetPublicListing(txCtx, listingID)
 		if err != nil {
@@ -423,6 +430,13 @@ func (s *MarketplaceService) AddFavoriteWithGame(ctx context.Context, userID, li
 		value := true
 		result := MarketplaceActionResult{Listing: &listing, Favorite: &value}
 		if !created {
+			return result, nil, nil
+		}
+		awarded, err := gameRepository.ClaimListingFavoriteReward(txCtx, userID, listingID, now.UTC())
+		if err != nil {
+			return MarketplaceActionResult{}, nil, err
+		}
+		if !awarded {
 			return result, nil, nil
 		}
 		id, category := listingID.String(), listing.CategoryCode
@@ -498,7 +512,8 @@ func (s *MarketplaceService) PurchaseWithGame(ctx context.Context, command Purch
 			return MarketplaceActionResult{}, nil, err
 		}
 		id, category := listing.ID.String(), listing.CategoryCode
-		action := &ProcessActionCommand{UserID: command.BuyerID, EventID: command.EventID, ActionType: model.ActionTypeListingSold, EntityID: &id, Category: &category, Metadata: json.RawMessage(`{"source":"marketplace.purchase"}`), OccurredAt: command.Now, Now: command.Now}
+		// A sale is a seller action. The buyer can separately receive credit for delivery.
+		action := &ProcessActionCommand{UserID: listing.OwnerID, EventID: command.EventID, ActionType: model.ActionTypeListingSold, EntityID: &id, Category: &category, Metadata: json.RawMessage(`{"source":"marketplace.purchase"}`), OccurredAt: command.Now, Now: command.Now}
 		return MarketplaceActionResult{Listing: &listing, Deal: &deal}, action, nil
 	})
 }
@@ -573,7 +588,11 @@ func (s *MarketplaceService) product(ctx context.Context, userID, listingID, eve
 		return MarketplaceActionResult{}, ErrUnexpectedStorage
 	}
 	var result MarketplaceActionResult
-	var publish []ProcessActionResult
+	type publishedAction struct {
+		userID uuid.UUID
+		result ProcessActionResult
+	}
+	var publish []publishedAction
 	err := s.txManager.WithinTx(ctx, func(txCtx context.Context) error {
 		existing, err := gameRepository.GetMarketplaceGameRequest(txCtx, eventID)
 		if err == nil {
@@ -621,11 +640,14 @@ func (s *MarketplaceService) product(ctx context.Context, userID, listingID, eve
 			if err != nil {
 				return err
 			}
-			result.ActionResult = &gameResult
-			publish = append(publish, gameResult)
+			if action.UserID == userID {
+				result.ActionResult = &gameResult
+			}
+			publish = append(publish, publishedAction{userID: action.UserID, result: gameResult})
 			if operation == "PURCHASE" && result.Deal != nil && result.Deal.DeliveryUsed {
 				derived := uuid.NewSHA1(eventID, []byte("DELIVERY_USED"))
 				delivery := *action
+				delivery.UserID = userID
 				delivery.EventID = derived
 				delivery.ActionType = model.ActionTypeDeliveryUsed
 				delivery.Metadata = json.RawMessage(`{"source":"marketplace.purchase.delivery"}`)
@@ -633,8 +655,12 @@ func (s *MarketplaceService) product(ctx context.Context, userID, listingID, eve
 				if err != nil {
 					return err
 				}
-				result.ActionResult.Events = append(result.ActionResult.Events, deliveryResult.Events...)
-				publish = append(publish, deliveryResult)
+				if result.ActionResult == nil {
+					result.ActionResult = &deliveryResult
+				} else {
+					result.ActionResult.Events = append(result.ActionResult.Events, deliveryResult.Events...)
+				}
+				publish = append(publish, publishedAction{userID: delivery.UserID, result: deliveryResult})
 			}
 		}
 		raw, err := json.Marshal(result)
@@ -647,7 +673,7 @@ func (s *MarketplaceService) product(ctx context.Context, userID, listingID, eve
 		return MarketplaceActionResult{}, err
 	}
 	for _, item := range publish {
-		s.game.PublishActionResult(userID, item)
+		s.game.PublishActionResult(item.userID, item.result)
 	}
 	return result, nil
 }
@@ -745,8 +771,8 @@ func listingQualityHint(field string) string {
 	case "price":
 		return "Укажите цену объявления"
 	case "photo":
-		return "Добавьте хотя бы одну фотографию"
+		return "Рекомендуем добавить хотя бы одну фотографию"
 	default:
-		return "Добавьте описание не короче 150 символов"
+		return "Рекомендуем добавить подробное описание"
 	}
 }

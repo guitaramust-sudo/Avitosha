@@ -26,6 +26,7 @@ const (
 	ReasonListingOwnAction   = "OWN_LISTING_ACTION"
 	ReasonListingTransition  = "LISTING_INVALID_TRANSITION"
 	ReasonListingEligibility = "LISTING_NOT_ELIGIBLE"
+	ReasonDemoPurchaseDone   = "DEMO_PURCHASE_ALREADY_COMPLETED"
 )
 
 func AuthError(err error) error {
@@ -90,6 +91,8 @@ func GameError(err error) error {
 		return status.Error(codes.FailedPrecondition, ReasonListingTransition)
 	case errors.Is(err, usecase.ErrListingNotEligible):
 		return status.Error(codes.FailedPrecondition, ReasonListingEligibility)
+	case errors.Is(err, usecase.ErrDemoPurchaseCompleted):
+		return status.Error(codes.AlreadyExists, ReasonDemoPurchaseDone)
 	default:
 		return status.Error(codes.Internal, "INTERNAL")
 	}
@@ -121,6 +124,8 @@ func DecodeGameError(err error) error {
 		return usecase.ErrListingInvalidTransition
 	case ReasonListingEligibility:
 		return usecase.ErrListingNotEligible
+	case ReasonDemoPurchaseDone:
+		return usecase.ErrDemoPurchaseCompleted
 	case ReasonInvalidInput:
 		return usecase.ErrInvalidListingInput
 	default:

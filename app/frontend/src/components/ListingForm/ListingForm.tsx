@@ -32,18 +32,33 @@ function ListingForm({
     initialListing ? String(initialListing.priceKopecks / 100) : '',
   )
   const [title, setTitle] = useState(initialListing?.title ?? '')
+	const [photoUrlError, setPhotoUrlError] = useState<string | null>(null)
 
   const selectedCategory = categoryCode || categories.data?.[0]?.code || ''
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+	const parsedPhotoUrls = photoUrls
+		.split('\n')
+		.map((url) => url.trim())
+		.filter(Boolean)
+	const invalidPhotoURL = parsedPhotoUrls.find((value) => {
+		try {
+			const url = new URL(value)
+			return !url.protocol || !url.host
+		} catch {
+			return true
+		}
+	})
+	if (invalidPhotoURL) {
+		setPhotoUrlError('Укажите полный URL фотографии, например https://example.com/photo.jpg')
+		return
+	}
+	setPhotoUrlError(null)
     onSubmit({
       categoryCode: selectedCategory,
       description,
-      photoUrls: photoUrls
-        .split('\n')
-        .map((url) => url.trim())
-        .filter(Boolean),
+		photoUrls: parsedPhotoUrls,
       priceKopecks: Math.max(0, Math.round(Number(price || 0) * 100)),
       title: title.trim(),
     })
@@ -101,10 +116,14 @@ function ListingForm({
         <textarea
           rows={4}
           value={photoUrls}
-          onChange={(event) => setPhotoUrls(event.target.value)}
+          onChange={(event) => {
+			setPhotoUrls(event.target.value)
+			setPhotoUrlError(null)
+		}}
           placeholder="Одна ссылка на строку"
         />
         <small>До 10 внешних URL. Загрузка файлов в MVP не используется.</small>
+		{photoUrlError && <small role="alert">{photoUrlError}</small>}
       </label>
       <button type="submit" disabled={isPending || !selectedCategory}>
         {isPending ? 'Сохраняем…' : submitLabel}

@@ -178,6 +178,16 @@ func (r *GameRepository) RemoveListingFavorite(ctx context.Context, userID, list
 	return tag.RowsAffected() == 1, nil
 }
 
+func (r *GameRepository) ClaimListingFavoriteReward(ctx context.Context, userID, listingID uuid.UUID, now time.Time) (bool, error) {
+	tag, err := executorFromContext(ctx, r.executor).Exec(ctx, `
+INSERT INTO listing_favorite_rewards (user_id, listing_id, awarded_at)
+VALUES ($1,$2,$3) ON CONFLICT DO NOTHING`, userID, listingID, now)
+	if err != nil {
+		return false, mapGameStorageError("claim listing favorite reward", err)
+	}
+	return tag.RowsAffected() == 1, nil
+}
+
 func (r *GameRepository) RegisterListingView(ctx context.Context, userID, listingID uuid.UUID, now time.Time) (bool, error) {
 	tag, err := executorFromContext(ctx, r.executor).Exec(ctx, `
 INSERT INTO listing_daily_views (user_id, listing_id, viewed_on, created_at)

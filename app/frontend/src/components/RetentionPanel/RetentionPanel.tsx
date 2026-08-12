@@ -37,7 +37,9 @@ function RetentionPanel() {
           <div>
             <small>Ежедневная цель</small>
             <h2>
-              Выполнено {dailyGoal.completed} из {dailyGoal.required}
+              {goalCompleted
+                ? `Дневная цель выполнена · заданий: ${dailyGoal.completed}`
+                : `Выполнено ${dailyGoal.completed} из ${dailyGoal.required}`}
             </h2>
           </div>
           <span className={goalCompleted ? 'is-active' : ''}>
