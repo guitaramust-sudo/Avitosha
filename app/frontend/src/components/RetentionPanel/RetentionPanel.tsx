@@ -6,21 +6,24 @@ import CollapsibleSection from '../CollapsibleSection/CollapsibleSection'
 
 import './RetentionPanel.scss'
 
+const roleLabels = {
+  BUYER: 'Покупатель',
+  SELLER: 'Продавец',
+  UNIVERSAL: 'Для всех',
+} as const
+
 function RetentionPanel() {
   const daily = useAppSelector(selectGameDaily)
 
   if (!daily) return null
 
-  const { dailyQuest, streak, tomorrow } = daily.retention
-  const questPercent = dailyQuest.target
-    ? Math.min(100, (dailyQuest.progress / dailyQuest.target) * 100)
-    : 0
-  const questCompleted = ['COMPLETED', 'REWARDED'].includes(dailyQuest.status)
+  const { dailyGoal, streak, tomorrow } = daily.retention
+  const goalCompleted = dailyGoal.status === 'REWARDED'
 
   return (
     <CollapsibleSection
       className="progress-card retention-card"
-      title="Ежедневный возврат"
+      title="Ежедневные задания"
       tourId="retention"
     >
       <span
@@ -32,58 +35,92 @@ function RetentionPanel() {
       <div className="retention-card__content">
         <div className="retention-card__heading">
           <div>
-            <small>Ежедневный возврат</small>
-            <h2>{streak.current} дней подряд</h2>
+            <small>Ежедневная цель</small>
+            <h2>
+              Выполнено {dailyGoal.completed} из {dailyGoal.required}
+            </h2>
           </div>
-          <span className={streak.activeToday ? 'is-active' : ''}>
-            {streak.activeToday ? 'Сегодня засчитано' : 'Зайдите сегодня'}
+          <span className={goalCompleted ? 'is-active' : ''}>
+            {goalCompleted
+              ? `+${dailyGoal.xpReward} XP и +${dailyGoal.reward.amount} бонусов`
+              : `${streak.current} дней подряд`}
           </span>
         </div>
 
+        <div className="daily-quest-list">
+          {dailyGoal.quests.map((quest) => {
+            const completed = ['COMPLETED', 'REWARDED'].includes(quest.status)
+            const percent = quest.target
+              ? Math.min(100, (quest.progress / quest.target) * 100)
+              : 0
+
+            return (
+              <section
+                className={`daily-quest ${completed ? 'is-completed' : ''}`}
+                key={quest.code}
+              >
+                <div className="daily-quest__heading">
+                  <span
+                    className={`daily-quest__role is-${quest.role.toLowerCase()}`}
+                  >
+                    {roleLabels[quest.role]}
+                  </span>
+                  <strong>+{quest.xpReward} XP</strong>
+                </div>
+                <h3>{quest.title}</h3>
+                <p>{quest.description}</p>
+                <span
+                  className="daily-quest__progress"
+                  role="progressbar"
+                  aria-label={`Прогресс задания ${quest.title}`}
+                  aria-valuemin={0}
+                  aria-valuemax={quest.target}
+                  aria-valuenow={quest.progress}
+                >
+                  <i style={{ width: `${percent}%` }} />
+                </span>
+                <strong>
+                  {completed
+                    ? 'Выполнено'
+                    : `${quest.progress}/${quest.target}`}
+                </strong>
+              </section>
+            )
+          })}
+        </div>
+
         <div className="retention-card__columns">
-          <section className="daily-quest">
-            <div className="daily-quest__heading">
-              <span>Задание на сегодня</span>
-              <strong>+{dailyQuest.reward.amount} бонусов</strong>
-            </div>
-            <h3>{dailyQuest.title}</h3>
-            <p>{dailyQuest.description}</p>
-            <span
-              className="daily-quest__progress"
-              role="progressbar"
-              aria-label={`Прогресс задания ${dailyQuest.title}`}
-              aria-valuemin={0}
-              aria-valuemax={dailyQuest.target}
-              aria-valuenow={dailyQuest.progress}
-            >
-              <i style={{ width: `${questPercent}%` }} />
-            </span>
+          <section className="balanced-day">
+            <span>Дополнительная цель</span>
+            <h3>Попробуйте обе роли</h3>
+            <p>Выполните задание покупателя и продавца.</p>
             <strong>
-              {questCompleted
-                ? 'Задание выполнено'
-                : `${dailyQuest.progress}/${dailyQuest.target}`}
+              {dailyGoal.balancedCompleted
+                ? 'Бонус получен'
+                : `+${dailyGoal.balancedReward.amount} бонуса`}
             </strong>
           </section>
 
           <section className="tomorrow-preview">
             <span>Завтра · {formatGameDate(tomorrow.date)}</span>
-            <h3>{tomorrow.dailyQuest.title}</h3>
-            <p>{tomorrow.dailyQuest.description}</p>
+            <h3>{tomorrow.tasksCount} новых заданий</h3>
+            <p>
+              {tomorrow.buyerTasks} покупателя · {tomorrow.sellerTasks} продавца
+              · {tomorrow.universalTasks} для всех. Выполните любые{' '}
+              {tomorrow.required}.
+            </p>
             <div>
               <span>Серия станет {tomorrow.streakAfterReturn}</span>
-              <strong>+{tomorrow.streakReward.amount} бонусов за вход</strong>
+              <strong>
+                +{tomorrow.xpReward} XP и +{tomorrow.reward.amount} бонусов
+              </strong>
             </div>
-            {tomorrow.nextGoal && (
-              <small>
-                Следующая награда: {tomorrow.nextGoal.title} · осталось{' '}
-                {tomorrow.nextGoal.remaining}
-              </small>
-            )}
           </section>
         </div>
 
         <small className="retention-card__record">
-          Лучшая серия: {streak.longest} дней
+          Серия продлевается после выполнения дневной цели. Лучшая серия:{' '}
+          {streak.longest} дней · защита серии: {streak.protections}
         </small>
       </div>
     </CollapsibleSection>

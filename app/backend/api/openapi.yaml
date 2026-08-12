@@ -541,7 +541,7 @@ paths:
       tags: [game]
       operationId: getRewardBalances
       summary: Get the current user's reward balances
-      description: Returns balances actually credited from tasks, streak rewards and daily quests. AVITO_BONUS is initialized with a zero balance during user registration.
+      description: Returns balances actually credited from tasks, daily goals, balanced-day bonuses and streak rewards. AVITO_BONUS is initialized with a zero balance during user registration.
       security:
         - bearerAuth: []
         - userIdHeader: []
@@ -1215,15 +1215,18 @@ components:
           type: integer
         source:
           type: string
-          enum: [TASK_COMPLETION, DAILY_QUEST, STREAK]
+          enum: [TASK_COMPLETION, DAILY_QUEST, DAILY_GOAL, BALANCED_DAY, STREAK]
     StreakOverview:
       type: object
-      required: [current, longest, activeToday, reward]
+      required: [current, longest, protections, activeToday, reward]
       properties:
         current:
           type: integer
         longest:
           type: integer
+        protections:
+          type: integer
+          description: Number of one-day streak shields available.
         lastActiveDate:
           type: string
           format: date
@@ -1234,7 +1237,7 @@ components:
           $ref: '#/components/schemas/RewardOffer'
     DailyQuest:
       type: object
-      required: [date, code, title, description, actionType, progress, target, status, reward]
+      required: [date, code, title, description, actionType, role, progress, target, status, xpReward]
       properties:
         date:
           type: string
@@ -1247,7 +1250,10 @@ components:
           type: string
         actionType:
           type: string
-          enum: [AD_VIEWED, AD_FAVORITED, MESSAGE_SENT, AD_CREATED, DELIVERY_USED, REVIEW_LEFT, BOOKING_CREATED]
+          enum: [AD_VIEWED, AD_FAVORITED, MESSAGE_SENT, AD_CREATED, DELIVERY_USED, REVIEW_LEFT, BOOKING_CREATED, LISTING_IMPROVED, LISTING_SOLD]
+        role:
+          type: string
+          enum: [BUYER, SELLER, UNIVERSAL]
         category:
           type: string
           nullable: true
@@ -1258,27 +1264,35 @@ components:
         status:
           type: string
           enum: [ACTIVE, COMPLETED, REWARDED, EXPIRED]
-        reward:
-          $ref: '#/components/schemas/RewardOffer'
-    TomorrowDailyQuest:
+        xpReward:
+          type: integer
+    DailyGoal:
       type: object
-      required: [code, title, description, actionType, target, reward]
+      required: [date, quests, completed, required, status, xpReward, reward, balancedCompleted, balancedReward]
       properties:
-        code:
+        date:
           type: string
-        title:
+          format: date
+        quests:
+          type: array
+          minItems: 5
+          maxItems: 5
+          items:
+            $ref: '#/components/schemas/DailyQuest'
+        completed:
+          type: integer
+        required:
+          type: integer
+        status:
           type: string
-        description:
-          type: string
-        actionType:
-          type: string
-          enum: [AD_VIEWED, AD_FAVORITED, MESSAGE_SENT, AD_CREATED, DELIVERY_USED, REVIEW_LEFT, BOOKING_CREATED]
-        category:
-          type: string
-          nullable: true
-        target:
+          enum: [ACTIVE, REWARDED, EXPIRED]
+        xpReward:
           type: integer
         reward:
+          $ref: '#/components/schemas/RewardOffer'
+        balancedCompleted:
+          type: boolean
+        balancedReward:
           $ref: '#/components/schemas/RewardOffer'
     RewardGoal:
       type: object
@@ -1303,7 +1317,7 @@ components:
           format: int64
     TomorrowPreview:
       type: object
-      required: [date, streakAfterReturn, streakReward, dailyQuest]
+      required: [date, streakAfterReturn, streakReward, tasksCount, required, buyerTasks, sellerTasks, universalTasks, xpReward, reward, balancedReward]
       properties:
         date:
           type: string
@@ -1312,20 +1326,34 @@ components:
           type: integer
         streakReward:
           $ref: '#/components/schemas/RewardOffer'
-        dailyQuest:
-          $ref: '#/components/schemas/TomorrowDailyQuest'
+        tasksCount:
+          type: integer
+        required:
+          type: integer
+        buyerTasks:
+          type: integer
+        sellerTasks:
+          type: integer
+        universalTasks:
+          type: integer
+        xpReward:
+          type: integer
+        reward:
+          $ref: '#/components/schemas/RewardOffer'
+        balancedReward:
+          $ref: '#/components/schemas/RewardOffer'
         nextGoal:
           allOf:
             - $ref: '#/components/schemas/RewardGoal'
           nullable: true
     RetentionOverview:
       type: object
-      required: [streak, dailyQuest, tomorrow]
+      required: [streak, dailyGoal, tomorrow]
       properties:
         streak:
           $ref: '#/components/schemas/StreakOverview'
-        dailyQuest:
-          $ref: '#/components/schemas/DailyQuest'
+        dailyGoal:
+          $ref: '#/components/schemas/DailyGoal'
         tomorrow:
           $ref: '#/components/schemas/TomorrowPreview'
     RewardCatalogEntry:

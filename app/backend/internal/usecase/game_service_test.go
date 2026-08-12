@@ -55,7 +55,8 @@ type gameTestRepository struct {
 	balances            map[string]model.RewardBalance
 	rewarded            map[string]struct{}
 	streak              model.UserStreak
-	dailyQuest          model.DailyQuestProgress
+	dailyQuests         []model.DailyQuestProgress
+	dailyGoal           model.UserDailyGoal
 	catalog             []model.RewardCatalogItem
 	templates           []model.DailyQuestTemplate
 	questReadsForUpdate int
@@ -134,11 +135,11 @@ func newGameTestRepository(userID uuid.UUID) *gameTestRepository {
 			{Code: "SELLER_LIMIT_PACK", RewardType: avitoBonus, PerkType: "LIMIT_PACK", Threshold: 160, SortOrder: 5},
 		},
 		templates: []model.DailyQuestTemplate{
-			{Code: "DAILY_DISCOVER", Title: "Discover", ActionType: model.ActionTypeAdViewed, TargetValue: 3, RewardType: avitoBonus, RewardAmount: 5, SortOrder: 1, IsActive: true, CreatedAt: now, UpdatedAt: now},
-			{Code: "DAILY_FAVORITE", Title: "Favorite", ActionType: model.ActionTypeAdFavorited, TargetValue: 1, RewardType: avitoBonus, RewardAmount: 6, SortOrder: 2, IsActive: true, CreatedAt: now, UpdatedAt: now},
-			{Code: "DAILY_CONTACT", Title: "Contact", ActionType: model.ActionTypeMessageSent, TargetValue: 1, RewardType: avitoBonus, RewardAmount: 8, SortOrder: 3, IsActive: true, CreatedAt: now, UpdatedAt: now},
-			{Code: "DAILY_SELLER_STEP", Title: "Seller step", ActionType: model.ActionTypeAdCreated, TargetValue: 1, RewardType: avitoBonus, RewardAmount: 10, SortOrder: 4, IsActive: true, CreatedAt: now, UpdatedAt: now},
-			{Code: "DAILY_DELIVERY", Title: "Delivery", ActionType: model.ActionTypeDeliveryUsed, TargetValue: 1, RewardType: avitoBonus, RewardAmount: 12, SortOrder: 5, IsActive: true, CreatedAt: now, UpdatedAt: now},
+			{Code: "DAILY_DISCOVER", Title: "Discover", ActionType: model.ActionTypeAdViewed, Role: model.DailyQuestRoleBuyer, TargetValue: 3, XPReward: 8, RewardType: avitoBonus, SortOrder: 1, IsActive: true, CreatedAt: now, UpdatedAt: now},
+			{Code: "DAILY_FAVORITE", Title: "Favorite", ActionType: model.ActionTypeAdFavorited, Role: model.DailyQuestRoleBuyer, TargetValue: 1, XPReward: 10, RewardType: avitoBonus, SortOrder: 2, IsActive: true, CreatedAt: now, UpdatedAt: now},
+			{Code: "DAILY_SELLER_STEP", Title: "Seller step", ActionType: model.ActionTypeAdCreated, Role: model.DailyQuestRoleSeller, TargetValue: 1, XPReward: 15, RewardType: avitoBonus, SortOrder: 3, IsActive: true, CreatedAt: now, UpdatedAt: now},
+			{Code: "DAILY_IMPROVE", Title: "Improve", ActionType: model.ActionTypeListingImproved, Role: model.DailyQuestRoleSeller, TargetValue: 1, XPReward: 12, RewardType: avitoBonus, SortOrder: 4, IsActive: true, CreatedAt: now, UpdatedAt: now},
+			{Code: "DAILY_DELIVERY", Title: "Delivery", ActionType: model.ActionTypeDeliveryUsed, Role: model.DailyQuestRoleUniversal, TargetValue: 1, XPReward: 10, RewardType: avitoBonus, SortOrder: 5, IsActive: true, CreatedAt: now, UpdatedAt: now},
 		},
 	}
 }
@@ -216,9 +217,10 @@ func (repository *gameTestRepository) ExpireDailyQuestsBefore(
 	date time.Time,
 	_ time.Time,
 ) error {
-	if repository.dailyQuest.Quest.ID != uuid.Nil && repository.dailyQuest.Quest.QuestDate.Before(date) &&
-		(repository.dailyQuest.Quest.Status == model.DailyQuestStatusActive || repository.dailyQuest.Quest.Status == model.DailyQuestStatusCompleted) {
-		repository.dailyQuest.Quest.Status = model.DailyQuestStatusExpired
+	for index := range repository.dailyQuests {
+		if repository.dailyQuests[index].Quest.QuestDate.Before(date) && repository.dailyQuests[index].Quest.Status == model.DailyQuestStatusActive {
+			repository.dailyQuests[index].Quest.Status = model.DailyQuestStatusExpired
+		}
 	}
 	return nil
 }
@@ -227,37 +229,59 @@ func (repository *gameTestRepository) AssignDailyQuest(
 	_ context.Context,
 	quest model.UserDailyQuest,
 ) (model.UserDailyQuest, error) {
-	if repository.dailyQuest.Quest.ID == uuid.Nil || !repository.dailyQuest.Quest.QuestDate.Equal(quest.QuestDate) {
-		repository.dailyQuest = model.DailyQuestProgress{
-			Template: repository.questTemplateByCode(quest.TemplateCode),
-			Quest:    quest,
+	for _, item := range repository.dailyQuests {
+		if item.Quest.QuestDate.Equal(quest.QuestDate) && item.Quest.TemplateCode == quest.TemplateCode {
+			return item.Quest, nil
 		}
 	}
-	return repository.dailyQuest.Quest, nil
+	repository.dailyQuests = append(repository.dailyQuests, model.DailyQuestProgress{
+		Template: repository.questTemplateByCode(quest.TemplateCode),
+		Quest:    quest,
+	})
+	return quest, nil
 }
 
-func (repository *gameTestRepository) GetDailyQuestProgress(
+func (repository *gameTestRepository) ListDailyQuestProgress(
 	_ context.Context,
 	_ uuid.UUID,
 	date time.Time,
-) (model.DailyQuestProgress, error) {
-	if repository.dailyQuest.Quest.ID == uuid.Nil || !repository.dailyQuest.Quest.QuestDate.Equal(date) {
-		return model.DailyQuestProgress{}, ErrDailyQuestNotFound
+) ([]model.DailyQuestProgress, error) {
+	items := make([]model.DailyQuestProgress, 0, 5)
+	for _, item := range repository.dailyQuests {
+		if item.Quest.QuestDate.Equal(date) {
+			items = append(items, item)
+		}
 	}
-	return repository.dailyQuest, nil
+	return items, nil
 }
 
-func (repository *gameTestRepository) GetDailyQuestProgressForUpdate(
+func (repository *gameTestRepository) ListDailyQuestProgressForUpdate(
 	_ context.Context,
 	_ uuid.UUID,
 	date time.Time,
-) (model.DailyQuestProgress, error) {
+) ([]model.DailyQuestProgress, error) {
 	repository.questReadsForUpdate++
-	return repository.GetDailyQuestProgress(context.Background(), uuid.Nil, date)
+	return repository.ListDailyQuestProgress(context.Background(), uuid.Nil, date)
 }
 
 func (repository *gameTestRepository) UpdateDailyQuest(_ context.Context, quest model.UserDailyQuest) error {
-	repository.dailyQuest.Quest = quest
+	for index := range repository.dailyQuests {
+		if repository.dailyQuests[index].Quest.ID == quest.ID {
+			repository.dailyQuests[index].Quest = quest
+		}
+	}
+	return nil
+}
+
+func (repository *gameTestRepository) GetOrCreateDailyGoal(_ context.Context, candidate model.UserDailyGoal) (model.UserDailyGoal, error) {
+	if repository.dailyGoal.ID == uuid.Nil || !repository.dailyGoal.GoalDate.Equal(candidate.GoalDate) {
+		repository.dailyGoal = candidate
+	}
+	return repository.dailyGoal, nil
+}
+
+func (repository *gameTestRepository) UpdateDailyGoal(_ context.Context, goal model.UserDailyGoal) error {
+	repository.dailyGoal = goal
 	return nil
 }
 
@@ -650,7 +674,7 @@ func TestProcessActionCompletesFirstRoomStageAndIsIdempotent(t *testing.T) {
 	if progress.Status != model.TaskStatusRewarded || progress.Progress != 5 || progress.RewardedAt == nil {
 		t.Fatalf("task progress = %+v", progress)
 	}
-	if repository.pet.GrowthXP != 30 || repository.pet.Level != 1 || repository.pet.Mood != model.PetMoodProud {
+	if repository.pet.GrowthXP != 38 || repository.pet.Level != 1 || repository.pet.Mood != model.PetMoodProud {
 		t.Fatalf("pet = %+v", repository.pet)
 	}
 	if repository.story.CurrentStage != 1 || repository.story.Status != model.StoryStatusActive {
@@ -659,7 +683,7 @@ func TestProcessActionCompletesFirstRoomStageAndIsIdempotent(t *testing.T) {
 	if _, ok := repository.roomItems["DESK"]; !ok {
 		t.Fatal("DESK was not unlocked")
 	}
-	if repository.weekly.Score != 100 || repository.weekly.EarnedXP != 30 {
+	if repository.weekly.Score != 108 || repository.weekly.EarnedXP != 38 {
 		t.Fatalf("weekly progress = %+v", repository.weekly)
 	}
 	if repository.daily.ActionsCount != 5 || repository.daily.CompletedTasks != 1 {
@@ -668,7 +692,7 @@ func TestProcessActionCompletesFirstRoomStageAndIsIdempotent(t *testing.T) {
 	if repository.questReadsForUpdate == 0 {
 		t.Fatal("daily quest was not read with a lock in the action flow")
 	}
-	if balance := repository.balances[DefaultRewardType]; balance.Balance != 12 || balance.EarnedTotal != 12 {
+	if balance := repository.balances[DefaultRewardType]; balance.Balance != 10 || balance.EarnedTotal != 10 {
 		t.Fatalf("reward balance = %+v", balance)
 	}
 	rewardEventFound := false
@@ -689,8 +713,8 @@ func TestProcessActionCompletesFirstRoomStageAndIsIdempotent(t *testing.T) {
 	if err != nil || !duplicate.Duplicate {
 		t.Fatalf("duplicate result = %+v, error = %v", duplicate, err)
 	}
-	if repository.pet.GrowthXP != 30 || repository.weekly.Score != 100 || repository.daily.ActionsCount != 5 ||
-		repository.balances[DefaultRewardType].Balance != 12 {
+	if repository.pet.GrowthXP != 38 || repository.weekly.Score != 108 || repository.daily.ActionsCount != 5 ||
+		repository.balances[DefaultRewardType].Balance != 10 {
 		t.Fatal("duplicate action changed rewards or aggregates")
 	}
 	if len(publisher.batches) != 5 {
@@ -740,7 +764,7 @@ func TestEndToEndCompletesFirstRoom(t *testing.T) {
 		repository.story.CompletedAt == nil {
 		t.Fatalf("story = %+v", repository.story)
 	}
-	if repository.pet.GrowthXP != 230 || repository.pet.Level != 2 || repository.pet.Mood != model.PetMoodProud {
+	if repository.pet.GrowthXP != 303 || repository.pet.Level != 3 || repository.pet.Mood != model.PetMoodHappy {
 		t.Fatalf("pet = %+v", repository.pet)
 	}
 	if repository.pet.Character == nil || *repository.pet.Character != model.PetCharacterExplorer {
@@ -751,16 +775,16 @@ func TestEndToEndCompletesFirstRoom(t *testing.T) {
 			t.Errorf("room item %s is missing", itemCode)
 		}
 	}
-	if repository.weekly.EarnedXP != 230 || repository.weekly.CompletedTasks != 5 ||
-		repository.weekly.CompletedStages != 5 || repository.weekly.Score != 580 {
+	if repository.weekly.EarnedXP != 303 || repository.weekly.CompletedTasks != 5 ||
+		repository.weekly.CompletedStages != 5 || repository.weekly.Score != 653 {
 		t.Fatalf("weekly = %+v", repository.weekly)
 	}
 	if repository.daily.ActionsCount != 9 || repository.daily.CompletedTasks != 5 ||
-		repository.daily.EarnedXP != 230 || repository.daily.StoryStageAfter != 5 {
+		repository.daily.EarnedXP != 303 || repository.daily.StoryStageAfter != 5 {
 		t.Fatalf("daily = %+v", repository.daily)
 	}
-	if balance := repository.balances[DefaultRewardType]; balance.Balance != 92 || balance.EarnedTotal != 92 {
-		t.Fatalf("reward balance = %+v, want 92", balance)
+	if balance := repository.balances[DefaultRewardType]; balance.Balance != 90 || balance.EarnedTotal != 90 {
+		t.Fatalf("reward balance = %+v, want 90", balance)
 	}
 	for _, code := range []string{"FIRST_STEP", "HOUSEWARMING", "EXPLORER", "IN_TOUCH", "FIRST_AD", "ROOM_COMPLETE"} {
 		if _, ok := repository.achievements[code]; !ok {
@@ -768,12 +792,23 @@ func TestEndToEndCompletesFirstRoom(t *testing.T) {
 		}
 	}
 	summary, err := service.GetDailySummary(context.Background(), userID, last.Now)
-	if err != nil || summary.Progress.EarnedXP != 230 || summary.WeeklyPosition == nil || *summary.WeeklyPosition != 1 ||
-		summary.Retention.DailyQuest.Code != "DAILY_SELLER_STEP" || summary.Retention.DailyQuest.Status != model.DailyQuestStatusRewarded {
+	if err != nil || summary.Progress.EarnedXP != 303 || summary.WeeklyPosition == nil || *summary.WeeklyPosition != 1 ||
+		summary.Retention.DailyGoal.Completed < 2 || summary.Retention.DailyGoal.Status != model.DailyGoalStatusRewarded {
 		t.Fatalf("daily summary = %+v, error = %v", summary, err)
 	}
+	roleCounts := map[model.DailyQuestRole]int{}
+	for _, quest := range summary.Retention.DailyGoal.Quests {
+		roleCounts[quest.Role]++
+	}
+	if len(summary.Retention.DailyGoal.Quests) != 5 || roleCounts[model.DailyQuestRoleBuyer] != 2 ||
+		roleCounts[model.DailyQuestRoleSeller] != 2 || roleCounts[model.DailyQuestRoleUniversal] != 1 {
+		t.Fatalf("daily quest roles = %+v", roleCounts)
+	}
+	if !summary.Retention.DailyGoal.BalancedCompleted || !summary.Retention.Streak.ActiveToday {
+		t.Fatalf("retention goal = %+v, streak = %+v", summary.Retention.DailyGoal, summary.Retention.Streak)
+	}
 	leaderboard, err := service.GetLeaderboard(context.Background(), userID, 10, last.Now)
-	if err != nil || leaderboard.CurrentUser.Score != 580 || len(leaderboard.Leaders) != 1 {
+	if err != nil || leaderboard.CurrentUser.Score != 653 || len(leaderboard.Leaders) != 1 {
 		t.Fatalf("leaderboard = %+v, error = %v", leaderboard, err)
 	}
 	achievements, err := service.GetAchievements(context.Background(), userID, last.Now)
@@ -781,11 +816,11 @@ func TestEndToEndCompletesFirstRoom(t *testing.T) {
 		t.Fatalf("achievements = %+v, error = %v", achievements, err)
 	}
 	balances, err := service.GetRewardBalances(context.Background(), userID, last.Now)
-	if err != nil || len(balances) != 1 || balances[0].Balance != 92 {
+	if err != nil || len(balances) != 1 || balances[0].Balance != 90 {
 		t.Fatalf("reward balances = %+v, error = %v", balances, err)
 	}
 	wallet, err := service.GetRewardWallet(context.Background(), userID, last.Now)
-	if err != nil || wallet.Balance.Balance != 92 || wallet.NextGoal == nil || wallet.NextGoal.Item.Code != "AUTOTEKA_CHECK" {
+	if err != nil || wallet.Balance.Balance != 90 || wallet.NextGoal == nil || wallet.NextGoal.Item.Code != "AUTOTEKA_CHECK" {
 		t.Fatalf("reward wallet = %+v, error = %v", wallet, err)
 	}
 
@@ -793,8 +828,8 @@ func TestEndToEndCompletesFirstRoom(t *testing.T) {
 	if err != nil || !duplicate.Duplicate {
 		t.Fatalf("duplicate = %+v, error = %v", duplicate, err)
 	}
-	if repository.weekly.Score != 580 || repository.pet.GrowthXP != 230 || repository.daily.ActionsCount != 9 ||
-		repository.balances[DefaultRewardType].Balance != 92 {
+	if repository.weekly.Score != 653 || repository.pet.GrowthXP != 303 || repository.daily.ActionsCount != 9 ||
+		repository.balances[DefaultRewardType].Balance != 90 {
 		t.Fatal("duplicate final action changed completed room state")
 	}
 }

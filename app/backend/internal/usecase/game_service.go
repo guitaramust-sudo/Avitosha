@@ -495,11 +495,30 @@ func (service *GameService) processAction(ctx context.Context, command ProcessAc
 				return fmt.Errorf("save task progress: %w", err)
 			}
 		}
-		_, retentionEvents, err := service.applyRetentionForAction(txCtx, action.ID, command, retentionState)
+		retentionResult, err := service.applyRetentionForAction(txCtx, action.ID, command, retentionState)
 		if err != nil {
 			return err
 		}
-		events = append(events, retentionEvents...)
+		events = append(events, retentionResult.Events...)
+		if retentionResult.XPEarned > 0 {
+			previousLevel := pet.Level
+			pet.GrowthXP += retentionResult.XPEarned
+			level, levelErr := CalculateLevel(pet.GrowthXP)
+			if levelErr != nil {
+				return fmt.Errorf("calculate retention level: %w", levelErr)
+			}
+			pet.Level = level
+			pet.Mood = model.PetMoodHappy
+			weeklyDelta.EarnedXP += retentionResult.XPEarned
+			events = append(events, service.event(action.ID, command.UserID, model.DomainEventXPEarned, command.Now, map[string]any{
+				"amount": retentionResult.XPEarned, "totalXp": pet.GrowthXP, "source": "DAILY_QUESTS",
+			}))
+			if pet.Level > previousLevel {
+				events = append(events, service.event(action.ID, command.UserID, model.DomainEventPetLevelUp, command.Now, map[string]any{
+					"previousLevel": previousLevel, "level": pet.Level,
+				}))
+			}
+		}
 
 		scores, err := service.repository.UpdateActivityScores(
 			txCtx, command.UserID, ActivityDelta(command.ActionType, command.Category), command.Now,

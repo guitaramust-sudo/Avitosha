@@ -170,6 +170,8 @@ export const invalidateGameQueriesForEvents = async (
         break
       case 'DAILY_QUEST_UPDATED':
       case 'DAILY_QUEST_COMPLETED':
+      case 'DAILY_GOAL_COMPLETED':
+      case 'BALANCED_DAY_COMPLETED':
       case 'STREAK_UPDATED':
         affectedQueries.add('daily')
         break

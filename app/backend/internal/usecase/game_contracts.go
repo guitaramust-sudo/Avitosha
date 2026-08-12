@@ -85,7 +85,9 @@ type GameRepository interface {
 	ListActiveDailyQuestTemplates(context.Context) ([]model.DailyQuestTemplate, error)
 	ExpireDailyQuestsBefore(context.Context, uuid.UUID, time.Time, time.Time) error
 	AssignDailyQuest(context.Context, model.UserDailyQuest) (model.UserDailyQuest, error)
-	GetDailyQuestProgress(context.Context, uuid.UUID, time.Time) (model.DailyQuestProgress, error)
-	GetDailyQuestProgressForUpdate(context.Context, uuid.UUID, time.Time) (model.DailyQuestProgress, error)
+	ListDailyQuestProgress(context.Context, uuid.UUID, time.Time) ([]model.DailyQuestProgress, error)
+	ListDailyQuestProgressForUpdate(context.Context, uuid.UUID, time.Time) ([]model.DailyQuestProgress, error)
 	UpdateDailyQuest(context.Context, model.UserDailyQuest) error
+	GetOrCreateDailyGoal(context.Context, model.UserDailyGoal) (model.UserDailyGoal, error)
+	UpdateDailyGoal(context.Context, model.UserDailyGoal) error
 }

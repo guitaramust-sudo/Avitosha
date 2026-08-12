@@ -438,19 +438,23 @@ func TestProgressRoutesReturnDailyLeaderboardAndAchievements(t *testing.T) {
 				Current: 4, Longest: 7, LastActiveDate: gameTimePointer(now), ActiveToday: true,
 				Reward: usecase.RewardOffer{Type: usecase.DefaultRewardType, Amount: 2, Source: model.RewardSourceStreak},
 			},
-			DailyQuest: usecase.DailyQuestOverview{
-				Date: now, Code: "DAILY_CONTACT", Title: "Contact seller", Description: "Send a message",
-				ActionType: model.ActionTypeMessageSent, Progress: 1, Target: 1, Status: model.DailyQuestStatusRewarded,
-				Reward: usecase.RewardOffer{Type: usecase.DefaultRewardType, Amount: 8, Source: model.RewardSourceDailyQuest},
+			DailyGoal: usecase.DailyGoalOverview{
+				Date: now, Completed: 2, Required: 2, Status: model.DailyGoalStatusRewarded, XPReward: 30,
+				Quests: []usecase.DailyQuestOverview{{
+					Date: now, Code: "DAILY_CONTACT", Title: "Contact seller", Description: "Send a message",
+					ActionType: model.ActionTypeMessageSent, Role: model.DailyQuestRoleBuyer,
+					Progress: 1, Target: 1, Status: model.DailyQuestStatusRewarded, XPReward: 12,
+				}},
+				Reward:            usecase.RewardOffer{Type: usecase.DefaultRewardType, Amount: 5, Source: model.RewardSourceDailyGoal},
+				BalancedCompleted: true,
+				BalancedReward:    usecase.RewardOffer{Type: usecase.DefaultRewardType, Amount: 3, Source: model.RewardSourceBalancedDay},
 			},
 			Tomorrow: usecase.TomorrowPreview{
 				Date: now.AddDate(0, 0, 1), StreakAfterReturn: 5,
 				StreakReward: usecase.RewardOffer{Type: usecase.DefaultRewardType, Amount: 2, Source: model.RewardSourceStreak},
-				DailyQuest: usecase.DailyQuestPreview{
-					Code: "DAILY_DISCOVER", Title: "Discover", Description: "View 3 ads",
-					ActionType: model.ActionTypeAdViewed, Target: 3,
-					Reward: usecase.RewardOffer{Type: usecase.DefaultRewardType, Amount: 5, Source: model.RewardSourceDailyQuest},
-				},
+				TasksCount:   5, Required: 2, BuyerTasks: 2, SellerTasks: 2, UniversalTasks: 1, XPReward: 30,
+				Reward:         usecase.RewardOffer{Type: usecase.DefaultRewardType, Amount: 5, Source: model.RewardSourceDailyGoal},
+				BalancedReward: usecase.RewardOffer{Type: usecase.DefaultRewardType, Amount: 3, Source: model.RewardSourceBalancedDay},
 			},
 		}}, nil
 	}

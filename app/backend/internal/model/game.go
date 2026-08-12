@@ -244,6 +244,8 @@ type RewardSourceKind string
 const (
 	RewardSourceTaskCompletion RewardSourceKind = "TASK_COMPLETION"
 	RewardSourceDailyQuest     RewardSourceKind = "DAILY_QUEST"
+	RewardSourceDailyGoal      RewardSourceKind = "DAILY_GOAL"
+	RewardSourceBalancedDay    RewardSourceKind = "BALANCED_DAY"
 	RewardSourceStreak         RewardSourceKind = "STREAK"
 )
 

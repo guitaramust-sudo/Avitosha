@@ -47,6 +47,7 @@
 }
 
 .daily-quest,
+.balanced-day,
 .tomorrow-preview {
   padding: h.rem(13px);
   border: h.rem(1px) solid h.$color-border;
@@ -69,7 +70,18 @@
   }
 }
 
+.daily-quest-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(h.rem(170px), 1fr));
+  gap: h.rem(8px);
+}
+
 .daily-quest {
+  &.is-completed {
+    border-color: h.$color-success-dark;
+    background: h.$color-success-light;
+  }
+
   &__heading {
     display: flex;
     justify-content: space-between;
@@ -79,6 +91,12 @@
     strong {
       color: h.$color-primary;
     }
+  }
+
+  &__role {
+    padding: h.rem(3px) h.rem(6px);
+    border-radius: h.$radius-round;
+    background: h.$color-surface-muted;
   }
 
   &__progress {
@@ -95,6 +113,21 @@
       border-radius: inherit;
       background: h.$color-primary;
     }
+  }
+}
+
+.balanced-day {
+  background: h.$color-surface-soft;
+
+  > span {
+    color: h.$color-text-muted;
+    font-size: h.rem(10px);
+  }
+
+  > strong {
+    display: block;
+    margin-top: h.rem(8px);
+    color: h.$color-primary;
   }
 }
 
@@ -121,6 +154,9 @@
 }
 
 @include h.mobile {
+  .daily-quest-list {
+    grid-template-columns: 1fr;
+  }
   .retention-card {
     &__heading {
       align-items: flex-start;

@@ -163,6 +163,18 @@ export const getGameEventMessage = (events: GameEvent[]) => {
           text: `Ежедневное задание выполнено: ${event.title}`,
         })
         break
+      case 'DAILY_GOAL_COMPLETED':
+        messages.push({
+          priority: 82,
+          text: `Дневная цель выполнена: +${event.xpReward} XP`,
+        })
+        break
+      case 'BALANCED_DAY_COMPLETED':
+        messages.push({
+          priority: 78,
+          text: `Сбалансированный день: +${event.rewardAmount} Avito-бонуса`,
+        })
+        break
       case 'DAILY_QUEST_UPDATED':
         messages.push({
           priority: 35,

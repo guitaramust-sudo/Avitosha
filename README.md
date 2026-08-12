@@ -66,7 +66,7 @@
 | Задания    | Основная история `FIRST_ROOM`, последовательные задания и ежедневная цель  |
 | Комната    | Открываемые предметы и интерактивная расстановка мебели                    |
 | Награды    | Начисление бонусов, история операций и каталог будущих наград              |
-| Retention  | Streak, ежедневные задания и preview следующей цели                        |
+| Retention  | Набор 2+2+1, цель «любые 2», streak со щитом и preview следующего дня       |
 | Достижения | Система достижений за игровые и продуктовые действия                       |
 | Лидерборд  | Недельный рейтинг, основанный на полезной активности                       |
 | Realtime   | Обновление состояния интерфейса через WebSocket                            |
@@ -216,9 +216,9 @@ Auth-инфраструктура использует `users` и `sessions`. И
 - `room_items`, `user_room_items` — справочник и размещённые предметы;
 - `stories`, `user_story_progress` — долгосрочная цель и текущий этап;
 - `weekly_progress`, `daily_progress` — рейтинг и дневная сводка;
-- `user_reward_balances`, `reward_transactions` — reward wallet, lifetime earned и auditable ledger для наград из задач, streak и daily quest;
+- `user_reward_balances`, `reward_transactions` — reward wallet, lifetime earned и auditable ledger для наград из задач, дневной цели, сбалансированного дня и streak;
 - `reward_catalog_items` — каталог конкретных Avito-perks и их порогов;
-- `user_streaks`, `daily_quest_templates`, `user_daily_quests` — retention-слой для streak, одной daily quest на день и tomorrow preview;
+- `user_streaks`, `daily_quest_templates`, `user_daily_quests`, `user_daily_goals` — retention-слой для набора 2+2+1, цели «любые 2 из 5», streak и tomorrow preview;
 - `achievements`, `user_achievements` — достижения без отдельной валюты;
 - `pet_activity_scores` — buyer/seller/category-счётчики характера;
 - `domain_events` — события, сформированные внутри транзакции.
@@ -293,7 +293,7 @@ X-User-ID: <existing-user-uuid>
 | POST  | `/api/v1/actions`                            | mock-событие Авито                                                          |
 | GET   | `/api/v1/room`                               | открытые и заблокированные предметы                                         |
 | GET   | `/api/v1/story`                              | прогресс `FIRST_ROOM` и следующая цель                                      |
-| GET   | `/api/v1/daily-summary`                      | дневной агрегат + retention block (`streak`, `dailyQuest`, `tomorrow`)      |
+| GET   | `/api/v1/daily-summary`                      | дневной агрегат + retention block (`streak`, `dailyGoal`, `tomorrow`)       |
 | GET   | `/api/v1/leaderboard?period=weekly&limit=10` | недельный топ и позиция пользователя                                        |
 | GET   | `/api/v1/achievements`                       | открытые и будущие достижения                                               |
 | GET   | `/api/v1/rewards/balance`                    | raw reward balances и lifetime earned totals                                |
@@ -386,7 +386,7 @@ docker compose up --build
 ./app/backend/scripts/smoke-game.sh
 ```
 
-Скрипт регистрирует нового пользователя, лениво создаёт стартовый профиль Авитоши первым игровым запросом, пять раз отправляет `AD_VIEWED`, затем проверяет задание, 30 XP, `DESK`, этап истории, дневную сводку, weekly score 100 и 12 бонусов: 10 за задание плюс 2 за первый день streak.
+Скрипт регистрирует нового пользователя, лениво создаёт стартовый профиль Авитоши первым игровым запросом, выполняет продуктовые действия и проверяет прогресс питомца, первой комнаты, ежедневного набора и наград.
 
 ## Тестирование
 

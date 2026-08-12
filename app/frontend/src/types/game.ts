@@ -164,7 +164,8 @@ export interface DailySummary {
   retention: RetentionOverview
 }
 
-export type RewardSource = 'TASK_COMPLETION' | 'DAILY_QUEST' | 'STREAK'
+export type RewardSource =
+  'TASK_COMPLETION' | 'DAILY_QUEST' | 'DAILY_GOAL' | 'BALANCED_DAY' | 'STREAK'
 
 export interface RewardOffer {
   type: string
@@ -188,37 +189,46 @@ export interface DailyQuest {
   title: string
   description: string
   actionType: ActionType
+  role: 'BUYER' | 'SELLER' | 'UNIVERSAL'
   category: string | null
   progress: number
   target: number
   status: 'ACTIVE' | 'COMPLETED' | 'REWARDED' | 'EXPIRED'
-  reward: RewardOffer
-}
-
-export interface TomorrowDailyQuest {
-  code: string
-  title: string
-  description: string
-  actionType: ActionType
-  category: string | null
-  target: number
-  reward: RewardOffer
+  xpReward: number
 }
 
 export interface RetentionOverview {
   streak: {
     current: number
     longest: number
+    protections: number
     lastActiveDate: string | null
     activeToday: boolean
     reward: RewardOffer
   }
-  dailyQuest: DailyQuest
+  dailyGoal: {
+    date: string
+    quests: DailyQuest[]
+    completed: number
+    required: number
+    status: 'ACTIVE' | 'REWARDED' | 'EXPIRED'
+    xpReward: number
+    reward: RewardOffer
+    balancedCompleted: boolean
+    balancedReward: RewardOffer
+  }
   tomorrow: {
     date: string
     streakAfterReturn: number
     streakReward: RewardOffer
-    dailyQuest: TomorrowDailyQuest
+    tasksCount: number
+    required: number
+    buyerTasks: number
+    sellerTasks: number
+    universalTasks: number
+    xpReward: number
+    reward: RewardOffer
+    balancedReward: RewardOffer
     nextGoal: RewardGoal | null
   }
 }
@@ -289,6 +299,8 @@ export type GameEventType =
   | 'REWARD_CATALOG_UNLOCKED'
   | 'DAILY_QUEST_UPDATED'
   | 'DAILY_QUEST_COMPLETED'
+  | 'DAILY_GOAL_COMPLETED'
+  | 'BALANCED_DAY_COMPLETED'
   | 'STREAK_UPDATED'
 
 interface GameEventBase<TType extends GameEventType> {
@@ -308,7 +320,11 @@ export type GameEvent =
       taskId: string
       taskCode: GameTaskCode
     })
-  | (GameEventBase<'XP_EARNED'> & { amount: number; totalXp: number })
+  | (GameEventBase<'XP_EARNED'> & {
+      amount: number
+      totalXp: number
+      source?: string
+    })
   | (GameEventBase<'PET_LEVEL_UP'> & {
       previousLevel: number
       level: number
@@ -355,15 +371,25 @@ export type GameEvent =
     })
   | (GameEventBase<'DAILY_QUEST_UPDATED'> & {
       code: string
-      title: string
+      role: DailyQuest['role']
       progress: number
       target: number
       status: DailyQuest['status']
-      reward: Pick<RewardOffer, 'type' | 'amount'>
     })
   | (GameEventBase<'DAILY_QUEST_COMPLETED'> & {
       code: string
       title: string
+      role: DailyQuest['role']
+      xpReward: number
+    })
+  | (GameEventBase<'DAILY_GOAL_COMPLETED'> & {
+      completed: number
+      required: number
+      xpReward: number
+      rewardType: string
+      rewardAmount: number
+    })
+  | (GameEventBase<'BALANCED_DAY_COMPLETED'> & {
       rewardType: string
       rewardAmount: number
     })
@@ -372,6 +398,9 @@ export type GameEvent =
       longest: number
       lastActiveDate: string
       reset: boolean
+      protections: number
+      protectionUsed: boolean
+      protectionEarned: boolean
       reward: Pick<RewardOffer, 'type' | 'amount'>
     })
 

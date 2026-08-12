@@ -25,6 +25,8 @@ const (
 	DomainEventRewardCatalogUnlocked   DomainEventType = "REWARD_CATALOG_UNLOCKED"
 	DomainEventDailyQuestUpdated       DomainEventType = "DAILY_QUEST_UPDATED"
 	DomainEventDailyQuestCompleted     DomainEventType = "DAILY_QUEST_COMPLETED"
+	DomainEventDailyGoalCompleted      DomainEventType = "DAILY_GOAL_COMPLETED"
+	DomainEventBalancedDayCompleted    DomainEventType = "BALANCED_DAY_COMPLETED"
 	DomainEventStreakUpdated           DomainEventType = "STREAK_UPDATED"
 	DomainEventListingViewed           DomainEventType = "LISTING_VIEWED"
 	DomainEventListingFavorited        DomainEventType = "LISTING_FAVORITED"

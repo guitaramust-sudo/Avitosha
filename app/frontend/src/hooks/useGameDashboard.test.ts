@@ -30,10 +30,9 @@ describe('invalidateGameQueriesForEvents', () => {
         id: 'quest-event',
         occurredAt: '2026-08-05T10:00:00Z',
         progress: 1,
-        reward: { amount: 5, type: 'AVITO_BONUS' },
+        role: 'BUYER',
         status: 'ACTIVE',
         target: 3,
-        title: 'Найти интересное',
         type: 'DAILY_QUEST_UPDATED',
       },
     ]
