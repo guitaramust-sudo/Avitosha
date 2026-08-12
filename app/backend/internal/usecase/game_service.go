@@ -347,13 +347,32 @@ func (service *GameService) ProcessAction(
 	ctx context.Context,
 	command ProcessActionCommand,
 ) (ProcessActionResult, error) {
+	return service.processAction(ctx, command, true)
+}
+
+// ProcessActionWithinTx reuses the current action pipeline in a caller-owned transaction.
+// The caller must publish result events only after its outer transaction commits.
+func (service *GameService) ProcessActionWithinTx(
+	ctx context.Context,
+	command ProcessActionCommand,
+) (ProcessActionResult, error) {
+	return service.processAction(ctx, command, false)
+}
+
+func (service *GameService) PublishActionResult(userID uuid.UUID, result ProcessActionResult) {
+	if !result.Duplicate && service.publisher != nil && len(result.Events) > 0 {
+		service.publisher.Publish(userID, result.Events)
+	}
+}
+
+func (service *GameService) processAction(ctx context.Context, command ProcessActionCommand, ownTransaction bool) (ProcessActionResult, error) {
 	command = normalizeActionCommand(command)
 	if err := validateActionCommand(command); err != nil {
 		return ProcessActionResult{}, err
 	}
 
 	var result ProcessActionResult
-	err := service.txManager.WithinTx(ctx, func(txCtx context.Context) error {
+	process := func(txCtx context.Context) error {
 		profile, err := service.EnsureProfile(txCtx, command.UserID, command.Now)
 		if err != nil {
 			return err
@@ -392,9 +411,42 @@ func (service *GameService) ProcessAction(
 		weeklyDelta := WeeklyProgressDelta{}
 		unlockedItems := make([]string, 0, 1)
 		achievementCodes := make([]string, 0, 4)
+		rule := model.ProductActionRule{ActionType: command.ActionType}
+		marketplaceAction := isTrustedMarketplaceAction(command.Metadata, ownTransaction)
+		if marketplaceAction {
+			rules, ok := service.repository.(interface {
+				GetProductActionRule(context.Context, model.ActionType) (model.ProductActionRule, error)
+			})
+			if !ok {
+				return ErrUnexpectedStorage
+			}
+			var ruleErr error
+			rule, ruleErr = rules.GetProductActionRule(txCtx, command.ActionType)
+			if ruleErr != nil {
+				return fmt.Errorf("get product action rule: %w", ruleErr)
+			}
+		}
 		retentionState, _, err := service.ensureRetentionState(txCtx, command.UserID, command.Now, true)
 		if err != nil {
 			return fmt.Errorf("ensure retention state: %w", err)
+		}
+		if rule.XPReward > 0 {
+			previousLevel := pet.Level
+			pet.GrowthXP += rule.XPReward
+			level, levelErr := CalculateLevel(pet.GrowthXP)
+			if levelErr != nil {
+				return fmt.Errorf("calculate product action level: %w", levelErr)
+			}
+			pet.Level = level
+			pet.Mood = model.PetMoodHappy
+			weeklyDelta.EarnedXP += rule.XPReward
+			events = append(events, service.event(action.ID, command.UserID, model.DomainEventXPEarned, command.Now, map[string]any{"amount": rule.XPReward, "totalXp": pet.GrowthXP}))
+			if pet.Level > previousLevel {
+				events = append(events, service.event(action.ID, command.UserID, model.DomainEventPetLevelUp, command.Now, map[string]any{"previousLevel": previousLevel, "level": pet.Level}))
+			}
+		}
+		if productEvent := service.productEvent(action.ID, command.UserID, command.ActionType, command.Now, command.EntityID, command.Category, marketplaceAction); productEvent.ID != uuid.Nil {
+			events = append(events, productEvent)
 		}
 
 		tasks, err := service.repository.FindMatchingActiveTasksForUpdate(
@@ -516,15 +568,56 @@ func (service *GameService) ProcessAction(
 		}
 		result.Events = events
 		return nil
-	})
+	}
+	var err error
+	if ownTransaction {
+		err = service.txManager.WithinTx(ctx, process)
+	} else {
+		err = process(ctx)
+	}
 	if err != nil {
 		return ProcessActionResult{}, fmt.Errorf("process action transaction: %w", err)
 	}
 
-	if !result.Duplicate && service.publisher != nil && len(result.Events) > 0 {
-		service.publisher.Publish(command.UserID, result.Events)
+	if ownTransaction {
+		service.PublishActionResult(command.UserID, result)
 	}
 	return result, nil
+}
+
+func (service *GameService) productEvent(actionID, userID uuid.UUID, actionType model.ActionType, now time.Time, entityID, category *string, marketplaceAction bool) model.DomainEvent {
+	if !marketplaceAction {
+		return model.DomainEvent{}
+	}
+	types := map[model.ActionType]model.DomainEventType{
+		model.ActionTypeAdViewed: model.DomainEventListingViewed, model.ActionTypeAdFavorited: model.DomainEventListingFavorited,
+		model.ActionTypeMessageSent: model.DomainEventSellerContacted, model.ActionTypeAdCreated: model.DomainEventListingPublished,
+		model.ActionTypeListingImproved: model.DomainEventListingImproved, model.ActionTypeListingSold: model.DomainEventListingSold,
+		model.ActionTypeDeliveryUsed: model.DomainEventDeliveryUsed,
+	}
+	eventType, ok := types[actionType]
+	if !ok {
+		return model.DomainEvent{}
+	}
+	payload := map[string]any{"actionType": actionType}
+	if entityID != nil {
+		payload["listingId"] = *entityID
+	}
+	if category != nil {
+		payload["category"] = *category
+	}
+	return service.event(actionID, userID, eventType, now, payload)
+}
+
+func isMarketplaceAction(metadata json.RawMessage) bool {
+	var value struct {
+		Source string `json:"source"`
+	}
+	return json.Unmarshal(metadata, &value) == nil && strings.HasPrefix(value.Source, "marketplace.")
+}
+
+func isTrustedMarketplaceAction(metadata json.RawMessage, ownTransaction bool) bool {
+	return !ownTransaction && isMarketplaceAction(metadata)
 }
 
 type taskRewardResult struct {

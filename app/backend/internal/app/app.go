@@ -69,6 +69,7 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, err
 		return nil, fmt.Errorf("create advice generator: %w", err)
 	}
 	game := newGameService(pool, txManager, eventHub, adviceGenerator)
+	marketplace := usecase.NewMarketplaceService(postgres.NewGameRepository(pool), txManager, uuid.New, game)
 
 	authService, err := usecase.NewAuthService(usecase.AuthConfig{
 		AccessTokenTTL:  cfg.AccessTokenTTL,
@@ -102,6 +103,7 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, err
 		RefreshTokenTTL:          cfg.RefreshTokenTTL,
 		SecureRefreshCookie:      cfg.AppEnv == config.AppEnvProd,
 		GameService:              game,
+		MarketplaceService:       marketplace,
 		EventHub:                 eventHub,
 	})
 	server := &http.Server{

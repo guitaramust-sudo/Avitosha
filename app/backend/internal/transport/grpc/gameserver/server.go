@@ -31,13 +31,34 @@ type GameUseCase interface {
 	ProcessAction(context.Context, usecase.ProcessActionCommand) (usecase.ProcessActionResult, error)
 }
 
-type Server struct {
-	avitoshav1.UnimplementedGameServiceServer
-	game GameUseCase
-	hub  *realtime.Hub
+type MarketplaceUseCase interface {
+	ListCategories(context.Context) ([]model.ListingCategory, error)
+	ListPublic(context.Context, *string, string, int, int) (usecase.ListingPage, error)
+	GetPublic(context.Context, uuid.UUID) (model.Listing, error)
+	ListMine(context.Context, uuid.UUID, int, int) (usecase.ListingPage, error)
+	ListFavorites(context.Context, uuid.UUID, int, int) (usecase.ListingPage, error)
+	Create(context.Context, usecase.CreateListingCommand) (model.Listing, error)
+	UpdateWithGame(context.Context, usecase.UpdateListingCommand) (usecase.MarketplaceActionResult, error)
+	PublishWithGame(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, time.Time) (usecase.MarketplaceActionResult, error)
+	Unpublish(context.Context, uuid.UUID, uuid.UUID, time.Time) (model.Listing, error)
+	AddFavoriteWithGame(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, time.Time) (usecase.MarketplaceActionResult, error)
+	RemoveFavorite(context.Context, uuid.UUID, uuid.UUID) (bool, error)
+	RegisterViewWithGame(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, time.Time) (usecase.MarketplaceActionResult, error)
+	ContactSellerWithGame(context.Context, uuid.UUID, uuid.UUID, uuid.UUID, string, time.Time) (usecase.MarketplaceActionResult, error)
+	ListMessages(context.Context, uuid.UUID, uuid.UUID) ([]model.ListingMessage, error)
+	PurchaseWithGame(context.Context, usecase.PurchaseListingCommand) (usecase.MarketplaceActionResult, error)
 }
 
-func New(game GameUseCase, hub *realtime.Hub) *Server { return &Server{game: game, hub: hub} }
+type Server struct {
+	avitoshav1.UnimplementedGameServiceServer
+	game        GameUseCase
+	marketplace MarketplaceUseCase
+	hub         *realtime.Hub
+}
+
+func New(game GameUseCase, marketplace MarketplaceUseCase, hub *realtime.Hub) *Server {
+	return &Server{game: game, marketplace: marketplace, hub: hub}
+}
 
 func (s *Server) EnsureProfile(ctx context.Context, request *avitoshav1.UserAtRequest) (*avitoshav1.JsonResponse, error) {
 	userID, at, err := parseUserAt(request.GetUserId(), request.GetAt())
@@ -160,6 +181,151 @@ func (s *Server) ProcessAction(ctx context.Context, request *avitoshav1.ProcessA
 	return encode(s.game.ProcessAction(ctx, command))
 }
 
+func (s *Server) ListListingCategories(ctx context.Context, _ *avitoshav1.Empty) (*avitoshav1.JsonResponse, error) {
+	return encode(s.marketplace.ListCategories(ctx))
+}
+
+func (s *Server) ListPublicListings(ctx context.Context, request *avitoshav1.ListingsRequest) (*avitoshav1.JsonResponse, error) {
+	return encode(s.marketplace.ListPublic(ctx, request.Category, request.GetQuery(), int(request.GetLimit()), int(request.GetOffset())))
+}
+
+func (s *Server) GetPublicListing(ctx context.Context, request *avitoshav1.ListingRequest) (*avitoshav1.JsonResponse, error) {
+	listingID, err := parseUUID("listing_id", request.GetListingId())
+	if err != nil {
+		return nil, err
+	}
+	return encode(s.marketplace.GetPublic(ctx, listingID))
+}
+
+func (s *Server) ListMyListings(ctx context.Context, request *avitoshav1.ListingsRequest) (*avitoshav1.JsonResponse, error) {
+	userID, err := parseUUID("user_id", request.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	return encode(s.marketplace.ListMine(ctx, userID, int(request.GetLimit()), int(request.GetOffset())))
+}
+
+func (s *Server) CreateListing(ctx context.Context, request *avitoshav1.MarketplaceCommand) (*avitoshav1.JsonResponse, error) {
+	userID, now, err := parseUserAt(request.GetUserId(), request.GetAt())
+	if err != nil {
+		return nil, err
+	}
+	return encode(s.marketplace.Create(ctx, usecase.CreateListingCommand{OwnerID: userID, CategoryCode: request.GetCategoryCode(), Title: request.GetTitle(), Description: request.GetDescription(), PriceKopecks: request.GetPriceKopecks(), PhotoURLs: request.GetPhotoUrls(), Now: now}))
+}
+
+func (s *Server) UpdateListing(ctx context.Context, request *avitoshav1.MarketplaceCommand) (*avitoshav1.JsonResponse, error) {
+	userID, now, err := parseUserAt(request.GetUserId(), request.GetAt())
+	if err != nil {
+		return nil, err
+	}
+	listingID, err := parseUUID("listing_id", request.GetListingId())
+	if err != nil {
+		return nil, err
+	}
+	eventID, err := parseUUID("event_id", request.GetEventId())
+	if err != nil {
+		return nil, err
+	}
+	return encode(s.marketplace.UpdateWithGame(ctx, usecase.UpdateListingCommand{OwnerID: userID, ListingID: listingID, CategoryCode: request.GetCategoryCode(), Title: request.GetTitle(), Description: request.GetDescription(), PriceKopecks: request.GetPriceKopecks(), PhotoURLs: request.GetPhotoUrls(), EventID: eventID, Now: now}))
+}
+
+func (s *Server) PublishListing(ctx context.Context, request *avitoshav1.ListingCommand) (*avitoshav1.JsonResponse, error) {
+	userID, listingID, at, err := parseListingCommand(request)
+	if err != nil {
+		return nil, err
+	}
+	eventID, err := parseUUID("event_id", request.GetEventId())
+	if err != nil {
+		return nil, err
+	}
+	return encode(s.marketplace.PublishWithGame(ctx, userID, listingID, eventID, at))
+}
+func (s *Server) UnpublishListing(ctx context.Context, request *avitoshav1.ListingCommand) (*avitoshav1.JsonResponse, error) {
+	userID, listingID, at, err := parseListingCommand(request)
+	if err != nil {
+		return nil, err
+	}
+	return encode(s.marketplace.Unpublish(ctx, userID, listingID, at))
+}
+func (s *Server) AddListingFavorite(ctx context.Context, request *avitoshav1.ListingCommand) (*avitoshav1.JsonResponse, error) {
+	userID, listingID, at, err := parseListingCommand(request)
+	if err != nil {
+		return nil, err
+	}
+	eventID, err := parseUUID("event_id", request.GetEventId())
+	if err != nil {
+		return nil, err
+	}
+	return encode(s.marketplace.AddFavoriteWithGame(ctx, userID, listingID, eventID, at))
+}
+func (s *Server) RemoveListingFavorite(ctx context.Context, request *avitoshav1.ListingCommand) (*avitoshav1.JsonResponse, error) {
+	userID, listingID, _, err := parseListingCommand(request)
+	if err != nil {
+		return nil, err
+	}
+	return encode(s.marketplace.RemoveFavorite(ctx, userID, listingID))
+}
+func (s *Server) RegisterListingView(ctx context.Context, request *avitoshav1.ListingCommand) (*avitoshav1.JsonResponse, error) {
+	userID, listingID, at, err := parseListingCommand(request)
+	if err != nil {
+		return nil, err
+	}
+	eventID, err := parseUUID("event_id", request.GetEventId())
+	if err != nil {
+		return nil, err
+	}
+	return encode(s.marketplace.RegisterViewWithGame(ctx, userID, listingID, eventID, at))
+}
+
+func (s *Server) ListFavoriteListings(ctx context.Context, request *avitoshav1.ListingsRequest) (*avitoshav1.JsonResponse, error) {
+	userID, err := parseUUID("user_id", request.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	return encode(s.marketplace.ListFavorites(ctx, userID, int(request.GetLimit()), int(request.GetOffset())))
+}
+func (s *Server) ContactSeller(ctx context.Context, request *avitoshav1.MarketplaceCommand) (*avitoshav1.JsonResponse, error) {
+	userID, now, err := parseUserAt(request.GetUserId(), request.GetAt())
+	if err != nil {
+		return nil, err
+	}
+	listingID, err := parseUUID("listing_id", request.GetListingId())
+	if err != nil {
+		return nil, err
+	}
+	eventID, err := parseUUID("event_id", request.GetEventId())
+	if err != nil {
+		return nil, err
+	}
+	return encode(s.marketplace.ContactSellerWithGame(ctx, userID, listingID, eventID, request.GetMessageBody(), now))
+}
+func (s *Server) ListListingMessages(ctx context.Context, request *avitoshav1.ListingRequest) (*avitoshav1.JsonResponse, error) {
+	userID, err := parseUUID("user_id", request.GetUserId())
+	if err != nil {
+		return nil, err
+	}
+	listingID, err := parseUUID("listing_id", request.GetListingId())
+	if err != nil {
+		return nil, err
+	}
+	return encode(s.marketplace.ListMessages(ctx, userID, listingID))
+}
+func (s *Server) PurchaseListing(ctx context.Context, request *avitoshav1.PurchaseListingRequest) (*avitoshav1.JsonResponse, error) {
+	userID, now, err := parseUserAt(request.GetUserId(), request.GetAt())
+	if err != nil {
+		return nil, err
+	}
+	listingID, err := parseUUID("listing_id", request.GetListingId())
+	if err != nil {
+		return nil, err
+	}
+	eventID, err := parseUUID("event_id", request.GetEventId())
+	if err != nil {
+		return nil, err
+	}
+	return encode(s.marketplace.PurchaseWithGame(ctx, usecase.PurchaseListingCommand{BuyerID: userID, ListingID: listingID, DeliveryUsed: request.GetDeliveryUsed(), EventID: eventID, Now: now}))
+}
+
 func (s *Server) SubscribeEvents(request *avitoshav1.SubscribeEventsRequest, stream avitoshav1.GameService_SubscribeEventsServer) error {
 	userID, err := parseUUID("user_id", request.GetUserId())
 	if err != nil {
@@ -213,6 +379,15 @@ func parseTaskRequest(request *avitoshav1.TaskRequest) (uuid.UUID, uuid.UUID, ti
 	}
 	taskID, err := parseUUID("task_id", request.GetTaskId())
 	return userID, taskID, at, err
+}
+
+func parseListingCommand(request *avitoshav1.ListingCommand) (uuid.UUID, uuid.UUID, time.Time, error) {
+	userID, at, err := parseUserAt(request.GetUserId(), request.GetAt())
+	if err != nil {
+		return uuid.Nil, uuid.Nil, time.Time{}, err
+	}
+	listingID, err := parseUUID("listing_id", request.GetListingId())
+	return userID, listingID, at, err
 }
 
 func parseUUID(field, value string) (uuid.UUID, error) {

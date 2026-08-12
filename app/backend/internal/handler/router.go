@@ -34,6 +34,7 @@ type RouterDependencies struct {
 	RefreshTokenTTL          time.Duration
 	SecureRefreshCookie      bool
 	GameService              GameUseCase
+	MarketplaceService       MarketplaceUseCase
 	EventHub                 realtime.EventSubscriber
 	Now                      func() time.Time
 }
@@ -86,10 +87,27 @@ func mountAPIRoutes(r chi.Router, logger *slog.Logger, deps RouterDependencies) 
 
 	})
 
+	marketplaceHandler := NewMarketplaceHandler(logger, deps.MarketplaceService, deps.Now)
+	r.Get("/api/v1/listing-categories", marketplaceHandler.ListCategories)
+	r.Get("/api/v1/listings", marketplaceHandler.ListPublic)
+	r.Get("/api/v1/listings/{listing_id}", marketplaceHandler.GetPublic)
+
 	gameHandler := NewGameHandler(logger, deps.GameService, deps.Now)
 	webSocketHandler := NewGameWebSocketHandler(logger, deps.EventHub, deps.FrontendOrigin)
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Use(GameIdentity(logger, deps.AccessTokenAuthenticator))
+		r.Get("/me/listings", marketplaceHandler.ListMine)
+		r.Get("/me/favorites", marketplaceHandler.ListFavorites)
+		r.Post("/listings", marketplaceHandler.Create)
+		r.Patch("/listings/{listing_id}", marketplaceHandler.Update)
+		r.Post("/listings/{listing_id}/publish", marketplaceHandler.Publish)
+		r.Post("/listings/{listing_id}/unpublish", marketplaceHandler.Unpublish)
+		r.Put("/listings/{listing_id}/favorite", marketplaceHandler.AddFavorite)
+		r.Delete("/listings/{listing_id}/favorite", marketplaceHandler.RemoveFavorite)
+		r.Post("/listings/{listing_id}/views", marketplaceHandler.RegisterView)
+		r.Post("/listings/{listing_id}/messages", marketplaceHandler.ContactSeller)
+		r.Get("/listings/{listing_id}/messages", marketplaceHandler.ListMessages)
+		r.Post("/listings/{listing_id}/purchase", marketplaceHandler.Purchase)
 		r.Get("/pet", gameHandler.GetPet)
 		r.Patch("/pet", gameHandler.RenamePet)
 		r.Get("/tasks", gameHandler.ListTasks)

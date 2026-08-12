@@ -90,6 +90,89 @@ func (c *Client) ProcessAction(ctx context.Context, command usecase.ProcessActio
 	return decode[usecase.ProcessActionResult](response, err)
 }
 
+func (c *Client) ListCategories(ctx context.Context) ([]model.ListingCategory, error) {
+	response, err := c.rpc.ListListingCategories(ctx, &avitoshav1.Empty{})
+	return decode[[]model.ListingCategory](response, err)
+}
+func (c *Client) ListPublic(ctx context.Context, category *string, query string, limit, offset int) (usecase.ListingPage, error) {
+	response, err := c.rpc.ListPublicListings(ctx, &avitoshav1.ListingsRequest{Category: category, Query: query, Limit: int32(limit), Offset: int32(offset)})
+	return decode[usecase.ListingPage](response, err)
+}
+func (c *Client) GetPublic(ctx context.Context, listingID uuid.UUID) (model.Listing, error) {
+	response, err := c.rpc.GetPublicListing(ctx, &avitoshav1.ListingRequest{ListingId: listingID.String()})
+	return decode[model.Listing](response, err)
+}
+func (c *Client) ListMine(ctx context.Context, userID uuid.UUID, limit, offset int) (usecase.ListingPage, error) {
+	response, err := c.rpc.ListMyListings(ctx, &avitoshav1.ListingsRequest{UserId: stringPointer(userID.String()), Limit: int32(limit), Offset: int32(offset)})
+	return decode[usecase.ListingPage](response, err)
+}
+func (c *Client) ListFavorites(ctx context.Context, userID uuid.UUID, limit, offset int) (usecase.ListingPage, error) {
+	response, err := c.rpc.ListFavoriteListings(ctx, &avitoshav1.ListingsRequest{UserId: stringPointer(userID.String()), Limit: int32(limit), Offset: int32(offset)})
+	return decode[usecase.ListingPage](response, err)
+}
+func (c *Client) Create(ctx context.Context, command usecase.CreateListingCommand) (model.Listing, error) {
+	response, err := c.rpc.CreateListing(ctx, marketplaceCommand(command.OwnerID, uuid.Nil, command.CategoryCode, command.Title, command.Description, command.PriceKopecks, command.PhotoURLs, "", command.Now))
+	return decode[model.Listing](response, err)
+}
+func (c *Client) UpdateWithGame(ctx context.Context, command usecase.UpdateListingCommand) (usecase.MarketplaceActionResult, error) {
+	request := marketplaceCommand(command.OwnerID, command.ListingID, command.CategoryCode, command.Title, command.Description, command.PriceKopecks, command.PhotoURLs, "", command.Now)
+	request.EventId = command.EventID.String()
+	response, err := c.rpc.UpdateListing(ctx, request)
+	return decode[usecase.MarketplaceActionResult](response, err)
+}
+func (c *Client) PublishWithGame(ctx context.Context, userID, listingID, eventID uuid.UUID, now time.Time) (usecase.MarketplaceActionResult, error) {
+	request := listingCommand(userID, listingID, now)
+	request.EventId = eventID.String()
+	response, err := c.rpc.PublishListing(ctx, request)
+	return decode[usecase.MarketplaceActionResult](response, err)
+}
+func (c *Client) Unpublish(ctx context.Context, userID, listingID uuid.UUID, now time.Time) (model.Listing, error) {
+	response, err := c.rpc.UnpublishListing(ctx, listingCommand(userID, listingID, now))
+	return decode[model.Listing](response, err)
+}
+func (c *Client) AddFavoriteWithGame(ctx context.Context, userID, listingID, eventID uuid.UUID, now time.Time) (usecase.MarketplaceActionResult, error) {
+	request := listingCommand(userID, listingID, now)
+	request.EventId = eventID.String()
+	response, err := c.rpc.AddListingFavorite(ctx, request)
+	return decode[usecase.MarketplaceActionResult](response, err)
+}
+func (c *Client) RemoveFavorite(ctx context.Context, userID, listingID uuid.UUID) (bool, error) {
+	response, err := c.rpc.RemoveListingFavorite(ctx, listingCommand(userID, listingID, time.Now()))
+	return decode[bool](response, err)
+}
+func (c *Client) RegisterViewWithGame(ctx context.Context, userID, listingID, eventID uuid.UUID, now time.Time) (usecase.MarketplaceActionResult, error) {
+	request := listingCommand(userID, listingID, now)
+	request.EventId = eventID.String()
+	response, err := c.rpc.RegisterListingView(ctx, request)
+	return decode[usecase.MarketplaceActionResult](response, err)
+}
+func (c *Client) ContactSellerWithGame(ctx context.Context, userID, listingID, eventID uuid.UUID, body string, now time.Time) (usecase.MarketplaceActionResult, error) {
+	request := marketplaceCommand(userID, listingID, "", "", "", 0, nil, body, now)
+	request.EventId = eventID.String()
+	response, err := c.rpc.ContactSeller(ctx, request)
+	return decode[usecase.MarketplaceActionResult](response, err)
+}
+func (c *Client) ListMessages(ctx context.Context, userID, listingID uuid.UUID) ([]model.ListingMessage, error) {
+	response, err := c.rpc.ListListingMessages(ctx, &avitoshav1.ListingRequest{ListingId: listingID.String(), UserId: stringPointer(userID.String())})
+	return decode[[]model.ListingMessage](response, err)
+}
+func (c *Client) PurchaseWithGame(ctx context.Context, command usecase.PurchaseListingCommand) (usecase.MarketplaceActionResult, error) {
+	response, err := c.rpc.PurchaseListing(ctx, &avitoshav1.PurchaseListingRequest{UserId: command.BuyerID.String(), ListingId: command.ListingID.String(), DeliveryUsed: command.DeliveryUsed, At: formatTime(command.Now), EventId: command.EventID.String()})
+	return decode[usecase.MarketplaceActionResult](response, err)
+}
+
+func listingCommand(userID, listingID uuid.UUID, at time.Time) *avitoshav1.ListingCommand {
+	return &avitoshav1.ListingCommand{UserId: userID.String(), ListingId: listingID.String(), At: formatTime(at)}
+}
+func marketplaceCommand(userID, listingID uuid.UUID, category, title, description string, price int64, photos []string, body string, at time.Time) *avitoshav1.MarketplaceCommand {
+	request := &avitoshav1.MarketplaceCommand{UserId: userID.String(), CategoryCode: category, Title: title, Description: description, PriceKopecks: price, PhotoUrls: photos, MessageBody: body, At: formatTime(at)}
+	if listingID != uuid.Nil {
+		request.ListingId = listingID.String()
+	}
+	return request
+}
+func stringPointer(value string) *string { return &value }
+
 func (c *Client) Subscribe(userID uuid.UUID) realtime.EventSubscription {
 	ctx, cancel := context.WithCancel(context.Background())
 	subscription := &interfaceSubscription{messages: make(chan []model.DomainEvent, 16), cancel: cancel}
