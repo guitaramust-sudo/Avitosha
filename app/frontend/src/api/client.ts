@@ -41,6 +41,10 @@ const toApiErrorCode = (code: string): ApiErrorCode => {
     'session_expired',
     'unauthorized',
     'forbidden_pet_name',
+    'demo_purchase_already_completed',
+    'conflict',
+    'forbidden',
+    'not_found',
   ]
 
   return knownCodes.includes(code as ApiErrorCode)

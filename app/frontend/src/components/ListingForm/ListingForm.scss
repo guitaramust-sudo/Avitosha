@@ -1,0 +1,85 @@
+@use '../../../helpers' as h;
+
+.listing-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: h.rem(18px);
+  padding: h.rem(24px);
+  border: h.rem(1px) solid h.$color-border;
+  border-radius: h.$radius-xlarge;
+  background: h.$color-surface;
+  box-shadow: h.$shadow-card;
+
+  label {
+    display: grid;
+    gap: h.rem(8px);
+
+    > span {
+      font-size: h.rem(12px);
+      font-weight: h.$font-weight-bold;
+    }
+  }
+
+  input,
+  select,
+  textarea {
+    width: 100%;
+    border: h.rem(1px) solid h.$color-border-strong;
+    border-radius: h.$radius-medium;
+    outline: none;
+    background: h.$color-surface;
+    transition:
+      border-color 160ms ease,
+      box-shadow 160ms ease;
+
+    &:focus {
+      border-color: h.$color-primary;
+      box-shadow: 0 0 0 h.rem(3px) rgb(0 170 255 / 12%);
+    }
+  }
+
+  input,
+  select {
+    min-height: h.rem(46px);
+    padding: 0 h.rem(13px);
+  }
+  textarea {
+    resize: vertical;
+    padding: h.rem(13px);
+  }
+
+  small {
+    color: h.$color-text-muted;
+    font-size: h.rem(10px);
+  }
+
+  &__wide {
+    grid-column: 1 / -1;
+  }
+
+  > button {
+    min-height: h.rem(46px);
+    border: 0;
+    border-radius: h.$radius-medium;
+    color: h.$color-white;
+    background: h.$color-primary;
+    font-weight: h.$font-weight-bold;
+    cursor: pointer;
+
+    &:disabled {
+      cursor: wait;
+      opacity: 0.65;
+    }
+  }
+}
+
+@include h.mobile {
+  .listing-form {
+    grid-template-columns: 1fr;
+    padding: h.rem(16px);
+
+    &__wide {
+      grid-column: auto;
+    }
+  }
+}

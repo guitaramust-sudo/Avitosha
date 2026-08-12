@@ -17,6 +17,8 @@ export type ActionType =
   | 'DELIVERY_USED'
   | 'REVIEW_LEFT'
   | 'BOOKING_CREATED'
+  | 'LISTING_IMPROVED'
+  | 'LISTING_SOLD'
 
 export const gameTaskCodes = [
   'VIEW_FURNITURE_ADS',
@@ -303,13 +305,23 @@ export type GameEventType =
   | 'BALANCED_DAY_COMPLETED'
   | 'STREAK_UPDATED'
 
-interface GameEventBase<TType extends GameEventType> {
+export type MarketplaceEventType =
+  | 'DELIVERY_USED'
+  | 'LISTING_FAVORITED'
+  | 'LISTING_IMPROVED'
+  | 'LISTING_PUBLISHED'
+  | 'LISTING_SOLD'
+  | 'LISTING_VIEWED'
+  | 'SELLER_CONTACTED'
+
+interface GameEventBase<TType extends GameEventType | MarketplaceEventType> {
   id: string
   type: TType
   occurredAt: string
 }
 
 export type GameEvent =
+  | (GameEventBase<MarketplaceEventType> & Record<string, unknown>)
   | (GameEventBase<'TASK_PROGRESS_UPDATED'> & {
       taskId: string
       taskCode: GameTaskCode
@@ -408,13 +420,4 @@ export interface ActionResult {
   actionId: string
   duplicate: boolean
   events: GameEvent[]
-}
-
-export interface ActionRequest {
-  eventId: string
-  type: ActionType
-  entityId?: string
-  category?: string
-  occurredAt: string
-  metadata: Record<string, unknown>
 }

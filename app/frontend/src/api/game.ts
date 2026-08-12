@@ -1,7 +1,5 @@
 import {
   type Achievement,
-  type ActionRequest,
-  type ActionResult,
   type DailySummary,
   type GameTask,
   isAchievementCode,
@@ -166,19 +164,4 @@ export const getAchievements = async (accessToken: string) => {
       ? [{ ...achievement, code: achievement.code }]
       : [],
   )
-}
-
-export const postAction = async (
-  accessToken: string,
-  action: ActionRequest,
-): Promise<ActionResult> => {
-  const response = await apiRequest<
-    Omit<ActionResult, 'events'> & { events: ActionResult['events'] | null }
-  >('/api/v1/actions', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${accessToken}` },
-    body: JSON.stringify(action),
-  })
-
-  return { ...response, events: response.events ?? [] }
 }

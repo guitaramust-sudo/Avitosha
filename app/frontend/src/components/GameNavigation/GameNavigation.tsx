@@ -20,6 +20,7 @@ const navigation = [
   { end: false, icon: '◇', label: 'Награды', to: '/rewards' },
   { end: false, icon: '☆', label: 'Достижения', to: '/achievements' },
   { end: false, icon: '♛', label: 'Лидерборд', to: '/leaderboard' },
+  { end: false, icon: '▦', label: 'Объявления', to: '/marketplace' },
 ] as const
 
 function GameNavigation() {

@@ -1,0 +1,115 @@
+@use '../../../helpers' as h;
+
+.listing-card {
+  overflow: hidden;
+  border: h.rem(1px) solid h.$color-border;
+  border-radius: h.$radius-large;
+  background: h.$color-surface;
+  box-shadow: h.$shadow-card;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
+
+  &:hover {
+    box-shadow: 0 h.rem(18px) h.rem(42px) rgb(35 76 96 / 14%);
+    transform: translateY(h.rem(-3px));
+  }
+
+  &__image {
+    display: grid;
+    height: h.rem(230px);
+    overflow: hidden;
+    place-items: center;
+    color: h.$color-text-muted;
+    background: linear-gradient(
+      145deg,
+      h.$color-primary-light,
+      h.$color-success-light
+    );
+    font-size: h.rem(12px);
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 300ms ease;
+    }
+
+    &:hover img {
+      transform: scale(1.03);
+    }
+  }
+
+  &__body {
+    display: grid;
+    gap: h.rem(12px);
+    padding: h.rem(15px);
+
+    > a {
+      min-height: h.rem(42px);
+      color: h.$color-text;
+      font-size: h.rem(14px);
+      line-height: 1.45;
+      text-decoration: none;
+
+      &:hover {
+        color: h.$color-primary;
+      }
+    }
+
+    > strong {
+      font-size: h.rem(18px);
+    }
+  }
+
+  &__meta {
+    display: flex;
+    min-height: h.rem(24px);
+    align-items: center;
+    justify-content: space-between;
+    gap: h.rem(8px);
+
+    small {
+      overflow: hidden;
+      color: h.$color-text-muted;
+      font-size: h.rem(10px);
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  &__action {
+    display: flex;
+    gap: h.rem(8px);
+    padding-top: h.rem(4px);
+
+    > * {
+      flex: 1;
+    }
+  }
+}
+
+.listing-status {
+  display: inline-flex;
+  padding: h.rem(5px) h.rem(8px);
+  border-radius: h.$radius-round;
+  color: h.$color-text-secondary;
+  background: h.$color-surface-muted;
+  font-size: h.rem(9px);
+  font-weight: h.$font-weight-bold;
+
+  &--published {
+    color: h.$color-white;
+    background: h.$color-primary;
+  }
+  &--sold {
+    color: h.$color-white;
+    background: h.$color-success;
+  }
+}
+
+@include h.mobile {
+  .listing-card__image {
+    height: h.rem(200px);
+  }
+}

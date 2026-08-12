@@ -8,6 +8,10 @@ export type ApiErrorCode =
   | 'session_expired'
   | 'unauthorized'
   | 'forbidden_pet_name'
+  | 'demo_purchase_already_completed'
+  | 'conflict'
+  | 'forbidden'
+  | 'not_found'
   | 'unknown_error'
 
 export interface ApiErrorPayload {

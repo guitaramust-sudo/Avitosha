@@ -9,7 +9,6 @@ import {
   getTask,
   getTaskAdvice,
   getTasks,
-  postAction,
   renamePet,
 } from './game'
 
@@ -69,40 +68,6 @@ describe('game API', () => {
         }),
       })
     }
-  })
-
-  it('posts the mock Avito action without changing its DTO', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValue(
-        jsonResponse({ actionId: 'action-id', duplicate: false, events: [] }),
-      )
-    vi.stubGlobal('fetch', fetchMock)
-    const action = {
-      eventId: 'event-id',
-      type: 'AD_VIEWED' as const,
-      entityId: 'advert-1',
-      category: 'FURNITURE',
-      occurredAt: '2026-08-05T12:00:00Z',
-      metadata: { source: 'test' },
-    }
-
-    await expect(postAction('access-token', action)).resolves.toMatchObject({
-      actionId: 'action-id',
-      duplicate: false,
-    })
-
-    expect(fetchMock).toHaveBeenCalledWith(
-      '/api/v1/actions',
-      expect.objectContaining({
-        body: JSON.stringify(action),
-        credentials: 'include',
-        method: 'POST',
-        headers: expect.objectContaining({
-          Authorization: 'Bearer access-token',
-        }),
-      }),
-    )
   })
 
   it('renames the pet through the documented PATCH endpoint', async () => {

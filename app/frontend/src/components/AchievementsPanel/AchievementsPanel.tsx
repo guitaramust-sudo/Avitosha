@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
-import { useAppSelector, useAuthCredentials } from '../../hooks/redux'
-import { useTaskAction } from '../../hooks/useTaskAction'
+import { useAppSelector } from '../../hooks/redux'
 import { selectGameAchievements, selectGameTasks } from '../../store/gameSlice'
 import {
   formatGameDateTime,
@@ -20,11 +20,10 @@ interface AchievementsPanelProps {
 }
 
 function AchievementsPanel({ view = 'all' }: AchievementsPanelProps) {
+  const navigate = useNavigate()
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
-  const { accessToken, userId } = useAuthCredentials()
   const achievements = useAppSelector(selectGameAchievements)
   const tasks = useAppSelector(selectGameTasks)
-  const { isPending, performTaskAction } = useTaskAction(accessToken, userId)
   const activeTask = tasks.find((task) => task.status === 'ACTIVE')
   const closeTaskDetails = useCallback(() => setSelectedTaskId(null), [])
   const showTasks = view !== 'achievements'
@@ -84,12 +83,15 @@ function AchievementsPanel({ view = 'all' }: AchievementsPanelProps) {
                   <button
                     className="task-card__action"
                     type="button"
-                    disabled={isPending}
-                    onClick={() => void performTaskAction(activeTask)}
+                    onClick={() =>
+                      void navigate(
+                        activeTask.actionType === 'AD_CREATED'
+                          ? '/marketplace/new'
+                          : `/marketplace?category=${encodeURIComponent(activeTask.category ?? 'FURNITURE')}`,
+                      )
+                    }
                   >
-                    {isPending
-                      ? 'Обновляем…'
-                      : taskActionLabels[activeTask.actionType]}
+                    {taskActionLabels[activeTask.actionType]} в объявлениях
                   </button>
                 </article>
               ) : (

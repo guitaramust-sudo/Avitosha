@@ -1,0 +1,137 @@
+@use '../../../helpers' as h;
+
+.marketplace-layout {
+  min-height: 100vh;
+
+  &__content {
+    width: min(100%, h.rem(1460px));
+    margin: 0 auto;
+    padding: h.rem(38px) h.rem(28px) h.rem(70px);
+  }
+}
+
+.marketplace-header {
+  position: sticky;
+  z-index: 30;
+  top: 0;
+  display: flex;
+  min-height: h.rem(68px);
+  align-items: center;
+  gap: h.rem(30px);
+  padding: h.rem(10px) max(h.rem(22px), calc((100vw - h.rem(1460px)) / 2));
+  border-bottom: h.rem(1px) solid h.$color-border;
+  background: rgb(255 255 255 / 94%);
+  backdrop-filter: blur(h.rem(18px));
+
+  &__brand {
+    display: flex;
+    align-items: center;
+    gap: h.rem(6px);
+    text-decoration: none;
+
+    img {
+      width: h.rem(38px);
+      height: h.rem(38px);
+      object-fit: contain;
+    }
+
+    strong {
+      font-size: h.rem(25px);
+      letter-spacing: -0.05em;
+    }
+  }
+
+  nav {
+    display: flex;
+    align-items: center;
+    gap: h.rem(6px);
+
+    a {
+      padding: h.rem(9px) h.rem(12px);
+      border-radius: h.$radius-medium;
+      color: h.$color-text-secondary;
+      font-size: h.rem(13px);
+      font-weight: h.$font-weight-semibold;
+      text-decoration: none;
+
+      &:hover,
+      &.active {
+        color: h.$color-primary;
+        background: h.$color-primary-light;
+      }
+    }
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: h.rem(10px);
+    margin-left: auto;
+  }
+
+  &__create,
+  &__login {
+    display: inline-flex;
+    min-height: h.rem(42px);
+    align-items: center;
+    padding: 0 h.rem(16px);
+    border-radius: h.$radius-medium;
+    color: h.$color-white;
+    background: h.$color-primary;
+    font-size: h.rem(12px);
+    font-weight: h.$font-weight-bold;
+    text-decoration: none;
+  }
+}
+
+@include h.tablet {
+  .marketplace-layout__content {
+    padding: h.rem(28px) h.rem(18px) h.rem(60px);
+  }
+
+  .marketplace-header {
+    flex-wrap: wrap;
+    gap: h.rem(8px) h.rem(14px);
+    padding: h.rem(9px) h.rem(18px);
+
+    nav {
+      order: 3;
+      width: 100%;
+      overflow-x: auto;
+
+      a {
+        flex: 0 0 auto;
+      }
+    }
+  }
+}
+
+@include h.mobile {
+  .marketplace-layout__content {
+    padding: h.rem(22px) h.rem(10px) h.rem(50px);
+  }
+
+  .marketplace-header {
+    padding-inline: h.rem(12px);
+
+    &__brand strong {
+      font-size: h.rem(21px);
+    }
+
+    &__create {
+      width: h.rem(42px);
+      padding: 0;
+      overflow: hidden;
+      color: transparent;
+
+      &::after {
+        display: grid;
+        width: 100%;
+        color: h.$color-white;
+        content: '+';
+        font-size: h.rem(22px);
+        place-items: center;
+      }
+    }
+  }
+}

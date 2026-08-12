@@ -1,0 +1,58 @@
+@use '../../../helpers' as h;
+
+.listing-quality {
+  display: grid;
+  gap: h.rem(12px);
+  padding: h.rem(18px);
+  border: h.rem(1px) solid h.$color-border;
+  border-radius: h.$radius-large;
+  background: h.$color-primary-light;
+
+  > div {
+    display: flex;
+    justify-content: space-between;
+    gap: h.rem(16px);
+    font-size: h.rem(13px);
+  }
+
+  &__progress {
+    height: h.rem(7px);
+    overflow: hidden;
+    border-radius: h.$radius-round;
+    background: rgb(255 255 255 / 80%);
+
+    i {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+      background: h.$color-primary;
+    }
+  }
+
+  ul {
+    display: grid;
+    gap: h.rem(7px);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: h.rem(7px);
+    color: h.$color-text-secondary;
+    font-size: h.rem(11px);
+
+    &.is-complete {
+      color: h.$color-success-dark;
+    }
+  }
+
+  p {
+    margin: 0;
+    color: h.$color-text-secondary;
+    font-size: h.rem(11px);
+    line-height: 1.45;
+  }
+}

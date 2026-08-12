@@ -1,9 +1,4 @@
-import {
-  type QueryClient,
-  useMutation,
-  useQuery,
-  useQueryClient,
-} from '@tanstack/react-query'
+import { type QueryClient, useQuery } from '@tanstack/react-query'
 
 import {
   getAchievements,
@@ -16,9 +11,8 @@ import {
   getTask,
   getTaskAdvice,
   getTasks,
-  postAction,
 } from '../api/game'
-import type { ActionRequest, GameEvent } from '../types/game'
+import type { GameEvent } from '../types/game'
 
 export const gameQueryKey = (userId?: string) =>
   userId ? (['game', userId] as const) : (['game'] as const)
@@ -175,6 +169,21 @@ export const invalidateGameQueriesForEvents = async (
       case 'STREAK_UPDATED':
         affectedQueries.add('daily')
         break
+      case 'DELIVERY_USED':
+      case 'LISTING_FAVORITED':
+      case 'LISTING_IMPROVED':
+      case 'LISTING_PUBLISHED':
+      case 'LISTING_SOLD':
+      case 'LISTING_VIEWED':
+      case 'SELLER_CONTACTED':
+        affectedQueries.add('pet')
+        affectedQueries.add('tasks')
+        affectedQueries.add('story')
+        affectedQueries.add('room')
+        affectedQueries.add('leaderboard')
+        affectedQueries.add('achievements')
+        affectedQueries.add('wallet')
+        break
     }
   })
 
@@ -183,18 +192,4 @@ export const invalidateGameQueriesForEvents = async (
       queryClient.invalidateQueries({ queryKey: gameQueryKeys[key](userId) }),
     ),
   )
-}
-
-export const useGameAction = (
-  accessToken: string | null,
-  userId: string | undefined,
-) => {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (action: ActionRequest) =>
-      postAction(accessToken ?? '', action),
-    onSuccess: async (result) => {
-      await invalidateGameQueriesForEvents(queryClient, userId, result.events)
-    },
-  })
 }

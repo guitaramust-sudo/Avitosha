@@ -35,6 +35,8 @@ export const taskActionLabels: Record<ActionType, string> = {
   MESSAGE_SENT: 'Написать продавцу',
   AD_CREATED: 'Разместить объявление',
   DELIVERY_USED: 'Использовать доставку',
+  LISTING_IMPROVED: 'Улучшить объявление',
+  LISTING_SOLD: 'Оформить покупку',
   REVIEW_LEFT: 'Оставить отзыв',
   BOOKING_CREATED: 'Создать бронирование',
 }
@@ -215,6 +217,30 @@ export const getGameEventMessage = (events: GameEvent[]) => {
           priority: 20,
           text: `Рейтинг: ${event.delta >= 0 ? '+' : ''}${event.delta} очков`,
         })
+        break
+      case 'LISTING_VIEWED':
+        messages.push({ priority: 12, text: 'Просмотр объявления учтён' })
+        break
+      case 'LISTING_FAVORITED':
+        messages.push({
+          priority: 12,
+          text: 'Объявление добавлено в избранное',
+        })
+        break
+      case 'SELLER_CONTACTED':
+        messages.push({ priority: 12, text: 'Сообщение продавцу отправлено' })
+        break
+      case 'LISTING_PUBLISHED':
+        messages.push({ priority: 12, text: 'Объявление опубликовано' })
+        break
+      case 'LISTING_IMPROVED':
+        messages.push({ priority: 12, text: 'Качество объявления улучшено' })
+        break
+      case 'LISTING_SOLD':
+        messages.push({ priority: 12, text: 'Демо-покупка оформлена' })
+        break
+      case 'DELIVERY_USED':
+        messages.push({ priority: 12, text: 'Авито Доставка подключена' })
         break
     }
   })
