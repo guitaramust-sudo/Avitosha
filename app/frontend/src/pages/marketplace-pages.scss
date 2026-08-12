@@ -155,8 +155,9 @@
   }
 }
 
-.marketplace-pagination {
+.marketplace-load-more {
   display: flex;
+  min-height: h.rem(72px);
   align-items: center;
   justify-content: center;
   gap: h.rem(16px);
@@ -169,9 +170,10 @@
     background: h.$color-surface;
     cursor: pointer;
 
-    &:disabled {
-      cursor: default;
-      opacity: 0.45;
+    &:hover {
+      border-color: h.$color-primary;
+      color: h.$color-primary;
+      background: h.$color-primary-light;
     }
   }
 
