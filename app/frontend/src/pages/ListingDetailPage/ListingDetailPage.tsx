@@ -2,6 +2,7 @@ import { type FormEvent, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 
 import { ApiError } from '../../api/client'
+import ListingGallery from '../../components/ListingGallery/ListingGallery'
 import ListingQuality from '../../components/ListingQuality/ListingQuality'
 import { useAppSelector } from '../../hooks/redux'
 import {
@@ -104,8 +105,6 @@ function ListingDetailPage() {
     )
   }
 
-  const photo = listing.photoUrls[0]
-
   return (
     <section className="listing-detail">
       <div className="listing-detail__breadcrumbs">
@@ -116,13 +115,12 @@ function ListingDetailPage() {
 
       <div className="listing-detail__layout">
         <div className="listing-detail__main">
-          <div className="listing-detail__photo">
-            {photo ? (
-              <img src={photo} alt="" />
-            ) : (
-              <span>Фотография не добавлена</span>
-            )}
-          </div>
+          <ListingGallery
+            photoUrls={listing.photoUrls}
+            showThumbnails
+            title={listing.title}
+            variant="detail"
+          />
           <div className="listing-detail__copy">
             <span
               className={`listing-status listing-status--${listing.status.toLowerCase()}`}

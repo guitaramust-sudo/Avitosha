@@ -12,6 +12,7 @@ import {
   useUpdateListing,
 } from '../../hooks/useMarketplace'
 import type { ListingWriteRequest } from '../../types/marketplace'
+import { hasPublishableListingDescription } from '../../utils/marketplacePresentation'
 
 import '../marketplace-pages.scss'
 
@@ -56,6 +57,11 @@ function ListingEditPage() {
       updateListing.mutateAsync({ ...request, eventId: crypto.randomUUID() }),
     )
 
+  const hasRequiredDescription = hasPublishableListingDescription(
+    listing.description,
+  )
+  const canPublish = listing.quality.isEligible && hasRequiredDescription
+
   return (
     <section className="marketplace-page marketplace-page--form">
       <GamePageHeader
@@ -99,7 +105,7 @@ function ListingEditPage() {
             <button
               className="marketplace-button"
               type="button"
-              disabled={!listing.quality.isEligible || publishListing.isPending}
+              disabled={!canPublish || publishListing.isPending}
               onClick={() =>
                 void runAction(() =>
                   publishListing.mutateAsync({
@@ -112,8 +118,12 @@ function ListingEditPage() {
               {publishListing.isPending ? 'Публикуем…' : 'Опубликовать'}
             </button>
           )}
-          {!listing.quality.isEligible && (
-            <small>Сначала закройте все три критерия качества.</small>
+          {!canPublish && (
+            <small>
+              {!hasRequiredDescription
+                ? 'Для публикации добавьте описание не короче 150 символов и сохраните изменения.'
+                : 'Перед публикацией укажите цену больше нуля.'}
+            </small>
           )}
         </aside>
       </div>

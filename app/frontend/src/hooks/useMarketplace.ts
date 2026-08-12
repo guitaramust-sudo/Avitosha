@@ -32,6 +32,7 @@ import type {
   MarketplaceActionResponse,
 } from '../types/marketplace'
 import { getGameEventMessage } from '../utils/gamePresentation'
+import { uploadListingPhotoBatch } from '../utils/listingPhotoUpload'
 import { useAppDispatch, useAuthCredentials } from './redux'
 import { invalidateGameQueriesForEvents } from './useGameDashboard'
 
@@ -161,8 +162,8 @@ export const useUploadListingPhotos = () => {
   const { accessToken } = useAuthCredentials()
   return useMutation({
     mutationFn: (files: File[]) =>
-      Promise.all(
-        files.map((file) => uploadListingPhoto(accessToken ?? '', file)),
+      uploadListingPhotoBatch(files, (file) =>
+        uploadListingPhoto(accessToken ?? '', file),
       ),
   })
 }

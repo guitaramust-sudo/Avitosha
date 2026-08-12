@@ -235,24 +235,6 @@
     overflow: hidden;
   }
 
-  &__photo {
-    display: grid;
-    min-height: h.rem(500px);
-    place-items: center;
-    color: h.$color-text-muted;
-    background: linear-gradient(
-      145deg,
-      h.$color-primary-light,
-      h.$color-success-light
-    );
-
-    img {
-      width: 100%;
-      height: h.rem(500px);
-      object-fit: contain;
-    }
-  }
-
   &__copy {
     display: grid;
     gap: h.rem(14px);

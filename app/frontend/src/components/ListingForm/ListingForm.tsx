@@ -6,8 +6,13 @@ import {
   useUploadListingPhotos,
 } from '../../hooks/useMarketplace'
 import type { Listing, ListingWriteRequest } from '../../types/marketplace'
+import { LISTING_DESCRIPTION_MIN_LENGTH } from '../../utils/marketplacePresentation'
 
 import './ListingForm.scss'
+
+const MAX_PHOTOS = 10
+const MAX_PHOTO_SIZE = 10 * 1024 * 1024
+const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 
 interface ListingFormProps {
   initialListing?: Listing
@@ -35,46 +40,61 @@ function ListingForm({
     initialListing ? String(initialListing.priceKopecks / 100) : '',
   )
   const [title, setTitle] = useState(initialListing?.title ?? '')
-  const [photoUrlsError, setPhotoUrlsError] = useState<string | null>(null)
+  const [photoError, setPhotoError] = useState<string | null>(null)
+  const [failedPhotoFiles, setFailedPhotoFiles] = useState<File[]>([])
 
   const selectedCategory = categoryCode || categories.data?.[0]?.code || ''
+
+  const uploadFiles = async (files: File[]) => {
+    const result = await uploadPhotos.mutateAsync(files)
+
+    if (result.uploadedUrls.length > 0) {
+      setPhotoUrls((current) => [...current, ...result.uploadedUrls])
+    }
+
+    setFailedPhotoFiles(result.failedFiles.map(({ file }) => file))
+    if (result.failedFiles.length === 0) {
+      setPhotoError(null)
+      return
+    }
+
+    const firstError = result.failedFiles[0]?.error
+    setPhotoError(
+      result.failedFiles.length === 1 && firstError instanceof ApiError
+        ? firstError.message
+        : `Не удалось загрузить ${result.failedFiles.length} фото. Попробуйте ещё раз.`,
+    )
+  }
 
   const handlePhotoSelection = async (event: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? [])
     event.target.value = ''
     if (files.length === 0) return
-    if (photoUrls.length + files.length > 10) {
-      setPhotoUrlsError('Можно добавить не больше 10 фотографий.')
-      return
-    }
-    if (
-      files.some(
-        (file) =>
-          !['image/jpeg', 'image/png', 'image/webp'].includes(file.type) ||
-          file.size > 10 * 1024 * 1024,
-      )
-    ) {
-      setPhotoUrlsError('Выберите JPEG, PNG или WebP размером не больше 10 МБ.')
+
+    if (photoUrls.length + files.length > MAX_PHOTOS) {
+      setPhotoError(`Можно добавить не больше ${MAX_PHOTOS} фотографий.`)
       return
     }
 
-    setPhotoUrlsError(null)
-    try {
-      const uploadedUrls = await uploadPhotos.mutateAsync(files)
-      setPhotoUrls((current) => [...current, ...uploadedUrls])
-    } catch (error) {
-      setPhotoUrlsError(
-        error instanceof ApiError
-          ? error.message
-          : 'Не удалось загрузить фотографию. Попробуйте ещё раз.',
-      )
+    if (files.some((file) => !PHOTO_TYPES.includes(file.type))) {
+      setPhotoError('Поддерживаются только фотографии JPEG, PNG и WebP.')
+      return
     }
+
+    if (files.some((file) => file.size === 0 || file.size > MAX_PHOTO_SIZE)) {
+      setPhotoError(
+        'Фотография не должна быть пустой и превышать размер 10 МБ.',
+      )
+      return
+    }
+
+    setPhotoError(null)
+    setFailedPhotoFiles([])
+    await uploadFiles(files)
   }
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-
-    setPhotoUrlsError(null)
     onSubmit({
       categoryCode: selectedCategory,
       description,
@@ -100,6 +120,7 @@ function ListingForm({
           ))}
         </select>
       </label>
+
       <label>
         <span>Название</span>
         <input
@@ -110,6 +131,7 @@ function ListingForm({
           required
         />
       </label>
+
       <label>
         <span>Цена, ₽</span>
         <input
@@ -120,9 +142,8 @@ function ListingForm({
           onChange={(event) => setPrice(event.target.value)}
         />
       </label>
-      <label
-        className={`listing-form__wide ${photoUrlsError ? 'has-error' : ''}`}
-      >
+
+      <label className="listing-form__wide">
         <span>Описание</span>
         <textarea
           maxLength={5000}
@@ -131,18 +152,28 @@ function ListingForm({
           onChange={(event) => setDescription(event.target.value)}
           placeholder="Подробно расскажите о состоянии, особенностях и условиях передачи"
         />
-        <small>{description.length}/150 символов до критерия качества</small>
+        <small>
+          {description.trim().length}/{LISTING_DESCRIPTION_MIN_LENGTH} символов
+          для публикации
+        </small>
       </label>
+
       <div className="listing-form__wide listing-form__photo-field">
-        <span>Фотографии</span>
+        <div className="listing-form__photo-heading">
+          <span>Фотографии</span>
+          <small>
+            {photoUrls.length}/{MAX_PHOTOS}
+          </small>
+        </div>
+
         {photoUrls.length > 0 && (
           <div className="listing-form__photos">
-            {photoUrls.map((url) => (
+            {photoUrls.map((url, index) => (
               <figure key={url}>
-                <img src={url} alt="Фотография объявления" />
+                <img src={url} alt={`Фотография объявления ${index + 1}`} />
                 <button
                   type="button"
-                  aria-label="Удалить фотографию"
+                  aria-label={`Удалить фотографию ${index + 1}`}
                   onClick={() =>
                     setPhotoUrls((current) =>
                       current.filter((photoUrl) => photoUrl !== url),
@@ -155,29 +186,53 @@ function ListingForm({
             ))}
           </div>
         )}
+
         <label className="listing-form__photo-upload">
           <input
             type="file"
-            accept="image/jpeg,image/png,image/webp"
+            accept={PHOTO_TYPES.join(',')}
             multiple
-            disabled={uploadPhotos.isPending || photoUrls.length >= 10}
-            aria-describedby="photo-urls-help photo-urls-error"
-            aria-invalid={Boolean(photoUrlsError)}
-            onChange={handlePhotoSelection}
+            disabled={uploadPhotos.isPending || photoUrls.length >= MAX_PHOTOS}
+            aria-describedby="photo-upload-help photo-upload-error"
+            aria-invalid={Boolean(photoError)}
+            onChange={(event) => void handlePhotoSelection(event)}
           />
           <span>
-            {uploadPhotos.isPending ? 'Загружаем…' : 'Выбрать фотографии'}
+            {uploadPhotos.isPending
+              ? 'Загружаем фотографии…'
+              : photoUrls.length >= MAX_PHOTOS
+                ? 'Добавлено максимум фотографий'
+                : 'Выбрать фотографии'}
           </span>
         </label>
-        <small id="photo-urls-help">
+
+        <small id="photo-upload-help">
           До 10 файлов JPEG, PNG или WebP, не больше 10 МБ каждый.
         </small>
-        {photoUrlsError && (
-          <strong className="listing-form__error" id="photo-urls-error">
-            {photoUrlsError}
+
+        {photoError && (
+          <strong className="listing-form__error" id="photo-upload-error">
+            {photoError}
           </strong>
         )}
+
+        {failedPhotoFiles.length > 0 && (
+          <div className="listing-form__failed-uploads">
+            <span>
+              Не загружены:{' '}
+              {failedPhotoFiles.map((file) => file.name).join(', ')}
+            </span>
+            <button
+              type="button"
+              disabled={uploadPhotos.isPending}
+              onClick={() => void uploadFiles(failedPhotoFiles)}
+            >
+              Повторить загрузку
+            </button>
+          </div>
+        )}
       </div>
+
       <button
         type="submit"
         disabled={isPending || uploadPhotos.isPending || !selectedCategory}

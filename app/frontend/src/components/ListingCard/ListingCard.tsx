@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from 'react'
+import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
 import type { Listing } from '../../types/marketplace'
@@ -6,6 +6,7 @@ import {
   formatListingPrice,
   listingStatusLabels,
 } from '../../utils/marketplacePresentation'
+import ListingGallery from '../ListingGallery/ListingGallery'
 
 import './ListingCard.scss'
 
@@ -20,28 +21,17 @@ function ListingCard({
   listing,
   showStatus = false,
 }: ListingCardProps) {
-  const photo = listing.photoUrls[0]
-  const [hasImageError, setHasImageError] = useState(false)
   const listingUrl = showStatus
     ? `/marketplace/listings/${listing.id}/edit`
     : `/marketplace/listings/${listing.id}`
 
   return (
     <article className="listing-card">
-      <Link className="listing-card__image" to={listingUrl}>
-        {photo && !hasImageError ? (
-          <img
-            src={photo}
-            alt=""
-            loading="lazy"
-            onError={() => setHasImageError(true)}
-          />
-        ) : (
-          <span className="listing-card__image-error">
-            Изображение недоступно
-          </span>
-        )}
-      </Link>
+      <ListingGallery
+        href={listingUrl}
+        photoUrls={listing.photoUrls}
+        title={listing.title}
+      />
       <div className="listing-card__body">
         <Link to={listingUrl}>{listing.title}</Link>
         <strong>{formatListingPrice(listing.priceKopecks)}</strong>

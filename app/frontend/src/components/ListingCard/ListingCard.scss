@@ -13,38 +13,6 @@
     transform: translateY(h.rem(-2px));
   }
 
-  &__image {
-    display: grid;
-    aspect-ratio: 1 / 0.94;
-    height: auto;
-    overflow: hidden;
-    border-radius: h.rem(14px);
-    place-items: center;
-    color: h.$color-text-muted;
-    background: linear-gradient(
-      145deg,
-      h.$color-primary-light,
-      h.$color-success-light
-    );
-    font-size: h.rem(12px);
-
-    img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      transition: transform 300ms ease;
-    }
-
-    &:hover img {
-      transform: scale(1.03);
-    }
-  }
-
-  &__image-error {
-    padding: h.rem(14px);
-    text-align: center;
-  }
-
   &__body {
     display: grid;
     gap: h.rem(5px);
@@ -110,11 +78,5 @@
   &--sold {
     color: h.$color-white;
     background: h.$color-success;
-  }
-}
-
-@include h.mobile {
-  .listing-card__image {
-    aspect-ratio: 1.2 / 1;
   }
 }

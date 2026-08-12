@@ -32,7 +32,8 @@ services:
   minio-seed-download:
     image: curlimages/curl:8.16.0
     user: "0:0"
-    entrypoint: ["/bin/sh", "/scripts/download-minio-seed.sh"]
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["sed 's/\\r$$//' /scripts/download-minio-seed.sh | /bin/sh"]
     volumes:
       - ./deploy/download-minio-seed.sh:/scripts/download-minio-seed.sh:ro
       - minio_seed:/seed
