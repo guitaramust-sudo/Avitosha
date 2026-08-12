@@ -5,7 +5,7 @@ import {
   Sprite,
   type Texture,
 } from 'pixi.js'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import './Character.scss'
 
@@ -50,12 +50,25 @@ interface CharacterProps {
 
 const CANVAS_WIDTH = 320
 const CANVAS_HEIGHT = 480
+const HEART_REACTION_DURATION = 1500
 
 function Character({
   animation = 'idle',
   animationSpeed = 0.12,
 }: CharacterProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLSpanElement>(null)
+  const [isReacting, setIsReacting] = useState(false)
+
+  useEffect(() => {
+    if (!isReacting) return
+
+    const timeoutId = window.setTimeout(
+      () => setIsReacting(false),
+      HEART_REACTION_DURATION,
+    )
+
+    return () => window.clearTimeout(timeoutId)
+  }, [isReacting])
 
   useEffect(() => {
     const container = containerRef.current
@@ -153,7 +166,26 @@ function Character({
     }
   }, [animation, animationSpeed])
 
-  return <div className="character" ref={containerRef} />
+  return (
+    <button
+      className={`character ${isReacting ? 'is-reacting' : ''}`}
+      type="button"
+      aria-label={isReacting ? 'Авитоша радуется' : 'Погладить Авитошу'}
+      disabled={isReacting}
+      onClick={() => setIsReacting(true)}
+    >
+      <span className="character__canvas" ref={containerRef} />
+      {isReacting && (
+        <span className="character__hearts" aria-hidden="true">
+          <i>♥</i>
+          <i>♥</i>
+          <i>♥</i>
+          <i>♥</i>
+          <i>♥</i>
+        </span>
+      )}
+    </button>
+  )
 }
 
 export default Character
