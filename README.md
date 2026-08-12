@@ -381,6 +381,16 @@ docker compose up --build
 - MinIO Console: <http://localhost:9001>;
 - PostgreSQL на host: `localhost:5433`.
 
+## Production-обновление
+
+После `git pull` на production-сервере выполните:
+
+```bash
+./deploy/deploy-prod.sh
+```
+
+Скрипт сохраняет существующий `.env.prod`, автоматически генерирует только отсутствующие MinIO-ключи, проверяет production Compose и запускает сборку с миграциями. На первом запуске без `.env.prod` создаётся шаблон; необходимо один раз заполнить `POSTGRES_PASSWORD`, `JWT_SIGNING_KEY` и `CADDY_ACME_EMAIL`, после чего повторить команду.
+
 ## Smoke-сценарий
 
 После запуска стека установите `curl`, `jq`, `uuidgen` и выполните:

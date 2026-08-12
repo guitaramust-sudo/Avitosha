@@ -43,10 +43,16 @@ MinIO Console локально доступна на `http://localhost:9001`. У
 
 ## Production
 
-Перед запуском заполните в `.env.prod` четыре разных длинных значения:
+После `git pull` запустите production-обновление:
 
-- `MINIO_ROOT_USER` и `MINIO_ROOT_PASSWORD` — только для администрирования MinIO;
-- `MINIO_APP_ACCESS_KEY` и `MINIO_APP_SECRET_KEY` — для подписи загрузок приложением.
+```bash
+./deploy/deploy-prod.sh
+```
+
+Скрипт безопасно дополняет существующий `.env.prod` четырьмя случайными MinIO-ключами, если их ещё нет, выставляет файлу права `600`, проверяет Compose и запускает обновление. При повторном запуске ключи не меняются. В Git они не попадают.
+
+- `MINIO_ROOT_USER` и `MINIO_ROOT_PASSWORD` используются только для администрирования MinIO;
+- `MINIO_APP_ACCESS_KEY` и `MINIO_APP_SECRET_KEY` используются приложением для подписи загрузок.
 
 Файлы находятся в Docker volume `avitosha_prod_minio_data`. Он переживает перезапуск и пересоздание контейнеров, но не потерю диска VM. Этот volume нужно включить в регулярное резервное копирование вместе с PostgreSQL.
 
