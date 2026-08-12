@@ -1,5 +1,4 @@
 import GamePageHeader from '../../components/GamePageHeader/GamePageHeader'
-import RetentionPanel from '../../components/RetentionPanel/RetentionPanel'
 import RewardWallet from '../../components/RewardWallet/RewardWallet'
 
 import '../game-pages.scss'
@@ -10,11 +9,13 @@ function RewardsPage() {
       <GamePageHeader
         eyebrow="Практическая польза"
         title="Награды"
-        description="Собирайте Avito-бонусы, открывайте преимущества каталога и поддерживайте ежедневную серию."
+        description="Собирайте Avito-бонусы и открывайте преимущества каталога за полезные действия."
       />
-      <div className="game-section-page__cards" data-page="rewards">
+      <div
+        className="game-section-page__cards game-section-page__cards--single"
+        data-page="rewards"
+      >
         <RewardWallet />
-        <RetentionPanel />
       </div>
     </section>
   )

@@ -32,18 +32,43 @@ function ListingForm({
     initialListing ? String(initialListing.priceKopecks / 100) : '',
   )
   const [title, setTitle] = useState(initialListing?.title ?? '')
+  const [photoUrlsError, setPhotoUrlsError] = useState<string | null>(null)
 
   const selectedCategory = categoryCode || categories.data?.[0]?.code || ''
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    const normalizedPhotoUrls = photoUrls
+      .split('\n')
+      .map((url) => url.trim())
+      .filter(Boolean)
+
+    if (normalizedPhotoUrls.length > 10) {
+      setPhotoUrlsError('Можно добавить не больше 10 ссылок на фотографии.')
+      return
+    }
+
+    const invalidPhotoUrl = normalizedPhotoUrls.find((value) => {
+      try {
+        const url = new URL(value)
+        return !['http:', 'https:'].includes(url.protocol)
+      } catch {
+        return true
+      }
+    })
+
+    if (invalidPhotoUrl) {
+      setPhotoUrlsError(
+        'Проверьте ссылки: каждая должна начинаться с http:// или https://.',
+      )
+      return
+    }
+
+    setPhotoUrlsError(null)
     onSubmit({
       categoryCode: selectedCategory,
       description,
-      photoUrls: photoUrls
-        .split('\n')
-        .map((url) => url.trim())
-        .filter(Boolean),
+      photoUrls: normalizedPhotoUrls,
       priceKopecks: Math.max(0, Math.round(Number(price || 0) * 100)),
       title: title.trim(),
     })
@@ -85,7 +110,9 @@ function ListingForm({
           onChange={(event) => setPrice(event.target.value)}
         />
       </label>
-      <label className="listing-form__wide">
+      <label
+        className={`listing-form__wide ${photoUrlsError ? 'has-error' : ''}`}
+      >
         <span>Описание</span>
         <textarea
           maxLength={5000}
@@ -101,10 +128,22 @@ function ListingForm({
         <textarea
           rows={4}
           value={photoUrls}
-          onChange={(event) => setPhotoUrls(event.target.value)}
-          placeholder="Одна ссылка на строку"
+          aria-describedby="photo-urls-help photo-urls-error"
+          aria-invalid={Boolean(photoUrlsError)}
+          onChange={(event) => {
+            setPhotoUrls(event.target.value)
+            if (photoUrlsError) setPhotoUrlsError(null)
+          }}
+          placeholder={'https://example.com/photo.jpg\nОдна ссылка на строку'}
         />
-        <small>До 10 внешних URL. Загрузка файлов в MVP не используется.</small>
+        <small id="photo-urls-help">
+          До 10 прямых ссылок на изображения, каждая с новой строки.
+        </small>
+        {photoUrlsError && (
+          <strong className="listing-form__error" id="photo-urls-error">
+            {photoUrlsError}
+          </strong>
+        )}
       </label>
       <button type="submit" disabled={isPending || !selectedCategory}>
         {isPending ? 'Сохраняем…' : submitLabel}

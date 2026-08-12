@@ -61,7 +61,7 @@ function ListingEditPage() {
       <GamePageHeader
         eyebrow="Редактор"
         title={listing.title}
-        description="Backend сам оценивает качество и начисляет прогресс только за впервые закрытый критерий опубликованного объявления."
+        description="Добавьте подробное описание, цену и фотографии, чтобы объявление заметили быстрее."
         action={
           <Link
             className="marketplace-button marketplace-button--muted"

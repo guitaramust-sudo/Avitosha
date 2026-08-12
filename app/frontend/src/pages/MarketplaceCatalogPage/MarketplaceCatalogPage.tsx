@@ -8,7 +8,7 @@ import { useListingCategories, useListings } from '../../hooks/useMarketplace'
 
 import '../marketplace-pages.scss'
 
-const PAGE_SIZE = 12
+const PAGE_SIZE = 20
 
 function MarketplaceCatalogPage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -59,8 +59,8 @@ function MarketplaceCatalogPage() {
           <strong>Зачем здесь питомец</strong>
           <p>
             Полезные действия с объявлениями двигают задания, развивают характер
-            Авитоши и открывают предметы комнаты. Игровой результат рассчитывает
-            backend.
+            Авитоши и открывают предметы комнаты. Результат появится в игровом
+            кабинете автоматически.
           </p>
         </div>
       </aside>

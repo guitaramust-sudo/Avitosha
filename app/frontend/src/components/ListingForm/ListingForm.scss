@@ -18,6 +18,11 @@
       font-size: h.rem(12px);
       font-weight: h.$font-weight-bold;
     }
+
+    &.has-error textarea {
+      border-color: h.$color-danger;
+      box-shadow: 0 0 0 h.rem(3px) rgb(255 77 90 / 10%);
+    }
   }
 
   input,
@@ -55,6 +60,12 @@
 
   &__wide {
     grid-column: 1 / -1;
+  }
+
+  &__error {
+    color: h.$color-danger;
+    font-size: h.rem(11px);
+    font-weight: h.$font-weight-semibold;
   }
 
   > button {

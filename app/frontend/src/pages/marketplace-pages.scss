@@ -124,8 +124,8 @@
 
 .listing-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: h.rem(18px);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: h.rem(28px) h.rem(16px);
 }
 
 .marketplace-state {
@@ -509,11 +509,15 @@
 
 @include h.laptop-small {
   .listing-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
 @include h.tablet {
+  .listing-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .listing-detail__layout,
   .listing-editor-layout {
     grid-template-columns: 1fr;
@@ -532,7 +536,7 @@
 
 @include h.mobile {
   .listing-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .marketplace-note {
     align-items: flex-start;
@@ -573,5 +577,11 @@
   }
   .marketplace-welcome > div:first-child h1 {
     font-size: h.rem(43px);
+  }
+}
+
+@include h.mobile-small {
+  .listing-grid {
+    grid-template-columns: 1fr;
   }
 }
