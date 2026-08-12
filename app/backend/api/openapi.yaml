@@ -172,7 +172,16 @@ paths:
       description: Only demo published listings can be purchased once per authenticated buyer. A demo deal does not change the public listing for other users. The server generates LISTING_SOLD and, when deliveryUsed is true, DELIVERY_USED in one transaction.
       security: [ { bearerAuth: [] }, { userIdHeader: [] } ]
       requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/PurchaseListingRequest' } } } }
-      responses: { '201': { description: Completed demo deal and game feedback, content: { application/json: { schema: { $ref: '#/components/schemas/MarketplaceActionResponse' } } } } }
+      responses:
+        '201': { description: Completed demo deal and game feedback, content: { application/json: { schema: { $ref: '#/components/schemas/MarketplaceActionResponse' } } } }
+        '409':
+          description: The demo purchase was already completed, the listing is unavailable, or eventId conflicts with another action.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+              examples:
+                demoPurchaseAlreadyCompleted:
+                  value: { error: { code: demo_purchase_already_completed, message: This demo purchase has already been completed } }
   /healthz:
     get:
       tags: [health]

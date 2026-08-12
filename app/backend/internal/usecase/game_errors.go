@@ -21,6 +21,7 @@ var (
 	ErrListingForbidden          = errors.New("listing access forbidden")
 	ErrListingOwnAction          = errors.New("cannot interact with own listing")
 	ErrListingInvalidTransition  = errors.New("invalid listing status transition")
+	ErrDemoPurchaseCompleted     = errors.New("demo purchase already completed")
 	ErrListingNotEligible        = errors.New("listing is not eligible for publication")
 	ErrInvalidListingInput       = errors.New("invalid listing input")
 	ErrProductActionRuleNotFound = errors.New("product action rule not found")

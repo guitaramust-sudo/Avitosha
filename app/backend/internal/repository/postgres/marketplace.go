@@ -9,6 +9,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/guitaramust-sudo/Avitosha/app/backend/internal/model"
 	"github.com/guitaramust-sudo/Avitosha/app/backend/internal/usecase"
@@ -360,6 +361,10 @@ func scanListing(row pgx.Row) (model.Listing, error) {
 func mapMarketplaceStorageError(operation string, err error) error {
 	if errors.Is(err, pgx.ErrNoRows) {
 		return fmt.Errorf("%s: %w", operation, usecase.ErrListingNotFound)
+	}
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == uniqueViolationCode && pgErr.ConstraintName == "listing_deals_listing_id_buyer_id_key" {
+		return fmt.Errorf("%s: %w", operation, usecase.ErrDemoPurchaseCompleted)
 	}
 	return mapGameStorageError(operation, err)
 }

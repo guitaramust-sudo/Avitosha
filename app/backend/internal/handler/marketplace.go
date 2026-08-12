@@ -379,6 +379,8 @@ func mapMarketplaceError(err error) (int, string, string) {
 		return 409, "listing_not_eligible", "Listing needs a price, photo and description of at least 150 characters"
 	case errors.Is(err, usecase.ErrListingInvalidTransition):
 		return 409, "listing_invalid_transition", "Listing status transition is not allowed"
+	case errors.Is(err, usecase.ErrDemoPurchaseCompleted):
+		return 409, "demo_purchase_already_completed", "This demo purchase has already been completed"
 	default:
 		return 500, internalErrorCode, "Internal server error"
 	}
