@@ -319,6 +319,16 @@
   font-weight: h.$font-weight-regular;
 }
 
+.listing-purchase__success {
+  margin: 0;
+  padding: h.rem(12px);
+  border-radius: h.$radius-medium;
+  color: h.$color-success-dark;
+  background: h.$color-success-light;
+  font-size: h.rem(12px);
+  font-weight: h.$font-weight-bold;
+}
+
 .listing-messages {
   display: grid;
   gap: h.rem(10px);
@@ -458,6 +468,12 @@
       transparent 69%
     );
 
+    img {
+      width: 48%;
+      height: 48%;
+      object-fit: contain;
+    }
+
     span {
       position: absolute;
       display: grid;
@@ -471,19 +487,19 @@
       font-weight: h.$font-weight-extrabold;
     }
 
-    span:nth-child(1) {
+    span:nth-of-type(1) {
       top: 20%;
       left: 6%;
       color: h.$color-danger;
       transform: rotate(-8deg);
     }
-    span:nth-child(2) {
+    span:nth-of-type(2) {
       top: 35%;
       right: 3%;
       color: h.$color-success;
       transform: rotate(8deg);
     }
-    span:nth-child(3) {
+    span:nth-of-type(3) {
       bottom: 18%;
       left: 34%;
       color: h.$color-primary;

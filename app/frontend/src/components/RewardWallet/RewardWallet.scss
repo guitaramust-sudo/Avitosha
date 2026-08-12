@@ -2,8 +2,25 @@
 
 .reward-wallet-card {
   &__icon {
+    display: grid;
+    width: h.rem(42px);
+    height: h.rem(42px);
+    flex: 0 0 h.rem(42px);
+    place-items: center;
+    overflow: hidden;
+    border: h.rem(1px) solid h.$color-border;
+    border-radius: h.$radius-medium;
     color: h.$color-success-dark;
     background: h.$color-success-light;
+
+    > img {
+      display: block;
+      width: h.rem(26px);
+      max-width: h.rem(26px);
+      height: h.rem(26px);
+      max-height: h.rem(26px);
+      object-fit: contain;
+    }
   }
 
   &__content {

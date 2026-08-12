@@ -23,7 +23,7 @@ function RewardWallet() {
         className="progress-card__icon reward-wallet-card__icon"
         aria-hidden="true"
       >
-        <img src={iconAssets.wallet} alt="" />
+        <img src={iconAssets.wallet} alt="" width="26" height="26" />
       </span>
       <div className="reward-wallet-card__content">
         <small>Кошелёк наград</small>

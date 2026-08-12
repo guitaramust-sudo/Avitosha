@@ -64,6 +64,7 @@ function ListingDetailPage() {
     setActionError(null)
     try {
       await action()
+      return true
     } catch (error) {
       if (
         error instanceof ApiError &&
@@ -71,13 +72,14 @@ function ListingDetailPage() {
       ) {
         setPurchaseCompleted(true)
         setActionError('Вы уже купили этот демо-товар.')
-        return
+        return false
       }
       setActionError(
         error instanceof ApiError
           ? error.message
           : 'Не удалось выполнить действие. Попробуйте ещё раз.',
       )
+      return false
     }
   }
 
@@ -96,7 +98,7 @@ function ListingDetailPage() {
     return <div className="marketplace-state">Открываем объявление…</div>
   }
 
-  if (listingQuery.isError || !listing) {
+  if (!listing) {
     return (
       <div className="marketplace-state marketplace-state--error">
         Объявление не найдено или больше недоступно.
@@ -182,39 +184,44 @@ function ListingDetailPage() {
                 </button>
               </form>
 
-              {listing.isDemo &&
-                listing.status === 'PUBLISHED' &&
-                !purchaseCompleted && (
-                  <section className="listing-purchase">
-                    <strong>Демо-покупка</strong>
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={deliveryUsed}
-                        onChange={(event) =>
-                          setDeliveryUsed(event.target.checked)
-                        }
-                      />
-                      Использовать Авито Доставку
-                    </label>
-                    <button
-                      type="button"
-                      disabled={purchase.isPending}
-                      onClick={() => {
-                        if (!requireAuthentication()) return
-                        void runAction(() =>
-                          purchase.mutateAsync({
-                            deliveryUsed,
-                            eventId: crypto.randomUUID(),
-                            listingId: listing.id,
-                          }),
-                        ).then(() => setPurchaseCompleted(true))
-                      }}
-                    >
-                      {purchase.isPending ? 'Оформляем…' : 'Купить демо-товар'}
-                    </button>
-                  </section>
-                )}
+              {listing.status === 'PUBLISHED' && !purchaseCompleted && (
+                <section className="listing-purchase">
+                  <strong>Оформить покупку</strong>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={deliveryUsed}
+                      onChange={(event) =>
+                        setDeliveryUsed(event.target.checked)
+                      }
+                    />
+                    Использовать Авито Доставку
+                  </label>
+                  <button
+                    type="button"
+                    disabled={purchase.isPending}
+                    onClick={() => {
+                      if (!requireAuthentication()) return
+                      void runAction(() =>
+                        purchase.mutateAsync({
+                          deliveryUsed,
+                          eventId: crypto.randomUUID(),
+                          listingId: listing.id,
+                        }),
+                      ).then((succeeded) => {
+                        if (succeeded) setPurchaseCompleted(true)
+                      })
+                    }}
+                  >
+                    {purchase.isPending ? 'Оформляем…' : 'Купить'}
+                  </button>
+                </section>
+              )}
+              {purchaseCompleted && (
+                <p className="listing-purchase__success">
+                  Покупка успешно оформлена.
+                </p>
+              )}
             </>
           )}
 
@@ -243,7 +250,6 @@ function ListingDetailPage() {
         )}
 
       <div className="listing-detail__footer-actions">
-        {isAuthenticated && <Link to="/">← К питомцу</Link>}
         <Link to="/marketplace">К объявлениям</Link>
       </div>
     </section>

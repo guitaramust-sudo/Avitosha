@@ -3,6 +3,9 @@ package usecase
 import (
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/guitaramust-sudo/Avitosha/app/backend/internal/model"
 )
@@ -27,6 +30,43 @@ func TestEvaluateListingQuality(t *testing.T) {
 				t.Fatalf("quality = %+v", quality)
 			}
 		})
+	}
+}
+
+func TestCompleteListingPurchaseSupportsUserListings(t *testing.T) {
+	ownerID, buyerID := uuid.New(), uuid.New()
+	publishedAt := time.Date(2026, 8, 13, 9, 0, 0, 0, time.UTC)
+	completedAt := publishedAt.Add(time.Hour)
+
+	listing, shouldUpdate, err := completeListingPurchase(model.Listing{
+		OwnerID: ownerID, Status: model.ListingStatusPublished,
+		PublishedAt: &publishedAt,
+	}, buyerID, completedAt)
+	if err != nil {
+		t.Fatalf("complete purchase: %v", err)
+	}
+	if !shouldUpdate || listing.Status != model.ListingStatusSold ||
+		listing.SoldAt == nil || listing.PublishedAt != nil {
+		t.Fatalf("purchased listing = %+v, shouldUpdate = %v", listing, shouldUpdate)
+	}
+}
+
+func TestCompleteListingPurchaseKeepsDemoPublished(t *testing.T) {
+	listing, shouldUpdate, err := completeListingPurchase(model.Listing{
+		OwnerID: uuid.New(), Status: model.ListingStatusPublished, IsDemo: true,
+	}, uuid.New(), time.Now())
+	if err != nil || shouldUpdate || listing.Status != model.ListingStatusPublished {
+		t.Fatalf("demo listing = %+v, shouldUpdate = %v, err = %v", listing, shouldUpdate, err)
+	}
+}
+
+func TestCompleteListingPurchaseRejectsOwner(t *testing.T) {
+	ownerID := uuid.New()
+	_, _, err := completeListingPurchase(model.Listing{
+		OwnerID: ownerID, Status: model.ListingStatusPublished,
+	}, ownerID, time.Now())
+	if err != ErrListingOwnAction {
+		t.Fatalf("error = %v, want %v", err, ErrListingOwnAction)
 	}
 }
 

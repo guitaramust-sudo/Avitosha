@@ -1,12 +1,10 @@
 import { Link } from 'react-router-dom'
 
-import { useAppSelector } from '../../hooks/redux'
+import { iconAssets } from '../../utils/iconAssets'
 
 import '../marketplace-pages.scss'
 
 function MarketplaceWelcomePage() {
-  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated)
-
   return (
     <section className="marketplace-welcome">
       <div>
@@ -21,15 +19,10 @@ function MarketplaceWelcomePage() {
           <Link className="marketplace-button" to="/marketplace">
             Смотреть объявления
           </Link>
-          <Link
-            className="marketplace-button marketplace-button--muted"
-            to={isAuthenticated ? '/' : '/register'}
-          >
-            {isAuthenticated ? 'К питомцу' : 'Создать аккаунт'}
-          </Link>
         </div>
       </div>
       <div className="marketplace-welcome__visual" aria-hidden="true">
+        <img src={iconAssets.websiteLogo} alt="" />
         <span>♡</span>
         <span>✓</span>
         <span>+XP</span>

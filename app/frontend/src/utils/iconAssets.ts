@@ -9,6 +9,7 @@ import star from '../../images/icons/star.png'
 import sun from '../../images/icons/sun.png'
 import target from '../../images/icons/target.png'
 import wallet from '../../images/icons/wallet.png'
+import websiteLogo from '../../images/icons/website_logo.png'
 
 export const iconAssets = {
   avitoLogo,
@@ -22,6 +23,7 @@ export const iconAssets = {
   sun,
   target,
   wallet,
+  websiteLogo,
 } as const
 
 export const achievementIconAssets: Record<string, string> = {

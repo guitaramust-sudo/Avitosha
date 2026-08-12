@@ -184,9 +184,9 @@ paths:
     parameters: [ { $ref: '#/components/parameters/ListingID' } ]
     post:
       tags: [marketplace]
-      operationId: purchaseDemoListing
-      summary: Complete a one-time demo purchase
-      description: Only demo published listings can be purchased once per authenticated buyer. A demo deal does not change the public listing for other users. The server generates LISTING_SOLD and, when deliveryUsed is true, DELIVERY_USED in one transaction.
+      operationId: purchaseListing
+      summary: Purchase another user's published listing
+      description: A regular listing becomes sold after purchase. A demo listing remains public and can be purchased once per authenticated buyer. The server generates LISTING_SOLD and, when deliveryUsed is true, DELIVERY_USED in one transaction.
       security: [ { bearerAuth: [] }, { userIdHeader: [] } ]
       requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/PurchaseListingRequest' } } } }
       responses:

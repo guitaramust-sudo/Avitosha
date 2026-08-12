@@ -280,6 +280,7 @@ export const usePurchaseListing = () => {
   const { accessToken } = useAuthCredentials()
   const feedback = useMarketplaceFeedback()
   const refreshMarketplace = useRefreshMarketplace()
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({
       deliveryUsed,
@@ -291,6 +292,12 @@ export const usePurchaseListing = () => {
       listingId: string
     }) => purchaseListing(accessToken ?? '', listingId, deliveryUsed, eventId),
     onSuccess: async (response) => {
+      if (response.listing) {
+        queryClient.setQueryData(
+          marketplaceQueryKeys.listing(response.listing.id),
+          response.listing,
+        )
+      }
       await refreshMarketplace()
       await feedback(response)
     },

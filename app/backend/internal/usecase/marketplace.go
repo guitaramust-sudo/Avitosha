@@ -327,19 +327,15 @@ func (s *MarketplaceService) Purchase(ctx context.Context, command PurchaseListi
 		if err != nil {
 			return model.ListingDeal{}, err
 		}
-		if listing.OwnerID == command.BuyerID {
-			return model.ListingDeal{}, ErrListingOwnAction
-		}
-		if !listing.IsDemo || listing.Status != model.ListingStatusPublished {
-			return model.ListingDeal{}, ErrListingInvalidTransition
-		}
 		completedAt := command.Now.UTC()
-		listing.Status = model.ListingStatusSold
-		listing.SoldAt = &completedAt
-		listing.PublishedAt = nil
-		listing.UpdatedAt = completedAt
-		if _, err = s.repository.UpdateListing(txCtx, listing); err != nil {
+		listing, shouldUpdate, err := completeListingPurchase(listing, command.BuyerID, completedAt)
+		if err != nil {
 			return model.ListingDeal{}, err
+		}
+		if shouldUpdate {
+			if _, err = s.repository.UpdateListing(txCtx, listing); err != nil {
+				return model.ListingDeal{}, err
+			}
 		}
 		return s.repository.CreateListingDeal(txCtx, model.ListingDeal{ID: s.idGenerator(), ListingID: listing.ID, BuyerID: command.BuyerID, SellerID: listing.OwnerID, DeliveryUsed: command.DeliveryUsed, CompletedAt: completedAt})
 	})
@@ -496,13 +492,16 @@ func (s *MarketplaceService) PurchaseWithGame(ctx context.Context, command Purch
 		if err != nil {
 			return MarketplaceActionResult{}, nil, err
 		}
-		if listing.OwnerID == command.BuyerID {
-			return MarketplaceActionResult{}, nil, ErrListingOwnAction
-		}
-		if !listing.IsDemo || listing.Status != model.ListingStatusPublished {
-			return MarketplaceActionResult{}, nil, ErrListingInvalidTransition
-		}
 		completed := command.Now.UTC()
+		listing, shouldUpdate, err := completeListingPurchase(listing, command.BuyerID, completed)
+		if err != nil {
+			return MarketplaceActionResult{}, nil, err
+		}
+		if shouldUpdate {
+			if _, err = s.repository.UpdateListing(txCtx, listing); err != nil {
+				return MarketplaceActionResult{}, nil, err
+			}
+		}
 		deal, err := s.repository.CreateListingDeal(txCtx, model.ListingDeal{ID: s.idGenerator(), ListingID: listing.ID, BuyerID: command.BuyerID, SellerID: listing.OwnerID, DeliveryUsed: command.DeliveryUsed, CompletedAt: completed})
 		if err != nil {
 			return MarketplaceActionResult{}, nil, err
@@ -512,6 +511,27 @@ func (s *MarketplaceService) PurchaseWithGame(ctx context.Context, command Purch
 		action := &ProcessActionCommand{UserID: listing.OwnerID, EventID: command.EventID, ActionType: model.ActionTypeListingSold, EntityID: &id, Category: &category, Metadata: json.RawMessage(`{"source":"marketplace.purchase"}`), OccurredAt: command.Now, Now: command.Now}
 		return MarketplaceActionResult{Listing: &listing, Deal: &deal}, action, nil
 	})
+}
+
+func completeListingPurchase(
+	listing model.Listing,
+	buyerID uuid.UUID,
+	completedAt time.Time,
+) (model.Listing, bool, error) {
+	if listing.OwnerID == buyerID {
+		return model.Listing{}, false, ErrListingOwnAction
+	}
+	if listing.Status != model.ListingStatusPublished {
+		return model.Listing{}, false, ErrListingInvalidTransition
+	}
+	if listing.IsDemo {
+		return listing, false, nil
+	}
+	listing.Status = model.ListingStatusSold
+	listing.SoldAt = &completedAt
+	listing.PublishedAt = nil
+	listing.UpdatedAt = completedAt
+	return listing, true, nil
 }
 
 func (s *MarketplaceService) UpdateWithGame(ctx context.Context, command UpdateListingCommand) (MarketplaceActionResult, error) {
