@@ -31,6 +31,20 @@ func TestMarketplaceRepositoryKeepsFavoriteAndDailyViewUnique(t *testing.T) {
 	if err != nil || secondFavorite {
 		t.Fatalf("second favorite = %v, %v", secondFavorite, err)
 	}
+	firstReward, err := repository.ClaimListingFavoriteReward(context.Background(), user, listing.ID, now)
+	if err != nil || !firstReward {
+		t.Fatalf("first favorite reward = %v, %v", firstReward, err)
+	}
+	if _, err = repository.RemoveListingFavorite(context.Background(), user, listing.ID); err != nil {
+		t.Fatalf("remove favorite: %v", err)
+	}
+	if restored, err := repository.AddListingFavorite(context.Background(), user, listing.ID, now); err != nil || !restored {
+		t.Fatalf("restore favorite = %v, %v", restored, err)
+	}
+	secondReward, err := repository.ClaimListingFavoriteReward(context.Background(), user, listing.ID, now)
+	if err != nil || secondReward {
+		t.Fatalf("second favorite reward = %v, %v", secondReward, err)
+	}
 	firstView, err := repository.RegisterListingView(context.Background(), user, listing.ID, now)
 	if err != nil || !firstView {
 		t.Fatalf("first view = %v, %v", firstView, err)

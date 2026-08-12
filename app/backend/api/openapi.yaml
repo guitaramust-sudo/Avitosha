@@ -87,7 +87,7 @@ paths:
       tags: [marketplace]
       operationId: publishListing
       summary: Publish own quality-complete listing
-      description: Requires price, a photo URL and description of at least 150 characters. The server calculates AD_CREATED and game effects; client provides only eventId.
+      description: Requires a non-empty title and price greater than zero. A photo URL and description of at least 150 characters improve listing quality but do not block publication. The server calculates AD_CREATED and game effects; client provides only eventId.
       security: [ { bearerAuth: [] }, { userIdHeader: [] } ]
       requestBody: { required: true, content: { application/json: { schema: { $ref: '#/components/schemas/EventRequest' } } } }
       responses:
@@ -812,7 +812,7 @@ components:
       required: [score, isEligible, missingFields, nextActionHint]
       properties:
         score: { type: integer, minimum: 0, maximum: 3 }
-        isEligible: { type: boolean }
+        isEligible: { type: boolean, description: "True when the listing can be published (requires a price greater than zero)." }
         missingFields: { type: array, items: { type: string, enum: [price, photo, description] } }
         nextActionHint: { type: string }
     Listing:
