@@ -194,9 +194,9 @@ func (repository *GameRepository) UpdateActivityScores(
 	err := executorFromContext(ctx, repository.executor).QueryRow(ctx, `
 INSERT INTO pet_activity_scores (
     user_id, buyer_score, seller_score, auto_score, travel_score,
-    real_estate_score, services_score, updated_at
+    real_estate_score, services_score, quality_score, updated_at
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 ON CONFLICT (user_id) DO UPDATE
 SET buyer_score = pet_activity_scores.buyer_score + EXCLUDED.buyer_score,
     seller_score = pet_activity_scores.seller_score + EXCLUDED.seller_score,
@@ -204,13 +204,14 @@ SET buyer_score = pet_activity_scores.buyer_score + EXCLUDED.buyer_score,
     travel_score = pet_activity_scores.travel_score + EXCLUDED.travel_score,
     real_estate_score = pet_activity_scores.real_estate_score + EXCLUDED.real_estate_score,
     services_score = pet_activity_scores.services_score + EXCLUDED.services_score,
+	quality_score = pet_activity_scores.quality_score + EXCLUDED.quality_score,
     updated_at = EXCLUDED.updated_at
 RETURNING user_id, buyer_score, seller_score, auto_score, travel_score,
-          real_estate_score, services_score, updated_at
+          real_estate_score, services_score, quality_score, updated_at
 `, userID, delta.Buyer, delta.Seller, delta.Auto, delta.Travel,
-		delta.RealEstate, delta.Services, now).Scan(
+		delta.RealEstate, delta.Services, delta.Quality, now).Scan(
 		&scores.UserID, &scores.BuyerScore, &scores.SellerScore, &scores.AutoScore,
-		&scores.TravelScore, &scores.RealEstateScore, &scores.ServicesScore, &scores.UpdatedAt,
+		&scores.TravelScore, &scores.RealEstateScore, &scores.ServicesScore, &scores.QualityScore, &scores.UpdatedAt,
 	)
 	if err != nil {
 		return model.ActivityScores{}, mapGameStorageError("update activity scores", err)
@@ -225,17 +226,30 @@ func (repository *GameRepository) GetActivityScores(
 	var scores model.ActivityScores
 	err := executorFromContext(ctx, repository.executor).QueryRow(ctx, `
 SELECT user_id, buyer_score, seller_score, auto_score, travel_score,
-       real_estate_score, services_score, updated_at
+       real_estate_score, services_score, quality_score, updated_at
 FROM pet_activity_scores
 WHERE user_id = $1
 `, userID).Scan(
 		&scores.UserID, &scores.BuyerScore, &scores.SellerScore, &scores.AutoScore,
-		&scores.TravelScore, &scores.RealEstateScore, &scores.ServicesScore, &scores.UpdatedAt,
+		&scores.TravelScore, &scores.RealEstateScore, &scores.ServicesScore, &scores.QualityScore, &scores.UpdatedAt,
 	)
 	if err != nil {
 		return model.ActivityScores{}, mapGameStorageError("get activity scores", err)
 	}
 	return scores, nil
+}
+
+func (repository *GameRepository) GetProductActionRule(ctx context.Context, actionType model.ActionType) (model.ProductActionRule, error) {
+	var rule model.ProductActionRule
+	err := executorFromContext(ctx, repository.executor).QueryRow(ctx, `
+SELECT action_type, xp_reward FROM product_action_rules WHERE action_type = $1`, actionType).Scan(&rule.ActionType, &rule.XPReward)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return model.ProductActionRule{}, usecase.ErrProductActionRuleNotFound
+	}
+	if err != nil {
+		return model.ProductActionRule{}, mapGameStorageError("get product action rule", err)
+	}
+	return rule, nil
 }
 
 func (repository *GameRepository) UnlockAchievements(

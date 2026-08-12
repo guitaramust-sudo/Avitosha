@@ -35,6 +35,7 @@ type ActivityScoreDelta struct {
 	Travel     int
 	RealEstate int
 	Services   int
+	Quality    int
 }
 
 type GameRepository interface {

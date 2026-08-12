@@ -20,6 +20,12 @@ const (
 	ReasonEventIDConflict    = "EVENT_ID_CONFLICT"
 	ReasonTaskNotFound       = "TASK_NOT_FOUND"
 	ReasonStoryNotFound      = "STORY_NOT_FOUND"
+	ReasonListingNotFound    = "LISTING_NOT_FOUND"
+	ReasonListingCategory    = "LISTING_CATEGORY_NOT_FOUND"
+	ReasonListingForbidden   = "LISTING_FORBIDDEN"
+	ReasonListingOwnAction   = "OWN_LISTING_ACTION"
+	ReasonListingTransition  = "LISTING_INVALID_TRANSITION"
+	ReasonListingEligibility = "LISTING_NOT_ELIGIBLE"
 )
 
 func AuthError(err error) error {
@@ -70,6 +76,20 @@ func GameError(err error) error {
 		return status.Error(codes.NotFound, ReasonTaskNotFound)
 	case errors.Is(err, usecase.ErrStoryNotFound):
 		return status.Error(codes.NotFound, ReasonStoryNotFound)
+	case errors.Is(err, usecase.ErrListingNotFound):
+		return status.Error(codes.NotFound, ReasonListingNotFound)
+	case errors.Is(err, usecase.ErrListingCategoryNotFound):
+		return status.Error(codes.InvalidArgument, ReasonListingCategory)
+	case errors.Is(err, usecase.ErrInvalidListingInput):
+		return status.Error(codes.InvalidArgument, ReasonInvalidInput)
+	case errors.Is(err, usecase.ErrListingForbidden):
+		return status.Error(codes.PermissionDenied, ReasonListingForbidden)
+	case errors.Is(err, usecase.ErrListingOwnAction):
+		return status.Error(codes.FailedPrecondition, ReasonListingOwnAction)
+	case errors.Is(err, usecase.ErrListingInvalidTransition):
+		return status.Error(codes.FailedPrecondition, ReasonListingTransition)
+	case errors.Is(err, usecase.ErrListingNotEligible):
+		return status.Error(codes.FailedPrecondition, ReasonListingEligibility)
 	default:
 		return status.Error(codes.Internal, "INTERNAL")
 	}
@@ -89,6 +109,20 @@ func DecodeGameError(err error) error {
 		return usecase.ErrTaskNotFound
 	case ReasonStoryNotFound:
 		return usecase.ErrStoryNotFound
+	case ReasonListingNotFound:
+		return usecase.ErrListingNotFound
+	case ReasonListingCategory:
+		return usecase.ErrListingCategoryNotFound
+	case ReasonListingForbidden:
+		return usecase.ErrListingForbidden
+	case ReasonListingOwnAction:
+		return usecase.ErrListingOwnAction
+	case ReasonListingTransition:
+		return usecase.ErrListingInvalidTransition
+	case ReasonListingEligibility:
+		return usecase.ErrListingNotEligible
+	case ReasonInvalidInput:
+		return usecase.ErrInvalidListingInput
 	default:
 		return usecase.ErrUnexpectedStorage
 	}

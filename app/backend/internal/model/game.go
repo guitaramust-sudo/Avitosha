@@ -10,13 +10,15 @@ import (
 type ActionType string
 
 const (
-	ActionTypeAdViewed       ActionType = "AD_VIEWED"
-	ActionTypeAdFavorited    ActionType = "AD_FAVORITED"
-	ActionTypeMessageSent    ActionType = "MESSAGE_SENT"
-	ActionTypeAdCreated      ActionType = "AD_CREATED"
-	ActionTypeDeliveryUsed   ActionType = "DELIVERY_USED"
-	ActionTypeReviewLeft     ActionType = "REVIEW_LEFT"
-	ActionTypeBookingCreated ActionType = "BOOKING_CREATED"
+	ActionTypeAdViewed        ActionType = "AD_VIEWED"
+	ActionTypeAdFavorited     ActionType = "AD_FAVORITED"
+	ActionTypeMessageSent     ActionType = "MESSAGE_SENT"
+	ActionTypeAdCreated       ActionType = "AD_CREATED"
+	ActionTypeDeliveryUsed    ActionType = "DELIVERY_USED"
+	ActionTypeReviewLeft      ActionType = "REVIEW_LEFT"
+	ActionTypeBookingCreated  ActionType = "BOOKING_CREATED"
+	ActionTypeListingImproved ActionType = "LISTING_IMPROVED"
+	ActionTypeListingSold     ActionType = "LISTING_SOLD"
 )
 
 type TaskStatus string
@@ -192,7 +194,13 @@ type ActivityScores struct {
 	TravelScore     int
 	RealEstateScore int
 	ServicesScore   int
+	QualityScore    int
 	UpdatedAt       time.Time
+}
+
+type ProductActionRule struct {
+	ActionType ActionType
+	XPReward   int
 }
 
 type RoomItemProgress struct {

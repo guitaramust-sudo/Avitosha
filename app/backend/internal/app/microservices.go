@@ -62,7 +62,7 @@ func NewGateway(cfg config.Config, logger *slog.Logger) (*GatewayApp, error) {
 	router := handler.NewRouter(handler.RouterDependencies{
 		Logger: logger, DB: ready, AuthService: auth, AccessTokenAuthenticator: auth,
 		FrontendOrigin: cfg.FrontendOrigin, RefreshTokenTTL: cfg.RefreshTokenTTL,
-		SecureRefreshCookie: cfg.AppEnv == config.AppEnvProd, GameService: game, EventHub: game,
+		SecureRefreshCookie: cfg.AppEnv == config.AppEnvProd, GameService: game, MarketplaceService: game, EventHub: game,
 	})
 	return &GatewayApp{
 		logger: logger, connections: []*grpc.ClientConn{authConnection, gameConnection},
@@ -165,8 +165,9 @@ func NewGameGRPCService(ctx context.Context, cfg config.Config, logger *slog.Log
 		return nil, fmt.Errorf("create advice generator: %w", err)
 	}
 	game := newGameService(pool, postgres.NewTxManager(pool), hub, advice)
+	marketplace := usecase.NewMarketplaceService(postgres.NewGameRepository(pool), postgres.NewTxManager(pool), nil, game)
 	server := grpc.NewServer()
-	avitoshav1.RegisterGameServiceServer(server, gameserver.New(game, hub))
+	avitoshav1.RegisterGameServiceServer(server, gameserver.New(game, marketplace, hub))
 	registerHealth(server)
 	return &GRPCServiceApp{name: "game-service", addr: cfg.GRPCAddr, logger: logger, server: server, db: pool, shutdownTimeout: cfg.ShutdownTimeout}, nil
 }
