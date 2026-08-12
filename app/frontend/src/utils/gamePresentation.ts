@@ -110,6 +110,13 @@ export const formatGameDateTime = (value: string) => {
 
 export const getGameEventMessage = (events: GameEvent[]) => {
   const messages: Array<{ priority: number; text: string }> = []
+  const hasDetailedRewardMessage = events.some((event) =>
+    [
+      'TASK_COMPLETED',
+      'DAILY_QUEST_COMPLETED',
+      'DAILY_GOAL_COMPLETED',
+    ].includes(event.type),
+  )
 
   events.forEach((event) => {
     switch (event.type) {
@@ -145,7 +152,10 @@ export const getGameEventMessage = (events: GameEvent[]) => {
         })
         break
       case 'TASK_COMPLETED':
-        messages.push({ priority: 70, text: 'Задание выполнено' })
+        messages.push({
+          priority: 70,
+          text: `Ты выполнил ${event.taskTitle ? `задание «${event.taskTitle}»` : 'задание'}! Ура! Теперь ты получил ${formatTaskReward(event.xpReward, event.avitoRewardAmount)}`,
+        })
         break
       case 'REWARD_CATALOG_UNLOCKED':
         messages.push({
@@ -154,6 +164,7 @@ export const getGameEventMessage = (events: GameEvent[]) => {
         })
         break
       case 'AVITO_REWARD_EARNED':
+        if (hasDetailedRewardMessage) break
         messages.push({
           priority: 68,
           text: `Получено ${event.amount} Avito-бонусов`,
@@ -162,7 +173,7 @@ export const getGameEventMessage = (events: GameEvent[]) => {
       case 'DAILY_QUEST_COMPLETED':
         messages.push({
           priority: 72,
-          text: `Ежедневное задание выполнено: ${event.title}`,
+          text: `Ты выполнил задание «${event.title}»! Ура! Теперь ты получил ${event.xpReward} XP`,
         })
         break
       case 'DAILY_GOAL_COMPLETED':
@@ -202,6 +213,7 @@ export const getGameEventMessage = (events: GameEvent[]) => {
         })
         break
       case 'XP_EARNED':
+        if (hasDetailedRewardMessage) break
         messages.push({ priority: 60, text: `Получено ${event.amount} XP` })
         break
       case 'PET_MOOD_CHANGED':
@@ -241,7 +253,7 @@ export const getGameEventMessage = (events: GameEvent[]) => {
         messages.push({ priority: 12, text: 'Качество объявления улучшено' })
         break
       case 'LISTING_SOLD':
-        messages.push({ priority: 12, text: 'Демо-покупка оформлена' })
+        messages.push({ priority: 12, text: 'Покупка оформлена' })
         break
       case 'DELIVERY_USED':
         messages.push({ priority: 12, text: 'Авито Доставка подключена' })
@@ -258,6 +270,15 @@ export const getGameEventMessage = (events: GameEvent[]) => {
   ]
 
   return uniqueMessages.slice(0, 3).join(' · ') || 'Прогресс Авитоши обновлён'
+}
+
+const formatTaskReward = (xpReward?: number, avitoRewardAmount?: number) => {
+  const rewards: string[] = []
+  if (xpReward) rewards.push(`${xpReward} XP`)
+  if (avitoRewardAmount) {
+    rewards.push(`${avitoRewardAmount} Avito-бонусов`)
+  }
+  return rewards.join(' и ') || 'награду'
 }
 
 const productOnlyEventTypes = new Set<GameEvent['type']>([

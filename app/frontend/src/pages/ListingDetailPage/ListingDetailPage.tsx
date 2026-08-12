@@ -45,7 +45,21 @@ function ListingDetailPage() {
   )
   const [deliveryUsed, setDeliveryUsed] = useState(true)
   const [actionError, setActionError] = useState<string | null>(null)
-  const [purchaseCompleted, setPurchaseCompleted] = useState(false)
+  const [purchasedListingId, setPurchasedListingId] = useState<string | null>(
+    null,
+  )
+  const purchaseStorageKey =
+    user?.id && listingId ? `avitosha:purchase:${user.id}:${listingId}` : null
+  const purchaseCompleted = Boolean(
+    purchasedListingId === listingId ||
+    (purchaseStorageKey && localStorage.getItem(purchaseStorageKey) === 'true'),
+  )
+
+  const rememberPurchase = () => {
+    if (!listingId) return
+    setPurchasedListingId(listingId)
+    if (purchaseStorageKey) localStorage.setItem(purchaseStorageKey, 'true')
+  }
 
   useEffect(() => {
     if (!listing || !isAuthenticated || isOwner || viewRegistered.current)
@@ -70,8 +84,8 @@ function ListingDetailPage() {
         error instanceof ApiError &&
         error.code === 'demo_purchase_already_completed'
       ) {
-        setPurchaseCompleted(true)
-        setActionError('Вы уже купили этот демо-товар.')
+        rememberPurchase()
+        setActionError(null)
         return false
       }
       setActionError(
@@ -209,7 +223,7 @@ function ListingDetailPage() {
                           listingId: listing.id,
                         }),
                       ).then((succeeded) => {
-                        if (succeeded) setPurchaseCompleted(true)
+                        if (succeeded) rememberPurchase()
                       })
                     }}
                   >
@@ -219,7 +233,7 @@ function ListingDetailPage() {
               )}
               {purchaseCompleted && (
                 <p className="listing-purchase__success">
-                  Покупка успешно оформлена.
+                  Вы уже купили этот товар
                 </p>
               )}
             </>

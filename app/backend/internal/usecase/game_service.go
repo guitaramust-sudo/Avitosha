@@ -662,7 +662,8 @@ func (service *GameService) rewardCompletedTask(
 ) (taskRewardResult, error) {
 	result := taskRewardResult{Progress: RewardTask(progress, now), Pet: pet, Story: story}
 	result.Events = append(result.Events, service.event(actionID, userID, model.DomainEventTaskCompleted, now, map[string]any{
-		"taskId": task.ID, "taskCode": task.Code,
+		"taskId": task.ID, "taskCode": task.Code, "taskTitle": task.Title,
+		"xpReward": task.XPReward, "avitoRewardAmount": task.AvitoRewardAmount,
 	}))
 
 	previousLevel := result.Pet.Level

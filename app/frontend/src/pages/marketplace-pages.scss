@@ -477,8 +477,8 @@
     span {
       position: absolute;
       display: grid;
-      width: h.rem(120px);
-      height: h.rem(90px);
+      width: h.rem(104px);
+      height: h.rem(76px);
       place-items: center;
       border-radius: h.$radius-large;
       background: h.$color-surface;
@@ -488,20 +488,20 @@
     }
 
     span:nth-of-type(1) {
-      top: 20%;
-      left: 6%;
+      top: 12%;
+      left: 0;
       color: h.$color-danger;
       transform: rotate(-8deg);
     }
     span:nth-of-type(2) {
-      top: 35%;
-      right: 3%;
+      top: 14%;
+      right: 0;
       color: h.$color-success;
       transform: rotate(8deg);
     }
     span:nth-of-type(3) {
-      bottom: 18%;
-      left: 34%;
+      right: 5%;
+      bottom: 10%;
       color: h.$color-primary;
     }
   }

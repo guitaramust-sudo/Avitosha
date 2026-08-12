@@ -331,6 +331,9 @@ export type GameEvent =
   | (GameEventBase<'TASK_COMPLETED'> & {
       taskId: string
       taskCode: GameTaskCode
+      taskTitle?: string
+      xpReward?: number
+      avitoRewardAmount?: number
     })
   | (GameEventBase<'XP_EARNED'> & {
       amount: number
