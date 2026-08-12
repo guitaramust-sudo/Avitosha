@@ -120,7 +120,14 @@ INSERT INTO listings (
      'Помогу собрать мебель', 'Соберу стол, стеллаж или кресло, привезу базовый набор инструментов и подскажу по уходу.', 150000, 'PUBLISHED', TRUE, NOW() - INTERVAL '12 hours', NOW() - INTERVAL '1 day', NOW());
 
 INSERT INTO listing_photos (listing_id, url, sort_order) VALUES
-    ('10000000-0000-0000-0000-000000000001', 'https://images.example.test/demo/lamp-1.jpg', 0),
-    ('10000000-0000-0000-0000-000000000002', 'https://images.example.test/demo/desk-1.jpg', 0),
-    ('10000000-0000-0000-0000-000000000003', 'https://images.example.test/demo/headphones-1.jpg', 0),
-    ('10000000-0000-0000-0000-000000000004', 'https://images.example.test/demo/service-1.jpg', 0);
+    ('10000000-0000-0000-0000-000000000001', 'https://storage.yandexcloud.net/avitosha-demo-images/lamp-1.jpg', 0),
+    ('10000000-0000-0000-0000-000000000001', 'https://storage.yandexcloud.net/avitosha-demo-images/lamp-2.jpg', 1),
+    ('10000000-0000-0000-0000-000000000001', 'https://storage.yandexcloud.net/avitosha-demo-images/lamp-3.jpg', 2),
+    ('10000000-0000-0000-0000-000000000002', 'https://storage.yandexcloud.net/avitosha-demo-images/desk-1.jpg', 0),
+    ('10000000-0000-0000-0000-000000000002', 'https://storage.yandexcloud.net/avitosha-demo-images/desk-2.jpg', 1),
+    ('10000000-0000-0000-0000-000000000002', 'https://storage.yandexcloud.net/avitosha-demo-images/desk-3.jpg', 2),
+    ('10000000-0000-0000-0000-000000000003', 'https://storage.yandexcloud.net/avitosha-demo-images/headphones-1.jpg', 0),
+    ('10000000-0000-0000-0000-000000000003', 'https://storage.yandexcloud.net/avitosha-demo-images/headphones-2.jpg', 1),
+    ('10000000-0000-0000-0000-000000000003', 'https://storage.yandexcloud.net/avitosha-demo-images/headphones-3.jpg', 2),
+    ('10000000-0000-0000-0000-000000000004', 'https://storage.yandexcloud.net/avitosha-demo-images/service-1.webp', 0),
+    ('10000000-0000-0000-0000-000000000004', 'https://storage.yandexcloud.net/avitosha-demo-images/service-2.webp', 1);

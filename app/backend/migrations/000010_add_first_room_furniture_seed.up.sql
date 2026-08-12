@@ -7,7 +7,13 @@ INSERT INTO listings (
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO listing_photos (listing_id, url, sort_order) VALUES
-    ('10000000-0000-0000-0000-000000000005', 'https://images.example.test/demo/chair-1.jpg', 0),
-    ('10000000-0000-0000-0000-000000000006', 'https://images.example.test/demo/bookshelf-1.jpg', 0),
-    ('10000000-0000-0000-0000-000000000007', 'https://images.example.test/demo/cabinet-1.jpg', 0)
+    ('10000000-0000-0000-0000-000000000005', 'https://storage.yandexcloud.net/avitosha-demo-images/chair-1.jpg', 0),
+    ('10000000-0000-0000-0000-000000000005', 'https://storage.yandexcloud.net/avitosha-demo-images/chair-2.jpg', 1),
+    ('10000000-0000-0000-0000-000000000005', 'https://storage.yandexcloud.net/avitosha-demo-images/chair-3.jpg', 2),
+    ('10000000-0000-0000-0000-000000000006', 'https://storage.yandexcloud.net/avitosha-demo-images/bookshelf-1.jpg', 0),
+    ('10000000-0000-0000-0000-000000000006', 'https://storage.yandexcloud.net/avitosha-demo-images/bookshelf-2.jpg', 1),
+    ('10000000-0000-0000-0000-000000000006', 'https://storage.yandexcloud.net/avitosha-demo-images/bookshelf-3.jpg', 2),
+    ('10000000-0000-0000-0000-000000000007', 'https://storage.yandexcloud.net/avitosha-demo-images/cabinet-1.jpg', 0),
+    ('10000000-0000-0000-0000-000000000007', 'https://storage.yandexcloud.net/avitosha-demo-images/cabinet-2.jpg', 1),
+    ('10000000-0000-0000-0000-000000000007', 'https://storage.yandexcloud.net/avitosha-demo-images/cabinet-3.jpg', 2)
 ON CONFLICT (listing_id, sort_order) DO NOTHING;
