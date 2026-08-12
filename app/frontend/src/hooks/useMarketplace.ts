@@ -31,7 +31,10 @@ import type {
   ListingWriteRequest,
   MarketplaceActionResponse,
 } from '../types/marketplace'
-import { getGameEventMessage } from '../utils/gamePresentation'
+import {
+  getGameEventMessage,
+  hasNotifiableGameEvent,
+} from '../utils/gamePresentation'
 import { uploadListingPhotoBatch } from '../utils/listingPhotoUpload'
 import { useAppDispatch, useAuthCredentials } from './redux'
 import { invalidateGameQueriesForEvents } from './useGameDashboard'
@@ -134,7 +137,9 @@ const useMarketplaceFeedback = () => {
       if (result.duplicate || acceptedEvents.length === 0) return
 
       await invalidateGameQueriesForEvents(queryClient, userId, acceptedEvents)
-      dispatch(showToast({ message: getGameEventMessage(acceptedEvents) }))
+      if (hasNotifiableGameEvent(acceptedEvents)) {
+        dispatch(showToast({ message: getGameEventMessage(acceptedEvents) }))
+      }
     },
     [dispatch, queryClient, userId],
   )

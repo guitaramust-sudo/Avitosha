@@ -259,3 +259,16 @@ export const getGameEventMessage = (events: GameEvent[]) => {
 
   return uniqueMessages.slice(0, 3).join(' · ') || 'Прогресс Авитоши обновлён'
 }
+
+const productOnlyEventTypes = new Set<GameEvent['type']>([
+  'LISTING_VIEWED',
+  'LISTING_FAVORITED',
+  'SELLER_CONTACTED',
+  'LISTING_PUBLISHED',
+  'LISTING_IMPROVED',
+  'LISTING_SOLD',
+  'DELIVERY_USED',
+])
+
+export const hasNotifiableGameEvent = (events: GameEvent[]) =>
+  events.some((event) => !productOnlyEventTypes.has(event.type))

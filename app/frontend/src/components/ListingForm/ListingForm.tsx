@@ -5,8 +5,15 @@ import {
   useListingCategories,
   useUploadListingPhotos,
 } from '../../hooks/useMarketplace'
-import type { Listing, ListingWriteRequest } from '../../types/marketplace'
-import { LISTING_DESCRIPTION_MIN_LENGTH } from '../../utils/marketplacePresentation'
+import type {
+  Listing,
+  ListingQuality,
+  ListingWriteRequest,
+} from '../../types/marketplace'
+import {
+  evaluateListingQuality,
+  LISTING_DESCRIPTION_MIN_LENGTH,
+} from '../../utils/marketplacePresentation'
 
 import './ListingForm.scss'
 
@@ -17,6 +24,7 @@ const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 interface ListingFormProps {
   initialListing?: Listing
   isPending: boolean
+  onQualityChange?: (quality: ListingQuality) => void
   onSubmit: (request: ListingWriteRequest) => void
   submitLabel: string
 }
@@ -24,6 +32,7 @@ interface ListingFormProps {
 function ListingForm({
   initialListing,
   isPending,
+  onQualityChange,
   onSubmit,
   submitLabel,
 }: ListingFormProps) {
@@ -45,11 +54,28 @@ function ListingForm({
 
   const selectedCategory = categoryCode || categories.data?.[0]?.code || ''
 
+  const getDraft = (
+    changes: Partial<ListingWriteRequest> = {},
+  ): ListingWriteRequest => ({
+    categoryCode: selectedCategory,
+    description,
+    photoUrls,
+    priceKopecks: Math.max(0, Math.round(Number(price || 0) * 100)),
+    title: title.trim(),
+    ...changes,
+  })
+
+  const updateQuality = (changes: Partial<ListingWriteRequest> = {}) => {
+    onQualityChange?.(evaluateListingQuality(getDraft(changes)))
+  }
+
   const uploadFiles = async (files: File[]) => {
     const result = await uploadPhotos.mutateAsync(files)
 
     if (result.uploadedUrls.length > 0) {
-      setPhotoUrls((current) => [...current, ...result.uploadedUrls])
+      const nextPhotoUrls = [...photoUrls, ...result.uploadedUrls]
+      setPhotoUrls(nextPhotoUrls)
+      updateQuality({ photoUrls: nextPhotoUrls })
     }
 
     setFailedPhotoFiles(result.failedFiles.map(({ file }) => file))
@@ -95,13 +121,7 @@ function ListingForm({
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    onSubmit({
-      categoryCode: selectedCategory,
-      description,
-      photoUrls,
-      priceKopecks: Math.max(0, Math.round(Number(price || 0) * 100)),
-      title: title.trim(),
-    })
+    onSubmit(getDraft())
   }
 
   return (
@@ -110,7 +130,10 @@ function ListingForm({
         <span>Категория</span>
         <select
           value={selectedCategory}
-          onChange={(event) => setCategoryCode(event.target.value)}
+          onChange={(event) => {
+            setCategoryCode(event.target.value)
+            updateQuality({ categoryCode: event.target.value })
+          }}
           required
         >
           {(categories.data ?? []).map((category) => (
@@ -126,7 +149,10 @@ function ListingForm({
         <input
           maxLength={120}
           value={title}
-          onChange={(event) => setTitle(event.target.value)}
+          onChange={(event) => {
+            setTitle(event.target.value)
+            updateQuality({ title: event.target.value.trim() })
+          }}
           placeholder="Например, удобное кресло"
           required
         />
@@ -139,7 +165,16 @@ function ListingForm({
           step="1"
           type="number"
           value={price}
-          onChange={(event) => setPrice(event.target.value)}
+          onChange={(event) => {
+            const nextPrice = event.target.value
+            setPrice(nextPrice)
+            updateQuality({
+              priceKopecks: Math.max(
+                0,
+                Math.round(Number(nextPrice || 0) * 100),
+              ),
+            })
+          }}
         />
       </label>
 
@@ -149,7 +184,10 @@ function ListingForm({
           maxLength={5000}
           rows={8}
           value={description}
-          onChange={(event) => setDescription(event.target.value)}
+          onChange={(event) => {
+            setDescription(event.target.value)
+            updateQuality({ description: event.target.value })
+          }}
           placeholder="Подробно расскажите о состоянии, особенностях и условиях передачи"
         />
         <small>
@@ -174,11 +212,13 @@ function ListingForm({
                 <button
                   type="button"
                   aria-label={`Удалить фотографию ${index + 1}`}
-                  onClick={() =>
-                    setPhotoUrls((current) =>
-                      current.filter((photoUrl) => photoUrl !== url),
+                  onClick={() => {
+                    const nextPhotoUrls = photoUrls.filter(
+                      (photoUrl) => photoUrl !== url,
                     )
-                  }
+                    setPhotoUrls(nextPhotoUrls)
+                    updateQuality({ photoUrls: nextPhotoUrls })
+                  }}
                 >
                   ×
                 </button>

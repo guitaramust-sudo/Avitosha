@@ -279,7 +279,9 @@ func (service *GameService) applyRetentionForAction(
 	xpEarned := 0
 	for index := range state.Quests {
 		quest := &state.Quests[index]
-		if quest.Quest.Status != model.DailyQuestStatusActive || !dailyQuestMatchesAction(quest.Template, command.ActionType, command.Category) {
+		if quest.Quest.Status != model.DailyQuestStatusActive ||
+			rewardedOnRetentionDate(quest.Quest.RewardedAt, today) ||
+			!dailyQuestMatchesAction(quest.Template, command.ActionType, command.Category) {
 			continue
 		}
 		quest.Quest.Progress = min(quest.Quest.Progress+1, quest.Quest.TargetValue)
@@ -303,7 +305,9 @@ func (service *GameService) applyRetentionForAction(
 	}
 
 	state.Goal.CompletedCount = completedDailyQuestCount(state.Quests)
-	if state.Goal.Status == model.DailyGoalStatusActive && state.Goal.CompletedCount >= state.Goal.RequiredCompleted {
+	if state.Goal.Status == model.DailyGoalStatusActive &&
+		!rewardedOnRetentionDate(state.Goal.RewardedAt, today) &&
+		state.Goal.CompletedCount >= state.Goal.RequiredCompleted {
 		completedAt := now
 		state.Goal.Status, state.Goal.RewardedAt = model.DailyGoalStatusRewarded, &completedAt
 		xpEarned += state.Goal.XPReward
@@ -322,7 +326,7 @@ func (service *GameService) applyRetentionForAction(
 		}
 		events = append(events, streakEvents...)
 	}
-	if state.Goal.BalancedRewardedAt == nil && completedBuyerAndSeller(state.Quests) {
+	if !rewardedOnRetentionDate(state.Goal.BalancedRewardedAt, today) && completedBuyerAndSeller(state.Quests) {
 		balancedAt := now
 		state.Goal.BalancedRewardedAt = &balancedAt
 		events = append(events, service.event(actionID, command.UserID, model.DomainEventBalancedDayCompleted, now, map[string]any{
@@ -598,6 +602,28 @@ func retentionDate(value time.Time) time.Time {
 	moscow := time.FixedZone("Europe/Moscow", 3*60*60)
 	local := value.In(moscow)
 	return time.Date(local.Year(), local.Month(), local.Day(), 0, 0, 0, 0, time.UTC)
+}
+
+func rewardedOnRetentionDate(rewardedAt *time.Time, date time.Time) bool {
+	return rewardedAt != nil && retentionDate(*rewardedAt).Equal(date)
+}
+
+func dailyQuestCompletedForActionOnDate(
+	quests []model.DailyQuestProgress,
+	command ProcessActionCommand,
+	date time.Time,
+) bool {
+	for _, quest := range quests {
+		if !quest.Quest.QuestDate.Equal(date) ||
+			!dailyQuestMatchesAction(quest.Template, command.ActionType, command.Category) {
+			continue
+		}
+		if quest.Quest.Status == model.DailyQuestStatusRewarded ||
+			rewardedOnRetentionDate(quest.Quest.RewardedAt, date) {
+			return true
+		}
+	}
+	return false
 }
 
 func projectedTomorrowStreak(streak model.UserStreak, today time.Time) int {

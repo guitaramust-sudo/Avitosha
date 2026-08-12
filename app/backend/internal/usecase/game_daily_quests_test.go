@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -43,6 +44,89 @@ func TestRetentionDateChangesAtMoscowMidnight(t *testing.T) {
 	after := retentionDate(time.Date(2026, 8, 11, 21, 0, 0, 0, time.UTC))
 	if before.Format(time.DateOnly) != "2026-08-11" || after.Format(time.DateOnly) != "2026-08-12" {
 		t.Fatalf("before=%s after=%s", before.Format(time.DateOnly), after.Format(time.DateOnly))
+	}
+}
+
+func TestRewardedOnRetentionDateUsesMoscowCalendarDay(t *testing.T) {
+	today := retentionDate(time.Date(2026, 8, 12, 12, 0, 0, 0, time.UTC))
+	rewardedToday := time.Date(2026, 8, 11, 21, 30, 0, 0, time.UTC)
+	rewardedYesterday := time.Date(2026, 8, 11, 20, 30, 0, 0, time.UTC)
+
+	if !rewardedOnRetentionDate(&rewardedToday, today) {
+		t.Fatal("reward granted after Moscow midnight must belong to today")
+	}
+	if rewardedOnRetentionDate(&rewardedYesterday, today) {
+		t.Fatal("reward granted before Moscow midnight must not belong to today")
+	}
+	if rewardedOnRetentionDate(nil, today) {
+		t.Fatal("missing reward timestamp must not be treated as rewarded today")
+	}
+}
+
+func TestApplyRetentionForActionDoesNotRewardQuestTwiceOnSameDay(t *testing.T) {
+	userID := uuid.New()
+	repository := newGameTestRepository(userID)
+	service := NewGameService(GameServiceDependencies{
+		Repository:  repository,
+		TxManager:   &gameTestTxManager{},
+		IDGenerator: uuid.New,
+	})
+	now := time.Date(2026, 8, 12, 12, 0, 0, 0, time.UTC)
+	rewardedAt := now.Add(-time.Hour)
+	questID := uuid.New()
+	state := retentionState{
+		Goal: model.UserDailyGoal{
+			ID: uuid.New(), UserID: userID, GoalDate: retentionDate(now),
+			RequiredCompleted: 2, Status: model.DailyGoalStatusActive,
+		},
+		Quests: []model.DailyQuestProgress{{
+			Template: model.DailyQuestTemplate{
+				Code: "DAILY_VIEW", ActionType: model.ActionTypeAdViewed,
+				Role: model.DailyQuestRoleBuyer, TargetValue: 1, XPReward: 10,
+			},
+			Quest: model.UserDailyQuest{
+				ID: questID, UserID: userID, QuestDate: retentionDate(now),
+				TemplateCode: "DAILY_VIEW", TargetValue: 1,
+				Status: model.DailyQuestStatusActive, RewardedAt: &rewardedAt,
+			},
+		}},
+	}
+
+	result, err := service.applyRetentionForAction(context.Background(), uuid.New(), ProcessActionCommand{
+		UserID: userID, ActionType: model.ActionTypeAdViewed, Now: now,
+	}, state)
+	if err != nil {
+		t.Fatalf("apply retention: %v", err)
+	}
+	if result.XPEarned != 0 || len(result.Events) != 0 {
+		t.Fatalf("duplicate daily reward result = %+v", result)
+	}
+	if result.State.Quests[0].Quest.Progress != 0 {
+		t.Fatalf("rewarded quest progressed again: %+v", result.State.Quests[0].Quest)
+	}
+}
+
+func TestDailyQuestCompletedForActionOnDateStopsProductXP(t *testing.T) {
+	now := time.Date(2026, 8, 12, 12, 0, 0, 0, time.UTC)
+	today := retentionDate(now)
+	rewardedAt := now.Add(-time.Hour)
+
+	for _, actionType := range []model.ActionType{
+		model.ActionTypeAdFavorited,
+		model.ActionTypeAdCreated,
+	} {
+		quests := []model.DailyQuestProgress{{
+			Template: model.DailyQuestTemplate{ActionType: actionType},
+			Quest: model.UserDailyQuest{
+				QuestDate: today, Status: model.DailyQuestStatusRewarded,
+				RewardedAt: &rewardedAt,
+			},
+		}}
+		if !dailyQuestCompletedForActionOnDate(quests, ProcessActionCommand{
+			ActionType: actionType,
+		}, today) {
+			t.Fatalf("completed %s daily quest did not stop product XP", actionType)
+		}
 	}
 }
 

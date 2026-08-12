@@ -11,8 +11,10 @@ import {
   useUnpublishListing,
   useUpdateListing,
 } from '../../hooks/useMarketplace'
-import type { ListingWriteRequest } from '../../types/marketplace'
-import { hasPublishableListingDescription } from '../../utils/marketplacePresentation'
+import type {
+  ListingQuality as ListingQualityType,
+  ListingWriteRequest,
+} from '../../types/marketplace'
 
 import '../marketplace-pages.scss'
 
@@ -23,6 +25,8 @@ function ListingEditPage() {
   const publishListing = usePublishListing()
   const unpublishListing = useUnpublishListing()
   const [error, setError] = useState<string | null>(null)
+  const [qualityPreview, setQualityPreview] =
+    useState<ListingQualityType | null>(null)
 
   const runAction = async (action: () => Promise<unknown>) => {
     setError(null)
@@ -57,10 +61,8 @@ function ListingEditPage() {
       updateListing.mutateAsync({ ...request, eventId: crypto.randomUUID() }),
     )
 
-  const hasRequiredDescription = hasPublishableListingDescription(
-    listing.description,
-  )
-  const canPublish = listing.quality.isEligible && hasRequiredDescription
+  const displayedQuality = qualityPreview ?? listing.quality
+  const canPublish = displayedQuality.isEligible
 
   return (
     <section className="marketplace-page marketplace-page--form">
@@ -84,12 +86,13 @@ function ListingEditPage() {
           <ListingForm
             initialListing={listing}
             isPending={updateListing.isPending}
+            onQualityChange={setQualityPreview}
             onSubmit={(request) => void update(request)}
             submitLabel="Сохранить изменения"
           />
         </div>
         <aside>
-          <ListingQuality quality={listing.quality} />
+          <ListingQuality quality={displayedQuality} />
           {listing.status === 'PUBLISHED' ? (
             <button
               className="marketplace-button marketplace-button--muted"
@@ -119,11 +122,7 @@ function ListingEditPage() {
             </button>
           )}
           {!canPublish && (
-            <small>
-              {!hasRequiredDescription
-                ? 'Для публикации добавьте описание не короче 150 символов и сохраните изменения.'
-                : 'Перед публикацией укажите цену больше нуля.'}
-            </small>
+            <small>Перед публикацией укажите цену больше нуля.</small>
           )}
         </aside>
       </div>

@@ -4,7 +4,10 @@ import { useEffect } from 'react'
 import { acceptGameEvents } from '../store/gameSlice'
 import { showToast } from '../store/toastSlice'
 import type { GameEvent } from '../types/game'
-import { getGameEventMessage } from '../utils/gamePresentation'
+import {
+  getGameEventMessage,
+  hasNotifiableGameEvent,
+} from '../utils/gamePresentation'
 import { useAppDispatch } from './redux'
 import {
   gameQueryKey,
@@ -59,7 +62,11 @@ export const useGameSocket = (
             userId,
             acceptedEvents,
           )
-          dispatch(showToast({ message: getGameEventMessage(acceptedEvents) }))
+          if (hasNotifiableGameEvent(acceptedEvents)) {
+            dispatch(
+              showToast({ message: getGameEventMessage(acceptedEvents) }),
+            )
+          }
         } catch {
           // Ignore malformed realtime payloads and keep the connection alive.
         }

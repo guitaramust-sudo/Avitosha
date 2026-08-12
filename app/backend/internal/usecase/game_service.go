@@ -430,7 +430,10 @@ func (service *GameService) processAction(ctx context.Context, command ProcessAc
 		if err != nil {
 			return fmt.Errorf("ensure retention state: %w", err)
 		}
-		if rule.XPReward > 0 {
+		dailyActionCompleted := dailyQuestCompletedForActionOnDate(
+			retentionState.Quests, command, retentionDate(command.Now),
+		)
+		if rule.XPReward > 0 && !dailyActionCompleted {
 			previousLevel := pet.Level
 			pet.GrowthXP += rule.XPReward
 			level, levelErr := CalculateLevel(pet.GrowthXP)
