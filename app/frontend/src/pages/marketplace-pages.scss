@@ -507,6 +507,17 @@
   }
 }
 
+@include h.media-max(930px) {
+  .marketplace-page--my-listings .game-page-header {
+    align-items: flex-start;
+    flex-direction: column;
+
+    > .marketplace-button {
+      align-self: flex-start;
+    }
+  }
+}
+
 @include h.laptop-small {
   .listing-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));

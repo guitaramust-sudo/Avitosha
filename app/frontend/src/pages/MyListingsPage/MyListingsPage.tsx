@@ -10,7 +10,7 @@ function MyListingsPage() {
   const listings = useMyListings()
 
   return (
-    <section className="marketplace-page">
+    <section className="marketplace-page marketplace-page--my-listings">
       <GamePageHeader
         eyebrow="Личный кабинет"
         title="Мои объявления"

@@ -119,19 +119,11 @@
     }
 
     &__create {
-      width: h.rem(42px);
-      padding: 0;
-      overflow: hidden;
-      color: transparent;
-
-      &::after {
-        display: grid;
-        width: 100%;
-        color: h.$color-white;
-        content: '+';
-        font-size: h.rem(22px);
-        place-items: center;
-      }
+      width: auto;
+      padding-inline: h.rem(12px);
+      color: h.$color-white;
+      font-size: h.rem(11px);
+      white-space: nowrap;
     }
   }
 }
