@@ -1,41 +1,64 @@
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, useCallback, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 
 import GamePageHeader from '../../components/GamePageHeader/GamePageHeader'
 import ListingCard from '../../components/ListingCard/ListingCard'
 import { useAppSelector } from '../../hooks/redux'
-import { useListingCategories, useListings } from '../../hooks/useMarketplace'
+import { useInfiniteScroll } from '../../hooks/useInfiniteScroll'
+import {
+  useInfiniteListings,
+  useListingCategories,
+} from '../../hooks/useMarketplace'
 
 import '../marketplace-pages.scss'
 
-const PAGE_SIZE = 12
+const PAGE_SIZE = 20
 
 function MarketplaceCatalogPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [search, setSearch] = useState(searchParams.get('query') ?? '')
   const category = searchParams.get('category') ?? ''
-  const offset = Number(searchParams.get('offset') ?? 0)
   const query = searchParams.get('query') ?? ''
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated)
   const categories = useListingCategories()
-  const listings = useListings({ category, limit: PAGE_SIZE, offset, query })
+  const listings = useInfiniteListings({
+    category,
+    limit: PAGE_SIZE,
+    query,
+  })
+  const loadedListings = useMemo(
+    () => listings.data?.pages.flatMap((page) => page.items) ?? [],
+    [listings.data?.pages],
+  )
+  const total = listings.data?.pages[0]?.total ?? 0
 
-  const updateFilters = (next: {
-    category?: string
-    offset?: number
-    query?: string
-  }) => {
+  const loadNextPage = useCallback(() => {
+    if (listings.hasNextPage && !listings.isFetchingNextPage) {
+      void listings.fetchNextPage()
+    }
+  }, [listings])
+  const loadMoreRef = useInfiniteScroll({
+    enabled: Boolean(
+      listings.hasNextPage &&
+      !listings.isFetchingNextPage &&
+      !listings.isFetchNextPageError,
+    ),
+    onLoadMore: loadNextPage,
+  })
+
+  const updateFilters = (next: { category?: string; query?: string }) => {
     const params = new URLSearchParams(searchParams)
+    params.delete('offset')
     Object.entries(next).forEach(([key, value]) => {
-      if (value === '' || value === undefined || value === 0) params.delete(key)
-      else params.set(key, String(value))
+      if (value === '' || value === undefined) params.delete(key)
+      else params.set(key, value)
     })
     setSearchParams(params)
   }
 
   const submitSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    updateFilters({ offset: 0, query: search.trim() })
+    updateFilters({ query: search.trim() })
   }
 
   return (
@@ -59,8 +82,8 @@ function MarketplaceCatalogPage() {
           <strong>Зачем здесь питомец</strong>
           <p>
             Полезные действия с объявлениями двигают задания, развивают характер
-            Авитоши и открывают предметы комнаты. Игровой результат рассчитывает
-            backend.
+            Авитоши и открывают предметы комнаты. Результат появится в игровом
+            кабинете автоматически.
           </p>
         </div>
       </aside>
@@ -80,7 +103,7 @@ function MarketplaceCatalogPage() {
         <button
           className={category ? '' : 'is-active'}
           type="button"
-          onClick={() => updateFilters({ category: '', offset: 0 })}
+          onClick={() => updateFilters({ category: '' })}
         >
           Все
         </button>
@@ -89,7 +112,7 @@ function MarketplaceCatalogPage() {
             className={category === item.code ? 'is-active' : ''}
             type="button"
             key={item.code}
-            onClick={() => updateFilters({ category: item.code, offset: 0 })}
+            onClick={() => updateFilters({ category: item.code })}
           >
             {item.name}
           </button>
@@ -105,38 +128,37 @@ function MarketplaceCatalogPage() {
             Повторить
           </button>
         </div>
-      ) : listings.data.items.length === 0 ? (
+      ) : loadedListings.length === 0 ? (
         <div className="marketplace-state">
           По вашему запросу ничего не найдено.
         </div>
       ) : (
         <>
           <div className="listing-grid">
-            {listings.data.items.map((listing) => (
+            {loadedListings.map((listing) => (
               <ListingCard listing={listing} key={listing.id} />
             ))}
           </div>
-          <div className="marketplace-pagination">
-            <button
-              type="button"
-              disabled={offset === 0}
-              onClick={() =>
-                updateFilters({ offset: Math.max(0, offset - PAGE_SIZE) })
-              }
-            >
-              ← Назад
-            </button>
-            <span>
-              {offset + 1}–{Math.min(offset + PAGE_SIZE, listings.data.total)}{' '}
-              из {listings.data.total}
-            </span>
-            <button
-              type="button"
-              disabled={offset + PAGE_SIZE >= listings.data.total}
-              onClick={() => updateFilters({ offset: offset + PAGE_SIZE })}
-            >
-              Далее →
-            </button>
+
+          <div className="marketplace-load-more" ref={loadMoreRef}>
+            {listings.isFetchingNextPage ? (
+              <span>Загружаем ещё объявления…</span>
+            ) : listings.isFetchNextPageError ? (
+              <>
+                <span>Не удалось загрузить следующую страницу.</span>
+                <button type="button" onClick={loadNextPage}>
+                  Повторить
+                </button>
+              </>
+            ) : listings.hasNextPage ? (
+              <button type="button" onClick={loadNextPage}>
+                Показать ещё
+              </button>
+            ) : (
+              <span>
+                Показано {Math.min(loadedListings.length, total)} из {total}
+              </span>
+            )}
           </div>
         </>
       )}

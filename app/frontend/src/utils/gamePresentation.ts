@@ -186,9 +186,13 @@ export const getGameEventMessage = (events: GameEvent[]) => {
       case 'STREAK_UPDATED':
         messages.push({
           priority: 45,
-          text: event.reset
-            ? 'Серия дней началась заново'
-            : `Серия: ${event.current} дней подряд`,
+          text: event.protectionEarned
+            ? `Серия: ${event.current} дней · получен щит`
+            : event.protectionUsed
+              ? `Серия сохранена щитом: ${event.current} дней`
+              : event.reset
+                ? 'Серия дней началась заново'
+                : `Серия: ${event.current} дней подряд`,
         })
         break
       case 'STORY_STAGE_COMPLETED':

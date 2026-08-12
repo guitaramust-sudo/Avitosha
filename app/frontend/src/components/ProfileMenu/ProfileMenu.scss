@@ -71,6 +71,12 @@
   }
 }
 
+.game-navigation__profile .profile-menu__popup {
+  top: auto;
+  right: 0;
+  bottom: calc(100% + h.rem(10px));
+}
+
 @include h.mobile-small {
   .profile-menu {
     &__trigger {

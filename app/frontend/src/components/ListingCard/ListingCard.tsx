@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { type ReactNode, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import type { Listing } from '../../types/marketplace'
@@ -21,6 +21,7 @@ function ListingCard({
   showStatus = false,
 }: ListingCardProps) {
   const photo = listing.photoUrls[0]
+  const [hasImageError, setHasImageError] = useState(false)
   const listingUrl = showStatus
     ? `/marketplace/listings/${listing.id}/edit`
     : `/marketplace/listings/${listing.id}`
@@ -28,10 +29,17 @@ function ListingCard({
   return (
     <article className="listing-card">
       <Link className="listing-card__image" to={listingUrl}>
-        {photo ? (
-          <img src={photo} alt="" loading="lazy" />
+        {photo && !hasImageError ? (
+          <img
+            src={photo}
+            alt=""
+            loading="lazy"
+            onError={() => setHasImageError(true)}
+          />
         ) : (
-          <span aria-hidden="true">Фото появится здесь</span>
+          <span className="listing-card__image-error">
+            Изображение недоступно
+          </span>
         )}
       </Link>
       <div className="listing-card__body">

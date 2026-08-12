@@ -8,7 +8,7 @@ function LeaderboardPage() {
     <section className="game-section-page">
       <GamePageHeader
         eyebrow="Недельная активность"
-        title="Лидерборд"
+        title="Таблица лидеров"
         description="Сравнивайте полезную активность: рейтинг зависит от прогресса, заданий и этапов истории, а не от потраченных денег."
       />
       <ProgressOverview view="leaderboard" />

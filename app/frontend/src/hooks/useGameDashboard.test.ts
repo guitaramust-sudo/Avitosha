@@ -8,7 +8,7 @@ import {
 } from './useGameDashboard'
 
 describe('invalidateGameQueriesForEvents', () => {
-  it('refreshes wallet and retention data for the new realtime events', async () => {
+  it('refreshes daily, pet, wallet and leaderboard data for daily events', async () => {
     const queryClient = new QueryClient()
     const invalidateQueries = vi
       .spyOn(queryClient, 'invalidateQueries')
@@ -44,6 +44,12 @@ describe('invalidateGameQueriesForEvents', () => {
     })
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: gameQueryKeys.wallet('user-id'),
+    })
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: gameQueryKeys.pet('user-id'),
+    })
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: gameQueryKeys.leaderboard('user-id'),
     })
   })
 

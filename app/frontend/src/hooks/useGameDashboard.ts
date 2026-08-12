@@ -168,6 +168,9 @@ export const invalidateGameQueriesForEvents = async (
       case 'BALANCED_DAY_COMPLETED':
       case 'STREAK_UPDATED':
         affectedQueries.add('daily')
+        affectedQueries.add('pet')
+        affectedQueries.add('wallet')
+        affectedQueries.add('leaderboard')
         break
       case 'DELIVERY_USED':
       case 'LISTING_FAVORITED':

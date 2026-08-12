@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 import { useCallback } from 'react'
 
 import {
@@ -53,6 +58,27 @@ export const useListings = (filters: ListingFilters) =>
   useQuery({
     queryKey: marketplaceQueryKeys.catalog(filters),
     queryFn: () => getListings(filters),
+  })
+
+export const getNextListingsOffset = (lastPage: {
+  items: unknown[]
+  offset: number
+  total: number
+}) => {
+  const nextOffset = lastPage.offset + lastPage.items.length
+  return lastPage.items.length > 0 && nextOffset < lastPage.total
+    ? nextOffset
+    : undefined
+}
+
+export const useInfiniteListings = (filters: Omit<ListingFilters, 'offset'>) =>
+  useInfiniteQuery({
+    queryKey: marketplaceQueryKeys.catalog(filters),
+    queryFn: ({ pageParam }) => getListings({ ...filters, offset: pageParam }),
+    initialPageParam: 0,
+    getNextPageParam: getNextListingsOffset,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
   })
 
 export const useListing = (listingId: string | undefined) =>
