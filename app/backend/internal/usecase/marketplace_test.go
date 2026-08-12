@@ -37,7 +37,13 @@ func TestValidateListingInput(t *testing.T) {
 	if err := validateListingInput("FURNITURE", "Lamp", "", 1, []string{"https://example.test/photo.jpg"}); err != nil {
 		t.Fatalf("valid input: %v", err)
 	}
+	if err := validateListingInput("FURNITURE", "Lamp", "", 1, []string{"/storage/avitosha-photos/listing-photos/user/photo.jpg"}); err != nil {
+		t.Fatalf("valid MinIO photo URL: %v", err)
+	}
 	if err := validateListingInput("FURNITURE", "Lamp", "", 1, []string{"not-a-url"}); err == nil {
 		t.Fatal("invalid photo URL was accepted")
+	}
+	if err := validateListingInput("FURNITURE", "Lamp", "", 1, []string{"/api/v1/me"}); err == nil {
+		t.Fatal("non-storage relative URL was accepted")
 	}
 }

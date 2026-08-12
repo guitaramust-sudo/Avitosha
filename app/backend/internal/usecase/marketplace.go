@@ -311,16 +311,12 @@ func (s *MarketplaceService) ContactSeller(ctx context.Context, userID, listingI
 }
 
 func (s *MarketplaceService) ListMessages(ctx context.Context, userID, listingID uuid.UUID) ([]model.ListingMessage, error) {
-	listing, err := s.repository.GetListingForUpdate(ctx, listingID)
-	if err != nil {
+	if _, err := s.repository.GetListingForUpdate(ctx, listingID); err != nil {
 		return nil, err
 	}
 	items, err := s.repository.ListListingMessages(ctx, userID, listingID)
 	if err != nil {
 		return nil, err
-	}
-	if listing.OwnerID != userID && len(items) == 0 {
-		return nil, ErrListingForbidden
 	}
 	return items, nil
 }
@@ -740,8 +736,11 @@ func validateListingInput(category, title, description string, price int64, phot
 		return ErrInvalidListingInput
 	}
 	for _, photo := range photos {
-		parsed, err := url.ParseRequestURI(strings.TrimSpace(photo))
-		if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		value := strings.TrimSpace(photo)
+		parsed, err := url.ParseRequestURI(value)
+		isAbsoluteHTTP := err == nil && parsed.Host != "" && (parsed.Scheme == "http" || parsed.Scheme == "https")
+		isLocalStorage := err == nil && parsed.Scheme == "" && parsed.Host == "" && strings.HasPrefix(parsed.Path, "/storage/avitosha-photos/")
+		if !isAbsoluteHTTP && !isLocalStorage {
 			return ErrInvalidListingInput
 		}
 	}

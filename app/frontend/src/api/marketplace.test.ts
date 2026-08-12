@@ -18,6 +18,13 @@ const jsonResponse = (body: unknown, status = 200) =>
     status,
   }) as unknown as Response
 
+const storageErrorResponse = (code: string, status: number) =>
+  ({
+    ok: false,
+    status,
+    text: vi.fn().mockResolvedValue(`<Error><Code>${code}</Code></Error>`),
+  }) as unknown as Response
+
 afterEach(() => {
   vi.unstubAllGlobals()
 })
@@ -156,5 +163,29 @@ describe('marketplace API', () => {
       'file',
     ])
     expect(body.get('file')).toBe(file)
+  })
+
+  it('shows the MinIO error code when a signed upload is rejected', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        jsonResponse({
+          expiresAt: '2026-08-12T10:40:00Z',
+          fields: { key: 'photo.jpg' },
+          maxFileSize: 10_485_760,
+          objectKey: 'photo.jpg',
+          publicUrl: '/storage/avitosha-photos/photo.jpg',
+          url: '/storage/avitosha-photos',
+        }),
+      )
+      .mockResolvedValueOnce(storageErrorResponse('SignatureDoesNotMatch', 403))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(
+      uploadListingPhoto(
+        'access-token',
+        new File(['image'], 'photo.jpg', { type: 'image/jpeg' }),
+      ),
+    ).rejects.toThrow('SignatureDoesNotMatch')
   })
 })

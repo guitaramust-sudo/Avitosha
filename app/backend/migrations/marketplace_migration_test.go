@@ -60,3 +60,20 @@ func TestFirstRoomFurnitureSeedContainsThreeAdditionalListings(t *testing.T) {
 		}
 	}
 }
+
+func TestLegacyDemoPhotoMigrationRepairsEveryHistoricalHost(t *testing.T) {
+	up, err := os.ReadFile("000014_repair_legacy_demo_photo_urls.up.sql")
+	if err != nil {
+		t.Fatalf("read legacy photo repair migration: %v", err)
+	}
+	for _, fragment := range []string{
+		"https://images.example.test/demo/",
+		"https://storage.yandexcloud.net/avitosha-demo-images/",
+		"/storage/avitosha-photos/demo/",
+		"service-1.webp",
+	} {
+		if !strings.Contains(string(up), fragment) {
+			t.Errorf("legacy photo repair migration missing %q", fragment)
+		}
+	}
+}

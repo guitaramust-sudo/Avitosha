@@ -168,7 +168,8 @@ paths:
     get:
       tags: [marketplace]
       operationId: listListingMessages
-      summary: List messages for a listing participant
+      summary: List messages visible to the authenticated user
+      description: Returns an empty list when the user has not started a conversation. Existing messages remain visible only to their participants.
       security: [ { bearerAuth: [] }, { userIdHeader: [] } ]
       responses: { '200': { description: Messages, content: { application/json: { schema: { $ref: '#/components/schemas/ListingMessagesResponse' } } } } }
     post:

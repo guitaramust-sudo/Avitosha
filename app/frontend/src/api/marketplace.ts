@@ -113,10 +113,14 @@ export const uploadListingPhoto = async (accessToken: string, file: File) => {
     )
   }
   if (!response.ok) {
+    const storageError = await response.text().catch(() => '')
+    const errorCode = storageError.match(/<Code>([^<]+)<\/Code>/)?.[1]
     throw new ApiError(
       response.status,
       'unknown_error',
-      'Хранилище не приняло фотографию. Попробуйте ещё раз.',
+      errorCode
+        ? `MinIO не принял фотографию (${errorCode}). Перезапустите хранилище и попробуйте ещё раз.`
+        : 'MinIO не принял фотографию. Перезапустите хранилище и попробуйте ещё раз.',
     )
   }
 
