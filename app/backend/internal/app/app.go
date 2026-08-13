@@ -103,6 +103,7 @@ func New(ctx context.Context, cfg config.Config, logger *slog.Logger) (*App, err
 		DB:                       pool,
 		AuthService:              authService,
 		AccessTokenAuthenticator: accessTokenAuthenticator,
+		AppEnv:                  cfg.AppEnv,
 		FrontendOrigin:           cfg.FrontendOrigin,
 		RefreshTokenTTL:          cfg.RefreshTokenTTL,
 		SecureRefreshCookie:      cfg.AppEnv == config.AppEnvProd,

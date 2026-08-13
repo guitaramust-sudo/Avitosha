@@ -425,6 +425,11 @@ func (service *GameService) processAction(ctx context.Context, command ProcessAc
 			if ruleErr != nil {
 				return fmt.Errorf("get product action rule: %w", ruleErr)
 			}
+			if command.ActionType == model.ActionTypeMessageSent || command.ActionType == model.ActionTypeAdFavorited {
+				count, countErr := service.repository.CountUserActionsOnDate(txCtx, command.UserID, command.ActionType, retentionDate(command.Now), command.EventID)
+				if countErr != nil { return fmt.Errorf("count daily messages: %w", countErr) }
+				if count > 0 { rule.XPReward = 0 }
+			}
 		}
 		retentionState, _, err := service.ensureRetentionState(txCtx, command.UserID, command.Now, true)
 		if err != nil {
@@ -433,7 +438,9 @@ func (service *GameService) processAction(ctx context.Context, command ProcessAc
 		dailyActionCompleted := dailyQuestCompletedForActionOnDate(
 			retentionState.Quests, command, retentionDate(command.Now),
 		)
-		if rule.XPReward > 0 && !dailyActionCompleted {
+		// Message product XP is independently limited to one per day; it must
+		// not be suppressed merely because the daily message quest completes.
+		if rule.XPReward > 0 && (!dailyActionCompleted || command.ActionType == model.ActionTypeMessageSent || command.ActionType == model.ActionTypeAdFavorited) {
 			previousLevel := pet.Level
 			pet.GrowthXP += rule.XPReward
 			level, levelErr := CalculateLevel(pet.GrowthXP)
@@ -486,6 +493,9 @@ func (service *GameService) processAction(ctx context.Context, command ProcessAc
 				if rewardResult.StoryAdvanced {
 					weeklyDelta.CompletedStages++
 				}
+				weeklyDelta.EarnedXP += rewardResult.EarnedXP - taskProgress.Task.XPReward
+				weeklyDelta.CompletedTasks += rewardResult.CompletedTasks
+				weeklyDelta.CompletedStages += rewardResult.CompletedStages
 				if rewardResult.UnlockedItem != "" {
 					unlockedItems = append(unlockedItems, rewardResult.UnlockedItem)
 				}
@@ -649,6 +659,9 @@ type taskRewardResult struct {
 	Events        []model.DomainEvent
 	UnlockedItem  string
 	StoryAdvanced bool
+	CompletedTasks int
+	CompletedStages int
+	EarnedXP int
 }
 
 func (service *GameService) rewardCompletedTask(
@@ -660,7 +673,7 @@ func (service *GameService) rewardCompletedTask(
 	story model.UserStoryProgress,
 	now time.Time,
 ) (taskRewardResult, error) {
-	result := taskRewardResult{Progress: RewardTask(progress, now), Pet: pet, Story: story}
+	result := taskRewardResult{Progress: RewardTask(progress, now), Pet: pet, Story: story, EarnedXP: task.XPReward}
 	result.Events = append(result.Events, service.event(actionID, userID, model.DomainEventTaskCompleted, now, map[string]any{
 		"taskId": task.ID, "taskCode": task.Code, "taskTitle": task.Title,
 		"xpReward": task.XPReward, "avitoRewardAmount": task.AvitoRewardAmount,
@@ -747,10 +760,30 @@ func (service *GameService) rewardCompletedTask(
 				"storyCode": *task.StoryCode,
 			}))
 		} else {
-			if _, assignErr := service.repository.AssignStoryTask(
+			next, assignErr := service.repository.AssignStoryTask(
 				ctx, userID, *task.StoryCode, result.Story.CurrentStage+1, now,
-			); assignErr != nil {
+			)
+			if assignErr != nil {
 				return taskRewardResult{}, fmt.Errorf("assign next story task: %w", assignErr)
+			}
+			if next.Task.TargetValue == 1 {
+				count, countErr := service.repository.CountUserActions(ctx, userID, next.Task.ActionType, next.Task.Category, nil)
+				if countErr != nil { return taskRewardResult{}, fmt.Errorf("check historical story action: %w", countErr) }
+				if count > 0 {
+					next.Progress.Progress = 1
+					completedAt := now
+					next.Progress.CompletedAt = &completedAt
+					next.Progress.Status = model.TaskStatusCompleted
+					nextResult, rewardErr := service.rewardCompletedTask(ctx, actionID, userID, next.Task, next.Progress, result.Pet, result.Story, now)
+					if rewardErr != nil { return taskRewardResult{}, rewardErr }
+					result.Pet, result.Story = nextResult.Pet, nextResult.Story
+					result.Events = append(result.Events, nextResult.Events...)
+					result.UnlockedItem += nextResult.UnlockedItem
+					result.StoryAdvanced = nextResult.StoryAdvanced
+					result.CompletedTasks = 1 + nextResult.CompletedTasks
+					result.CompletedStages = nextResult.CompletedStages
+					if err := service.repository.UpdateTaskProgress(ctx, nextResult.Progress); err != nil { return taskRewardResult{}, err }
+				}
 			}
 		}
 		if err := service.repository.UpdateStoryProgress(ctx, result.Story); err != nil {

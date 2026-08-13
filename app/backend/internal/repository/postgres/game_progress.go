@@ -12,6 +12,9 @@ import (
 	"github.com/guitaramust-sudo/Avitosha/app/backend/internal/usecase"
 )
 
+const demoSellerOneID = "11111111-1111-1111-1111-111111111111"
+const demoSellerTwoID = "22222222-2222-2222-2222-222222222222"
+
 func (repository *GameRepository) UpdateWeeklyProgress(
 	ctx context.Context,
 	userID uuid.UUID,
@@ -129,10 +132,11 @@ FROM (
     FROM weekly_progress wp
     JOIN pets p ON p.user_id = wp.user_id
     WHERE wp.week_start = $1
+      AND wp.user_id NOT IN ($2::uuid, $3::uuid)
 ) ranked
 ORDER BY position
-LIMIT $2
-`, weekStart, limit)
+LIMIT $4
+`, weekStart, demoSellerOneID, demoSellerTwoID, limit)
 	if err != nil {
 		return nil, mapGameStorageError("list weekly leaders", err)
 	}
@@ -169,9 +173,10 @@ FROM (
     FROM weekly_progress wp
     JOIN pets p ON p.user_id = wp.user_id
     WHERE wp.week_start = $2
+      AND wp.user_id NOT IN ($3::uuid, $4::uuid)
 ) ranked
 WHERE user_id = $1
-`, userID, weekStart).Scan(
+`, userID, weekStart, demoSellerOneID, demoSellerTwoID).Scan(
 		&entry.Position, &entry.UserID, &entry.PetName, &entry.Level,
 		&entry.Score, &entry.CompletedTasks,
 	)

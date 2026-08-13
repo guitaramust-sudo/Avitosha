@@ -543,8 +543,12 @@ func (s *MarketplaceService) PurchaseWithGame(ctx context.Context, command Purch
 			return MarketplaceActionResult{}, nil, err
 		}
 		id, category := listing.ID.String(), listing.CategoryCode
-		// A sale is a seller action. The buyer can separately receive credit for delivery.
-		action := &ProcessActionCommand{UserID: listing.OwnerID, EventID: command.EventID, ActionType: model.ActionTypeListingSold, EntityID: &id, Category: &category, Metadata: json.RawMessage(`{"source":"marketplace.purchase"}`), OccurredAt: command.Now, Now: command.Now}
+		// Demo listings are fixtures, not real seller activity. The buyer can
+		// still receive credit for delivery below.
+		var action *ProcessActionCommand
+		if !listing.IsDemo {
+			action = &ProcessActionCommand{UserID: listing.OwnerID, EventID: command.EventID, ActionType: model.ActionTypeListingSold, EntityID: &id, Category: &category, Metadata: json.RawMessage(`{"source":"marketplace.purchase"}`), OccurredAt: command.Now, Now: command.Now}
+		}
 		return MarketplaceActionResult{Listing: &listing, Deal: &deal}, action, nil
 	})
 }
@@ -717,6 +721,16 @@ func (s *MarketplaceService) product(ctx context.Context, userID, listingID, eve
 				}
 				publish = append(publish, publishedAction{userID: delivery.UserID, result: deliveryResult})
 			}
+		} else if operation == "PURCHASE" && result.Deal != nil && result.Deal.DeliveryUsed {
+			derived := uuid.NewSHA1(eventID, []byte("DELIVERY_USED"))
+			listingIDString := listingID.String()
+			delivery := ProcessActionCommand{UserID: userID, EventID: derived, ActionType: model.ActionTypeDeliveryUsed, EntityID: &listingIDString, Metadata: json.RawMessage(`{"source":"marketplace.purchase.delivery"}`), OccurredAt: now, Now: now}
+			deliveryResult, err := s.game.ProcessActionWithinTx(txCtx, delivery)
+			if err != nil {
+				return err
+			}
+			result.ActionResult = &deliveryResult
+			publish = append(publish, publishedAction{userID: userID, result: deliveryResult})
 		}
 		raw, err := json.Marshal(result)
 		if err != nil {

@@ -66,7 +66,7 @@ func NewGateway(cfg config.Config, logger *slog.Logger) (*GatewayApp, error) {
 		return nil, fmt.Errorf("create photo upload service: %w", err)
 	}
 	router := handler.NewRouter(handler.RouterDependencies{
-		Logger: logger, DB: ready, AuthService: auth, AccessTokenAuthenticator: auth,
+		Logger: logger, DB: ready, AuthService: auth, AccessTokenAuthenticator: auth, AppEnv: cfg.AppEnv,
 		FrontendOrigin: cfg.FrontendOrigin, RefreshTokenTTL: cfg.RefreshTokenTTL,
 		SecureRefreshCookie: cfg.AppEnv == config.AppEnvProd, GameService: game, MarketplaceService: game, EventHub: game,
 		PhotoUploadService: photoUploads,
