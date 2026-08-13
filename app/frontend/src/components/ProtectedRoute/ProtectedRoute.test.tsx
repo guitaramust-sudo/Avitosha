@@ -26,7 +26,7 @@ const renderRoutes = (authenticated: boolean) => {
           <Route Component={ProtectedRoute}>
             <Route path="/" element={<span>Главная</span>} />
           </Route>
-          <Route path="/register" element={<span>Регистрация</span>} />
+          <Route path="/marketplace" element={<span>Гостевая</span>} />
         </Routes>
       </MemoryRouter>
     </Provider>,
@@ -40,10 +40,10 @@ describe('ProtectedRoute', () => {
     expect(screen.getByText('Главная')).toBeInTheDocument()
   })
 
-  it('redirects an unauthenticated user to register', async () => {
+  it('redirects an unauthenticated user to the guest landing page', async () => {
     renderRoutes(false)
 
-    expect(await screen.findByText('Регистрация')).toBeInTheDocument()
+    expect(await screen.findByText('Гостевая')).toBeInTheDocument()
     expect(screen.queryByText('Главная')).not.toBeInTheDocument()
   })
 })

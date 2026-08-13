@@ -53,8 +53,7 @@ function MarketplaceLayout() {
             </NavLink>
           )}
           <NavLink
-            end
-            to="/marketplace"
+            to="/marketplace/listings"
             onClick={() => setIsMobileMenuOpen(false)}
           >
             Объявления
@@ -147,8 +146,7 @@ function MarketplaceLayout() {
             </NavLink>
           )}
           <NavLink
-            end
-            to="/marketplace"
+            to="/marketplace/listings"
             onClick={() => setIsMobileMenuOpen(false)}
           >
             Объявления

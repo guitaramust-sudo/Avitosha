@@ -21,8 +21,13 @@ const getQuestPath = (actionType: string, category: string | null) => {
   const params = new URLSearchParams()
   if (category) params.set('category', category)
   const search = params.toString()
-  return `/marketplace${search ? `?${search}` : ''}`
+  return `/marketplace/listings${search ? `?${search}` : ''}`
 }
+
+const getQuestDescription = (actionType: string, description: string) =>
+  actionType === 'LISTING_IMPROVED'
+    ? 'Выполните одну из рекомендаций: напишите описание от 150 символов, добавьте хотя бы одну фотографию или укажите цену больше нуля.'
+    : description
 
 function RetentionPanel() {
   const daily = useAppSelector(selectGameDaily)
@@ -82,7 +87,9 @@ function RetentionPanel() {
                   <strong>+{quest.xpReward} XP</strong>
                 </div>
                 <h3>{quest.title}</h3>
-                <p>{quest.description}</p>
+                <p>
+                  {getQuestDescription(quest.actionType, quest.description)}
+                </p>
                 <span
                   className="daily-quest__progress"
                   role="progressbar"

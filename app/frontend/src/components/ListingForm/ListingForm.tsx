@@ -191,8 +191,8 @@ function ListingForm({
           placeholder="Подробно расскажите о состоянии, особенностях и условиях передачи"
         />
         <small>
-          {description.trim().length}/{LISTING_DESCRIPTION_MIN_LENGTH} символов
-          для публикации
+          Набрано {description.trim().length}/{LISTING_DESCRIPTION_MIN_LENGTH}{' '}
+          символов. Это не обязательно, но рекомендуем подробнее описать товар.
         </small>
       </label>
 

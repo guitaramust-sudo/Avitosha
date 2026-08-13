@@ -1,9 +1,10 @@
-import { Navigate, Outlet } from 'react-router-dom'
+import { Navigate, Outlet, useLocation } from 'react-router-dom'
 
 import { useAppSelector } from '../../hooks/redux'
 import AuthRouteLoader from '../AuthRouteLoader/AuthRouteLoader'
 
 function ProtectedRoute() {
+  const { pathname } = useLocation()
   const { isAuthenticated, isAuthInitialized } = useAppSelector(
     (state) => state.auth,
   )
@@ -12,7 +13,11 @@ function ProtectedRoute() {
     return <AuthRouteLoader />
   }
 
-  return isAuthenticated ? <Outlet /> : <Navigate to="/register" replace />
+  if (isAuthenticated) return <Outlet />
+
+  return (
+    <Navigate replace to={pathname === '/' ? '/marketplace' : '/register'} />
+  )
 }
 
 export default ProtectedRoute

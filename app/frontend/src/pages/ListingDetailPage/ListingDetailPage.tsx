@@ -116,7 +116,7 @@ function ListingDetailPage() {
     return (
       <div className="marketplace-state marketplace-state--error">
         Объявление не найдено или больше недоступно.
-        <Link to="/marketplace">Вернуться в каталог</Link>
+        <Link to="/marketplace/listings">Вернуться в каталог</Link>
       </div>
     )
   }
@@ -124,7 +124,7 @@ function ListingDetailPage() {
   return (
     <section className="listing-detail">
       <div className="listing-detail__breadcrumbs">
-        <Link to="/marketplace">Объявления</Link>
+        <Link to="/marketplace/listings">Объявления</Link>
         <span>›</span>
         <span>{listing.title}</span>
       </div>
@@ -266,7 +266,7 @@ function ListingDetailPage() {
         )}
 
       <div className="listing-detail__footer-actions">
-        <Link to="/marketplace">К объявлениям</Link>
+        <Link to="/marketplace/listings">К объявлениям</Link>
       </div>
     </section>
   )

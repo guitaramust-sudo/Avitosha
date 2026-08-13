@@ -65,7 +65,7 @@ export const router = createBrowserRouter([
             index: true,
             lazy: async () => ({
               Component: (
-                await import('./pages/MarketplaceCatalogPage/MarketplaceCatalogPage')
+                await import('./pages/MarketplaceIndexPage/MarketplaceIndexPage')
               ).default,
             }),
           },
@@ -74,6 +74,14 @@ export const router = createBrowserRouter([
             lazy: async () => ({
               Component: (
                 await import('./pages/MarketplaceWelcomePage/MarketplaceWelcomePage')
+              ).default,
+            }),
+          },
+          {
+            path: 'listings',
+            lazy: async () => ({
+              Component: (
+                await import('./pages/MarketplaceCatalogPage/MarketplaceCatalogPage')
               ).default,
             }),
           },

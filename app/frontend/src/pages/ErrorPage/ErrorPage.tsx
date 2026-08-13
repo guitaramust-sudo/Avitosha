@@ -19,7 +19,10 @@ function ErrorPage() {
             <Link className="error-page__primary-action" to="/">
               Вернуться к Авитоше
             </Link>
-            <Link className="error-page__secondary-action" to="/marketplace">
+            <Link
+              className="error-page__secondary-action"
+              to="/marketplace/listings"
+            >
               Посмотреть объявления
             </Link>
           </div>

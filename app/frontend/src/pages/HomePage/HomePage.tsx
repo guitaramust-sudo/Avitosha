@@ -29,7 +29,7 @@ function HomePage() {
         description="Развивайте питомца полезными действиями на Авито и создавайте его личное пространство."
         action={
           <Link className="home-page__primary-action" to="/progress">
-            Открыть задания <span aria-hidden="true">→</span>
+            Открыть задания
           </Link>
         }
       />

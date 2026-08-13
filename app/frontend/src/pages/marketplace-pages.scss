@@ -455,6 +455,8 @@
   }
 
   &__visual {
+    --orbit-radius: min(18vw, #{h.rem(190px)});
+
     position: relative;
     display: grid;
     width: min(100%, h.rem(520px));
@@ -472,10 +474,13 @@
       width: 48%;
       height: 48%;
       object-fit: contain;
+      z-index: 1;
     }
 
     span {
       position: absolute;
+      top: calc(50% - #{h.rem(38px)});
+      left: calc(50% - #{h.rem(52px)});
       display: grid;
       width: h.rem(104px);
       height: h.rem(76px);
@@ -485,25 +490,37 @@
       box-shadow: h.$shadow-card;
       font-size: h.rem(28px);
       font-weight: h.$font-weight-extrabold;
+      animation: marketplace-welcome-orbit 12s linear infinite;
     }
 
     span:nth-of-type(1) {
-      top: 12%;
-      left: 0;
       color: h.$color-danger;
-      transform: rotate(-8deg);
+      animation-delay: 0s;
     }
     span:nth-of-type(2) {
-      top: 14%;
-      right: 0;
       color: h.$color-success;
-      transform: rotate(8deg);
+      animation-delay: -4s;
     }
     span:nth-of-type(3) {
-      right: 5%;
-      bottom: 10%;
       color: h.$color-primary;
+      animation-delay: -8s;
     }
+  }
+}
+
+@keyframes marketplace-welcome-orbit {
+  from {
+    transform: rotate(0turn) translateX(var(--orbit-radius)) rotate(0turn);
+  }
+
+  to {
+    transform: rotate(1turn) translateX(var(--orbit-radius)) rotate(-1turn);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marketplace-welcome__visual span {
+    animation-play-state: paused;
   }
 }
 

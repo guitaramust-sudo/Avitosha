@@ -87,7 +87,7 @@ function AchievementsPanel({ view = 'all' }: AchievementsPanelProps) {
                       void navigate(
                         activeTask.actionType === 'AD_CREATED'
                           ? '/marketplace/new'
-                          : `/marketplace?category=${encodeURIComponent(activeTask.category ?? 'FURNITURE')}`,
+                          : `/marketplace/listings?category=${encodeURIComponent(activeTask.category ?? 'FURNITURE')}`,
                       )
                     }
                   >

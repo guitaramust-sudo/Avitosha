@@ -1,10 +1,13 @@
 import { Link } from 'react-router-dom'
 
+import { useAppSelector } from '../../hooks/redux'
 import { iconAssets } from '../../utils/iconAssets'
 
 import '../marketplace-pages.scss'
 
 function MarketplaceWelcomePage() {
+  const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated)
+
   return (
     <section className="marketplace-welcome">
       <div>
@@ -15,9 +18,17 @@ function MarketplaceWelcomePage() {
           Авитоша будет расти, менять характер и обустраивать комнату вместе с
           вашей активностью.
         </p>
-        <div>
-          <Link className="marketplace-button" to="/marketplace">
-            Смотреть объявления
+        <div className="marketplace-welcome__actions">
+          {!isAuthenticated && (
+            <Link className="marketplace-button" to="/register">
+              Завести питомца
+            </Link>
+          )}
+          <Link
+            className={`marketplace-button ${isAuthenticated ? '' : 'marketplace-button--muted'}`}
+            to="/marketplace/listings"
+          >
+            {isAuthenticated ? 'Смотреть объявления' : 'К объявлениям'}
           </Link>
         </div>
       </div>

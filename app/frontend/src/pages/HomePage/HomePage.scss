@@ -7,8 +7,10 @@
   &__primary-action {
     display: inline-flex;
     min-height: h.rem(46px);
+    min-width: h.rem(190px);
     flex: 0 0 auto;
     align-items: center;
+    justify-content: center !important;
     gap: h.rem(10px);
     padding: 0 h.rem(20px);
     border-radius: h.$radius-medium;
@@ -17,6 +19,7 @@
     box-shadow: 0 h.rem(10px) h.rem(24px) rgb(0 170 255 / 22%);
     font-size: h.rem(13px);
     font-weight: h.$font-weight-bold;
+    text-align: center;
     text-decoration: none;
   }
 
@@ -80,6 +83,10 @@
     &__room {
       padding: h.rem(5px);
       border-radius: h.$radius-large;
+    }
+
+    &__primary-action {
+      width: 100%;
     }
   }
 }
