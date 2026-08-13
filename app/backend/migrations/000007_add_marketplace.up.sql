@@ -119,6 +119,18 @@ INSERT INTO listings (
     ('10000000-0000-0000-0000-000000000004', '22222222-2222-2222-2222-222222222222', 'SERVICES',
      'Помогу собрать мебель', 'Соберу стол, стеллаж или кресло, привезу базовый набор инструментов и подскажу по уходу.', 150000, 'PUBLISHED', TRUE, NOW() - INTERVAL '12 hours', NOW() - INTERVAL '1 day', NOW());
 
+INSERT INTO listings (
+    id, owner_id, category_code, title, description, price_kopecks, status, is_demo, published_at, created_at, updated_at
+) VALUES
+    ('10000000-0000-0000-0000-000000000008', '11111111-1111-1111-1111-111111111111', 'AUTO',
+     'Toyota Camry 2015', 'Надёжный седан Toyota Camry 2015 года. Автомобиль в хорошем состоянии, комфортный салон, автоматическая коробка передач и уверенная динамика для города и трассы. Все подробности расскажу по телефону.', 150000000, 'PUBLISHED', TRUE, NOW() - INTERVAL '6 hours', NOW() - INTERVAL '1 day', NOW()),
+    ('10000000-0000-0000-0000-000000000009', '22222222-2222-2222-2222-222222222222', 'AUTO',
+     'Mitsubishi ASX 2012', 'Компактный кроссовер Mitsubishi ASX 2012 года. Практичный автомобиль для города и поездок за город, удобная посадка, экономичный двигатель и вместительный багажник. Состояние и комплектацию уточняйте по телефону.', 108000000, 'PUBLISHED', TRUE, NOW() - INTERVAL '5 hours', NOW() - INTERVAL '1 day', NOW()),
+    ('10000000-0000-0000-0000-000000000010', '11111111-1111-1111-1111-111111111111', 'TRAVEL',
+     'Горящие туры на выходные', 'Подберём горящий тур на ближайшие выходные с вылетом из вашего города. В стоимость входит размещение и базовая программа отдыха, варианты направлений и актуальные даты уточняйте при обращении.', 2000000, 'PUBLISHED', TRUE, NOW() - INTERVAL '4 hours', NOW() - INTERVAL '1 day', NOW()),
+    ('10000000-0000-0000-0000-000000000011', '22222222-2222-2222-2222-222222222222', 'REAL_ESTATE',
+     'Квартира, 2 комнаты, 48 м²', 'Двухкомнатная квартира площадью 48 м² в новострое. Квартира без мебели, чистовая отделка и удобная планировка. Все подробности по звонку.', 600000000, 'PUBLISHED', TRUE, NOW() - INTERVAL '3 hours', NOW() - INTERVAL '1 day', NOW());
+
 INSERT INTO listing_photos (listing_id, url, sort_order) VALUES
     ('10000000-0000-0000-0000-000000000001', 'https://storage.yandexcloud.net/avitosha-demo-images/lamp-1.jpg', 0),
     ('10000000-0000-0000-0000-000000000001', 'https://storage.yandexcloud.net/avitosha-demo-images/lamp-2.jpg', 1),
@@ -130,4 +142,14 @@ INSERT INTO listing_photos (listing_id, url, sort_order) VALUES
     ('10000000-0000-0000-0000-000000000003', 'https://storage.yandexcloud.net/avitosha-demo-images/headphones-2.jpg', 1),
     ('10000000-0000-0000-0000-000000000003', 'https://storage.yandexcloud.net/avitosha-demo-images/headphones-3.jpg', 2),
     ('10000000-0000-0000-0000-000000000004', 'https://storage.yandexcloud.net/avitosha-demo-images/service-1.webp', 0),
-    ('10000000-0000-0000-0000-000000000004', 'https://storage.yandexcloud.net/avitosha-demo-images/service-2.webp', 1);
+    ('10000000-0000-0000-0000-000000000004', 'https://storage.yandexcloud.net/avitosha-demo-images/service-2.webp', 1),
+    ('10000000-0000-0000-0000-000000000008', 'https://storage.yandexcloud.net/avitosha-demo-images/camry-1.jpg', 0),
+    ('10000000-0000-0000-0000-000000000008', 'https://storage.yandexcloud.net/avitosha-demo-images/camry-2.jpg', 1),
+    ('10000000-0000-0000-0000-000000000008', 'https://storage.yandexcloud.net/avitosha-demo-images/camry-3.jpg', 2),
+    ('10000000-0000-0000-0000-000000000009', 'https://storage.yandexcloud.net/avitosha-demo-images/mits-1.jpg', 0),
+    ('10000000-0000-0000-0000-000000000009', 'https://storage.yandexcloud.net/avitosha-demo-images/mits-2.jpg', 1),
+    ('10000000-0000-0000-0000-000000000009', 'https://storage.yandexcloud.net/avitosha-demo-images/mits-3.jpg', 2),
+    ('10000000-0000-0000-0000-000000000010', 'https://storage.yandexcloud.net/avitosha-demo-images/travel-1.png', 0),
+    ('10000000-0000-0000-0000-000000000010', 'https://storage.yandexcloud.net/avitosha-demo-images/travel-2.jpg', 1),
+    ('10000000-0000-0000-0000-000000000011', 'https://storage.yandexcloud.net/avitosha-demo-images/flat-1.jpg', 0),
+    ('10000000-0000-0000-0000-000000000011', 'https://storage.yandexcloud.net/avitosha-demo-images/flat-2.jpg', 1);

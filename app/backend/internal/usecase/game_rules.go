@@ -11,6 +11,7 @@ const (
 	FirstRoomStoryCode      = "FIRST_ROOM"
 	InitialRoomItemCode     = "BOX"
 	CharacterUnlockTarget   = 5
+	ExplorerAchievementTarget = 5
 	DefaultLeaderboardLimit = 10
 )
 
