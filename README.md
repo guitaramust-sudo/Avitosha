@@ -139,6 +139,59 @@ React dashboard
 
 Сервисы используют unary gRPC для команд и запросов, стандартный gRPC Health Checking Protocol для readiness и server streaming для realtime. Deadline HTTP-запроса автоматически передаётся downstream через `context.Context`. Подробные границы, модель отказов и план дальнейшей изоляции данных описаны в [`docs/avitosha-v2-audit.md`](docs/avitosha-v2-audit.md).
 
+### Диаграммы архитектуры и ключевых сценариев
+
+<p align="center">
+  <img src="docs/diagrams/architecture.png" alt="Общая архитектура Авитоши" width="100%" />
+</p>
+
+<details>
+<summary><strong>Авторизация и безопасное обновление сессии</strong></summary>
+
+<p align="center">
+  <img src="docs/diagrams/auth-session-sequence.png" alt="Sequence-диаграмма авторизации и обновления сессии" width="100%" />
+</p>
+
+</details>
+
+<details>
+<summary><strong>Ежедневные задания и награды</strong></summary>
+
+<p align="center">
+  <img src="docs/diagrams/daily-quests-sequence.png" alt="Sequence-диаграмма ежедневных заданий и наград" width="100%" />
+</p>
+
+</details>
+
+<details>
+<summary><strong>Блок-схема обработки ежедневного задания</strong></summary>
+
+<p align="center">
+  <img src="docs/diagrams/daily-quest-flowchart.png" alt="Блок-схема обработки ежедневного задания" width="640" />
+</p>
+
+</details>
+
+<details>
+<summary><strong>Загрузка фотографии объявления в MinIO</strong></summary>
+
+<p align="center">
+  <img src="docs/diagrams/minio-photo-upload-sequence.png" alt="Sequence-диаграмма загрузки фотографии в MinIO" width="100%" />
+</p>
+
+</details>
+
+<details>
+<summary><strong>Production-деплой</strong></summary>
+
+<p align="center">
+  <img src="docs/diagrams/production-deployment.png" alt="Диаграмма production-деплоя Авитоши" width="900" />
+</p>
+
+</details>
+
+Исходники всех схем в Mermaid и рекомендации по их использованию на защите находятся в [`docs/diagrams.md`](docs/diagrams.md).
+
 После изменения protobuf сгенерируйте stubs и проверьте контракт:
 
 ```bash
@@ -357,6 +410,7 @@ Hub хранится в памяти процесса, имеет огранич
 | Frontend            | [Документация React-приложения](app/frontend/README.md)  |
 | Backend             | [Исходный код сервисов](app/backend)                     |
 | OpenAPI             | [HTTP-контракт](app/backend/api/openapi.yaml)            |
+| Диаграммы           | [Архитектура и ключевые сценарии](docs/diagrams.md)      |
 | AI-советы           | [Интеграция ProxyAPI](docs/ai-advice.md)                 |
 | Загрузка фотографий | [MinIO Object Storage](docs/frontend-photo-uploads.md)    |
 | Архитектурный аудит | [Avitosha v2](docs/avitosha-v2-audit.md)                 |
