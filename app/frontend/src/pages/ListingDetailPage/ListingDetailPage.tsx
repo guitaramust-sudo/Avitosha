@@ -233,7 +233,9 @@ function ListingDetailPage() {
               )}
               {purchaseCompleted && (
                 <p className="listing-purchase__success">
-                  Вы уже купили этот товар
+                  {listing.isDemo
+                    ? 'Вы уже купили этот demo-товар'
+                    : 'Вы уже купили этот товар'}
                 </p>
               )}
             </>

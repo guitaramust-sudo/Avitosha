@@ -72,6 +72,9 @@ describe('marketplace API', () => {
         }),
       }),
     )
+    expect(fetchMock.mock.calls[0]?.[1]?.headers).not.toHaveProperty(
+      'X-User-ID',
+    )
   })
 
   it.each([

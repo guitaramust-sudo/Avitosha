@@ -129,6 +129,32 @@ function ProgressOverview({ view = 'all' }: ProgressOverviewProps) {
               {leaderboard.currentUser.level} · заданий{' '}
               {leaderboard.currentUser.completedTasks}
             </p>
+            <details className="leaderboard-card__score-help">
+              <summary>Как считается рейтинг?</summary>
+              <div>
+                <strong>Рейтинг за неделю</strong>
+                <p>XP, заработанный за эту неделю</p>
+                <p>+ 20 очков за каждую выполненную задачу</p>
+                <p>+ 50 очков за каждый пройденный этап истории</p>
+                <dl>
+                  <div>
+                    <dt>Выполнено задач</dt>
+                    <dd>
+                      {leaderboard.currentUser.completedTasks} → +
+                      {leaderboard.currentUser.completedTasks * 20}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Итоговый рейтинг</dt>
+                    <dd>{leaderboard.currentUser.score}</dd>
+                  </div>
+                </dl>
+                <small>
+                  Это недельный рейтинг, а не общий XP питомца, поэтому значения
+                  могут отличаться.
+                </small>
+              </div>
+            </details>
             <ol>
               {topLeaders.map((leader) => (
                 <li

@@ -234,9 +234,6 @@ export const getGameEventMessage = (events: GameEvent[]) => {
           text: `Рейтинг: ${event.delta >= 0 ? '+' : ''}${event.delta} очков`,
         })
         break
-      case 'LISTING_VIEWED':
-        messages.push({ priority: 12, text: 'Просмотр объявления учтён' })
-        break
       case 'LISTING_FAVORITED':
         messages.push({
           priority: 12,
