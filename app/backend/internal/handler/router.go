@@ -38,6 +38,7 @@ type RouterDependencies struct {
 	PhotoUploadService       PhotoUploadUseCase
 	EventHub                 realtime.EventSubscriber
 	Now                      func() time.Time
+	AppEnv                   string
 }
 
 func NewRouter(deps RouterDependencies) *chi.Mux {
@@ -97,7 +98,7 @@ func mountAPIRoutes(r chi.Router, logger *slog.Logger, deps RouterDependencies) 
 	gameHandler := NewGameHandler(logger, deps.GameService, deps.Now)
 	webSocketHandler := NewGameWebSocketHandler(logger, deps.EventHub, deps.FrontendOrigin)
 	r.Route("/api/v1", func(r chi.Router) {
-		r.Use(GameIdentity(logger, deps.AccessTokenAuthenticator))
+		r.Use(GameIdentity(logger, deps.AccessTokenAuthenticator, deps.AppEnv))
 		r.Get("/me/listings", marketplaceHandler.ListMine)
 		r.Get("/me/favorites", marketplaceHandler.ListFavorites)
 		r.Post("/listings", marketplaceHandler.Create)

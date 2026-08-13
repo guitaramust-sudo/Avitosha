@@ -35,10 +35,7 @@ INSERT INTO daily_quest_templates (
     ('DAILY_COMPARE', 'Сравни варианты', 'Посмотри 5 разных объявлений.', 'AD_VIEWED', 'BUYER', NULL, 5, 8, 'AVITO_BONUS', 0, 6),
     ('DAILY_DIALOG', 'Начни диалог', 'Напиши продавцу по интересному объявлению.', 'MESSAGE_SENT', 'BUYER', NULL, 1, 12, 'AVITO_BONUS', 0, 7),
     ('DAILY_NEW_LISTING', 'Новое объявление', 'Создай новое объявление.', 'AD_CREATED', 'SELLER', NULL, 1, 15, 'AVITO_BONUS', 0, 8),
-    ('DAILY_IMPROVE_LISTING', 'Улучши объявление', 'Улучши описание, цену или фотографии объявления.', 'LISTING_IMPROVED', 'SELLER', NULL, 1, 12, 'AVITO_BONUS', 0, 9),
-    ('DAILY_CLOSE_DEAL', 'Успешная продажа', 'Заверши одну сделку как продавец.', 'LISTING_SOLD', 'SELLER', NULL, 1, 15, 'AVITO_BONUS', 0, 10),
-    ('DAILY_REVIEW', 'Поделись впечатлением', 'Оставь полезный отзыв после сделки.', 'REVIEW_LEFT', 'UNIVERSAL', NULL, 1, 10, 'AVITO_BONUS', 0, 11),
-    ('DAILY_BOOKING', 'Запланируй услугу', 'Создай одно бронирование.', 'BOOKING_CREATED', 'UNIVERSAL', NULL, 1, 10, 'AVITO_BONUS', 0, 12)
+    ('DAILY_IMPROVE_LISTING', 'Улучши объявление', 'Улучши описание, цену или фотографии объявления.', 'LISTING_IMPROVED', 'SELLER', NULL, 1, 12, 'AVITO_BONUS', 0, 9)
 ON CONFLICT (code) DO NOTHING;
 
 ALTER TABLE user_daily_quests DROP CONSTRAINT IF EXISTS user_daily_quests_user_id_quest_date_key;

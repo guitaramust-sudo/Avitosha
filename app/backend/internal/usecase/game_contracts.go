@@ -60,6 +60,8 @@ type GameRepository interface {
 	UpdateTaskProgress(context.Context, model.UserTask) error
 
 	InsertAction(context.Context, model.UserAction) (model.UserAction, bool, error)
+	CountUserActions(context.Context, uuid.UUID, model.ActionType, *string, *string) (int, error)
+	CountUserActionsOnDate(context.Context, uuid.UUID, model.ActionType, time.Time, uuid.UUID) (int, error)
 	CompleteAction(context.Context, uuid.UUID, time.Time, []model.DomainEvent) error
 	InsertDomainEvents(context.Context, []model.DomainEvent) error
 

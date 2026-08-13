@@ -17,9 +17,7 @@ func TestSelectDailyQuestSetUsesTwoBuyerTwoSellerAndOneUniversal(t *testing.T) {
 		{Code: "BUY_CONTACT", Role: model.DailyQuestRoleBuyer, ActionType: model.ActionTypeMessageSent, SortOrder: 3},
 		{Code: "SELL_CREATE", Role: model.DailyQuestRoleSeller, ActionType: model.ActionTypeAdCreated, SortOrder: 4},
 		{Code: "SELL_IMPROVE", Role: model.DailyQuestRoleSeller, ActionType: model.ActionTypeListingImproved, SortOrder: 5},
-		{Code: "SELL_SOLD", Role: model.DailyQuestRoleSeller, ActionType: model.ActionTypeListingSold, SortOrder: 6},
-		{Code: "ANY_DELIVERY", Role: model.DailyQuestRoleUniversal, ActionType: model.ActionTypeDeliveryUsed, SortOrder: 7},
-		{Code: "ANY_REVIEW", Role: model.DailyQuestRoleUniversal, ActionType: model.ActionTypeReviewLeft, SortOrder: 8},
+		{Code: "ANY_DELIVERY", Role: model.DailyQuestRoleUniversal, ActionType: model.ActionTypeDeliveryUsed, SortOrder: 6},
 	}
 	set, err := selectDailyQuestSet(uuid.MustParse("00000000-0000-0000-0000-000000000001"), time.Date(2026, 8, 12, 0, 0, 0, 0, time.UTC), templates)
 	if err != nil {

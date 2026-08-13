@@ -12,7 +12,7 @@ CREATE TABLE product_action_rules (
 );
 
 INSERT INTO product_action_rules (action_type, xp_reward) VALUES
-    ('AD_VIEWED', 2), ('AD_FAVORITED', 5), ('MESSAGE_SENT', 8), ('AD_CREATED', 40),
+    ('AD_VIEWED', 0), ('AD_FAVORITED', 5), ('MESSAGE_SENT', 8), ('AD_CREATED', 40),
     ('LISTING_IMPROVED', 20), ('LISTING_SOLD', 50), ('DELIVERY_USED', 15),
     ('REVIEW_LEFT', 0), ('BOOKING_CREATED', 0);
 

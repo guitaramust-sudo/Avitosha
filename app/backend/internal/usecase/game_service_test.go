@@ -472,6 +472,22 @@ func (repository *gameTestRepository) InsertAction(
 	return candidate, true, nil
 }
 
+func (repository *gameTestRepository) CountUserActions(_ context.Context, userID uuid.UUID, actionType model.ActionType, category, entityID *string) (int, error) {
+	count := 0
+	for _, action := range repository.actions {
+		if action.UserID == userID && action.ActionType == actionType && (category == nil || equalStringPointers(action.Category, category)) && (entityID == nil || equalStringPointers(action.EntityID, entityID)) { count++ }
+	}
+	return count, nil
+}
+
+func (repository *gameTestRepository) CountUserActionsOnDate(_ context.Context, userID uuid.UUID, actionType model.ActionType, date time.Time, excludeEventID uuid.UUID) (int, error) {
+	count := 0
+	for _, action := range repository.actions {
+		if action.UserID == userID && action.EventID != excludeEventID && action.ActionType == actionType && action.OccurredAt.UTC().Truncate(24*time.Hour).Equal(date.UTC().Truncate(24*time.Hour)) { count++ }
+	}
+	return count, nil
+}
+
 func (repository *gameTestRepository) CompleteAction(
 	_ context.Context,
 	actionID uuid.UUID,
