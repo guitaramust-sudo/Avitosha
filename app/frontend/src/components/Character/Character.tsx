@@ -7,6 +7,8 @@ import {
 } from 'pixi.js'
 import { useEffect, useRef, useState } from 'react'
 
+import type { PetMood } from '../../types/game'
+
 import './Character.scss'
 
 const frameModules = import.meta.glob<string>(
@@ -46,15 +48,35 @@ export type CharacterAnimation = keyof typeof animations
 interface CharacterProps {
   animation?: CharacterAnimation
   animationSpeed?: number
+  mood?: PetMood
 }
 
 const CANVAS_WIDTH = 320
 const CANVAS_HEIGHT = 480
-const HEART_REACTION_DURATION = 1500
+const MOOD_REACTION_DURATION = 1500
+
+const moodEmojis: Record<PetMood, readonly string[]> = {
+  CALM: ['😌', '🌿', '✨', '☁️', '💙'],
+  CURIOUS: ['🔎', '❓', '✨', '👀', '💡'],
+  EXCITED: ['🤩', '⚡', '🎉', '✨', '🚀'],
+  HAPPY: ['😊', '💛', '💖', '✨', '🎉'],
+  PROUD: ['⭐', '🏆', '✨', '💪', '💛'],
+  SLEEPING: ['💤', '🌙', '⭐', '💤', '☁️'],
+}
+
+const moodReactionLabels: Record<PetMood, string> = {
+  CALM: 'Авитоша спокоен',
+  CURIOUS: 'Авитоше любопытно',
+  EXCITED: 'Авитоша в восторге',
+  HAPPY: 'Авитоша радуется',
+  PROUD: 'Авитоша гордится',
+  SLEEPING: 'Авитоша спит',
+}
 
 function Character({
   animation = 'idle',
   animationSpeed = 0.12,
+  mood = 'CALM',
 }: CharacterProps) {
   const containerRef = useRef<HTMLSpanElement>(null)
   const [isReacting, setIsReacting] = useState(false)
@@ -64,7 +86,7 @@ function Character({
 
     const timeoutId = window.setTimeout(
       () => setIsReacting(false),
-      HEART_REACTION_DURATION,
+      MOOD_REACTION_DURATION,
     )
 
     return () => window.clearTimeout(timeoutId)
@@ -170,18 +192,16 @@ function Character({
     <button
       className={`character ${isReacting ? 'is-reacting' : ''}`}
       type="button"
-      aria-label={isReacting ? 'Авитоша радуется' : 'Погладить Авитошу'}
+      aria-label={isReacting ? moodReactionLabels[mood] : 'Погладить Авитошу'}
       disabled={isReacting}
       onClick={() => setIsReacting(true)}
     >
       <span className="character__canvas" ref={containerRef} />
       {isReacting && (
-        <span className="character__hearts" aria-hidden="true">
-          <i>♥</i>
-          <i>♥</i>
-          <i>♥</i>
-          <i>♥</i>
-          <i>♥</i>
+        <span className="character__reaction" aria-hidden="true">
+          {moodEmojis[mood].map((emoji, index) => (
+            <i key={`${emoji}-${index}`}>{emoji}</i>
+          ))}
         </span>
       )}
     </button>

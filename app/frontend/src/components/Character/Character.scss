@@ -33,7 +33,7 @@
     height: 100% !important;
   }
 
-  &__hearts {
+  &__reaction {
     position: absolute;
     z-index: 2;
     top: 7%;
@@ -46,12 +46,12 @@
     i {
       position: absolute;
       bottom: 0;
-      color: #ff4053;
       font-size: clamp(1rem, 2.2vw, 1.75rem);
+      font-family: 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif;
       font-style: normal;
       opacity: 0;
       filter: drop-shadow(0 0.125rem 0.1875rem rgb(185 25 51 / 20%));
-      animation: character-heart-float 1.2s ease-out forwards;
+      animation: character-mood-float 1.2s ease-out forwards;
     }
 
     i:nth-child(1) {
@@ -84,7 +84,7 @@
   }
 }
 
-@keyframes character-heart-float {
+@keyframes character-mood-float {
   0% {
     opacity: 0;
     transform: translateY(0) scale(0.55) rotate(-8deg);
@@ -105,7 +105,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .character__hearts i {
+  .character__reaction i {
     animation-duration: 300ms;
     animation-delay: 0ms;
   }

@@ -208,7 +208,7 @@ function RoomStage() {
         </div>
       )}
       <div className="room-stage__character" data-mood={pet.mood}>
-        <Character />
+        <Character mood={pet.mood} />
       </div>
       <span className="room-stage__placed-count">
         {room.progress} предметов
