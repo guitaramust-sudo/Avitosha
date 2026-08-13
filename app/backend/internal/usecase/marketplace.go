@@ -101,6 +101,14 @@ type MarketplaceActionResult struct {
 	Counted      *bool                 `json:"counted,omitempty"`
 	First        *bool                 `json:"first,omitempty"`
 	ActionResult *ProcessActionResult  `json:"actionResult,omitempty"`
+	// additionalActionResults contains server-side actions produced by one
+	// marketplace request. It is intentionally not part of the API response.
+	additionalActionResults []publishedActionResult
+}
+
+type publishedActionResult struct {
+	userID uuid.UUID
+	result ProcessActionResult
 }
 
 type GameActionProcessor interface {
@@ -375,6 +383,7 @@ func (s *MarketplaceService) changeStatus(ctx context.Context, userID, listingID
 
 func (s *MarketplaceService) PublishWithGame(ctx context.Context, userID, listingID, eventID uuid.UUID, now time.Time) (MarketplaceActionResult, error) {
 	return s.product(ctx, userID, listingID, eventID, "PUBLISH", now, func(txCtx context.Context) (MarketplaceActionResult, *ProcessActionCommand, error) {
+		var result MarketplaceActionResult
 		listing, err := s.getOwned(txCtx, userID, listingID)
 		if err != nil {
 			return MarketplaceActionResult{}, nil, err
@@ -396,9 +405,36 @@ func (s *MarketplaceService) PublishWithGame(ctx context.Context, userID, listin
 		if err != nil {
 			return MarketplaceActionResult{}, nil, err
 		}
+		// A fully completed quality profile at publication time also counts as
+		// one listing improvement. The unique (listing_id, criterion) records
+		// make this safe across re-publish and retries.
+		if quality.Score == 3 {
+			gameRepository, ok := s.repository.(marketplaceGameRepository)
+			if !ok {
+				return MarketplaceActionResult{}, nil, ErrUnexpectedStorage
+			}
+			criteria := []string{"price", "photo", "description"}
+			awarded, err := gameRepository.AwardListingQualityCriteria(txCtx, listingID, criteria, now.UTC())
+			if err != nil {
+				return MarketplaceActionResult{}, nil, err
+			}
+			if len(awarded) > 0 {
+				id, category := listingID.String(), updated.CategoryCode
+				meta, _ := json.Marshal(map[string]any{"source": "marketplace.improve", "criteria": awarded})
+				improve := ProcessActionCommand{UserID: userID, EventID: uuid.NewSHA1(eventID, []byte("LISTING_IMPROVED")), ActionType: model.ActionTypeListingImproved, EntityID: &id, Category: &category, Metadata: meta, OccurredAt: now, Now: now}
+				improveResult, err := s.game.ProcessActionWithinTx(txCtx, improve)
+				if err != nil {
+					return MarketplaceActionResult{}, nil, err
+				}
+				// The primary action result is filled by product; retain the
+				// secondary result so it is published after commit as well.
+				result.additionalActionResults = append(result.additionalActionResults, publishedActionResult{userID: userID, result: improveResult})
+			}
+		}
 		id, category := listingID.String(), updated.CategoryCode
 		command := &ProcessActionCommand{UserID: userID, EventID: eventID, ActionType: model.ActionTypeAdCreated, EntityID: &id, Category: &category, Metadata: json.RawMessage(`{"source":"marketplace.publish"}`), OccurredAt: now, Now: now}
-		return MarketplaceActionResult{Listing: &updated}, command, nil
+		result.Listing = &updated
+		return result, command, nil
 	})
 }
 
@@ -660,6 +696,9 @@ func (s *MarketplaceService) product(ctx context.Context, userID, listingID, eve
 				result.ActionResult = &gameResult
 			}
 			publish = append(publish, publishedAction{userID: action.UserID, result: gameResult})
+			for _, extra := range result.additionalActionResults {
+				publish = append(publish, publishedAction{userID: extra.userID, result: extra.result})
+			}
 			if operation == "PURCHASE" && result.Deal != nil && result.Deal.DeliveryUsed {
 				derived := uuid.NewSHA1(eventID, []byte("DELIVERY_USED"))
 				delivery := *action
