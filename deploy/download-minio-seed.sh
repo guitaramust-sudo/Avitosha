@@ -10,6 +10,10 @@ service-1.webp service-2.webp
 chair-1.jpg chair-2.jpg chair-3.jpg
 bookshelf-1.jpg bookshelf-2.jpg bookshelf-3.jpg
 cabinet-1.jpg cabinet-2.jpg cabinet-3.jpg
+camry-1.jpg camry-2.jpg camry-3.jpg
+mits-1.jpg mits-2.jpg mits-3.jpg
+travel-1.png travel-2.jpg
+flat-1.jpg flat-2.jpg
 "
 
 mkdir -p /seed

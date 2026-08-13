@@ -61,6 +61,17 @@ WHERE user_id=$1 AND action_type=$2 AND ($3::text IS NULL OR category=$3) AND ($
 	return count, nil
 }
 
+func (repository *GameRepository) CountDistinctUserActionEntities(ctx context.Context, userID uuid.UUID, actionType model.ActionType) (int, error) {
+	var count int
+	err := executorFromContext(ctx, repository.executor).QueryRow(ctx, `
+SELECT COUNT(DISTINCT entity_id) FROM user_actions
+WHERE user_id=$1 AND action_type=$2 AND entity_id IS NOT NULL
+  AND metadata->>'source' = 'marketplace.view'
+	`, userID, actionType).Scan(&count)
+	if err != nil { return 0, mapGameStorageError("count distinct user action entities", err) }
+	return count, nil
+}
+
 func (repository *GameRepository) CountUserActionsOnDate(ctx context.Context, userID uuid.UUID, actionType model.ActionType, date time.Time, excludeEventID uuid.UUID) (int, error) {
 	var count int
 	err := executorFromContext(ctx, repository.executor).QueryRow(ctx, `

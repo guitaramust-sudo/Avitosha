@@ -413,6 +413,32 @@ func (service *GameService) processAction(ctx context.Context, command ProcessAc
 		achievementCodes := make([]string, 0, 4)
 		rule := model.ProductActionRule{ActionType: command.ActionType}
 		marketplaceAction := isTrustedMarketplaceAction(command.Metadata, ownTransaction)
+		// FIRST_AD is tied to the real marketplace publication, not to the
+		// order in which the story task happens to be assigned. Story catch-up
+		// still covers publications that happened before this check was added.
+		if marketplaceAction && command.ActionType == model.ActionTypeAdCreated {
+			achievementCodes = append(achievementCodes, "FIRST_AD")
+		}
+		if marketplaceAction {
+			switch command.ActionType {
+			case model.ActionTypeMessageSent:
+				// ContactSellerWithGame emits MESSAGE_SENT only for the first
+				// message in a listing conversation.
+				achievementCodes = append(achievementCodes, "IN_TOUCH")
+			case model.ActionTypeAdViewed:
+				// EXPLORER is based on five distinct listings, independently of
+				// the category-specific story task.
+				count, countErr := service.repository.CountDistinctUserActionEntities(
+					txCtx, command.UserID, model.ActionTypeAdViewed,
+				)
+				if countErr != nil {
+					return fmt.Errorf("count distinct viewed listings: %w", countErr)
+				}
+				if count >= ExplorerAchievementTarget {
+					achievementCodes = append(achievementCodes, "EXPLORER")
+				}
+			}
+		}
 		if marketplaceAction {
 			rules, ok := service.repository.(interface {
 				GetProductActionRule(context.Context, model.ActionType) (model.ProductActionRule, error)
@@ -496,11 +522,10 @@ func (service *GameService) processAction(ctx context.Context, command ProcessAc
 				weeklyDelta.EarnedXP += rewardResult.EarnedXP - taskProgress.Task.XPReward
 				weeklyDelta.CompletedTasks += rewardResult.CompletedTasks
 				weeklyDelta.CompletedStages += rewardResult.CompletedStages
-				if rewardResult.UnlockedItem != "" {
-					unlockedItems = append(unlockedItems, rewardResult.UnlockedItem)
-				}
+				unlockedItems = append(unlockedItems, rewardResult.UnlockedItems...)
+				achievementCodes = append(achievementCodes, rewardResult.AchievementCodes...)
 				achievementCodes = append(achievementCodes, AchievementCodesForTask(
-					taskProgress.Task.Code, rewardResult.UnlockedItem != "", story.Status == model.StoryStatusCompleted,
+					taskProgress.Task.Code, len(rewardResult.UnlockedItems) > 0, story.Status == model.StoryStatusCompleted,
 				)...)
 			}
 
@@ -540,11 +565,14 @@ func (service *GameService) processAction(ctx context.Context, command ProcessAc
 			return fmt.Errorf("update activity scores: %w", err)
 		}
 		character, _ := CharacterFromScores(scores)
-		if pet.Character == nil && character != nil {
+		if character != nil && (pet.Character == nil || *pet.Character != *character) {
+			wasUnlocked := pet.Character != nil
 			pet.Character = character
-			events = append(events, service.event(action.ID, command.UserID, model.DomainEventPetCharacterUnlocked, command.Now, map[string]any{
-				"character": *character,
-			}))
+			if !wasUnlocked {
+				events = append(events, service.event(action.ID, command.UserID, model.DomainEventPetCharacterUnlocked, command.Now, map[string]any{
+					"character": *character,
+				}))
+			}
 		}
 
 		pet.UpdatedAt = command.Now
@@ -657,11 +685,12 @@ type taskRewardResult struct {
 	Pet           model.Pet
 	Story         model.UserStoryProgress
 	Events        []model.DomainEvent
-	UnlockedItem  string
+	UnlockedItems []string
 	StoryAdvanced bool
 	CompletedTasks int
 	CompletedStages int
 	EarnedXP int
+	AchievementCodes []string
 }
 
 func (service *GameService) rewardCompletedTask(
@@ -729,7 +758,7 @@ func (service *GameService) rewardCompletedTask(
 			return taskRewardResult{}, fmt.Errorf("unlock room item: %w", unlockErr)
 		}
 		if unlocked {
-			result.UnlockedItem = *task.RoomItemCode
+			result.UnlockedItems = append(result.UnlockedItems, *task.RoomItemCode)
 			result.Pet.Mood = model.PetMoodProud
 			result.Events = append(result.Events, service.event(actionID, userID, model.DomainEventRoomItemUnlocked, now, map[string]any{
 				"itemCode": *task.RoomItemCode,
@@ -778,10 +807,17 @@ func (service *GameService) rewardCompletedTask(
 					if rewardErr != nil { return taskRewardResult{}, rewardErr }
 					result.Pet, result.Story = nextResult.Pet, nextResult.Story
 					result.Events = append(result.Events, nextResult.Events...)
-					result.UnlockedItem += nextResult.UnlockedItem
-					result.StoryAdvanced = nextResult.StoryAdvanced
+					result.UnlockedItems = append(result.UnlockedItems, nextResult.UnlockedItems...)
+					// The current task already advanced the story. Keep that flag set
+					// while carrying only the nested task counts upward.
+					result.StoryAdvanced = true
+					result.EarnedXP += nextResult.EarnedXP
 					result.CompletedTasks = 1 + nextResult.CompletedTasks
-					result.CompletedStages = nextResult.CompletedStages
+					result.CompletedStages = 1 + nextResult.CompletedStages
+					result.AchievementCodes = append(result.AchievementCodes, nextResult.AchievementCodes...)
+					result.AchievementCodes = append(result.AchievementCodes, AchievementCodesForTask(
+						next.Task.Code, len(nextResult.UnlockedItems) > 0, nextResult.Story.Status == model.StoryStatusCompleted,
+					)...)
 					if err := service.repository.UpdateTaskProgress(ctx, nextResult.Progress); err != nil { return taskRewardResult{}, err }
 				}
 			}

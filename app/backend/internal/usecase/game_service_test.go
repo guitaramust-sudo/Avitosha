@@ -480,12 +480,27 @@ func (repository *gameTestRepository) CountUserActions(_ context.Context, userID
 	return count, nil
 }
 
+func (repository *gameTestRepository) CountDistinctUserActionEntities(_ context.Context, userID uuid.UUID, actionType model.ActionType) (int, error) {
+	entities := make(map[string]struct{})
+	for _, action := range repository.actions {
+		if action.UserID != userID || action.ActionType != actionType || action.EntityID == nil {
+			continue
+		}
+		entities[*action.EntityID] = struct{}{}
+	}
+	return len(entities), nil
+}
+
 func (repository *gameTestRepository) CountUserActionsOnDate(_ context.Context, userID uuid.UUID, actionType model.ActionType, date time.Time, excludeEventID uuid.UUID) (int, error) {
 	count := 0
 	for _, action := range repository.actions {
 		if action.UserID == userID && action.EventID != excludeEventID && action.ActionType == actionType && action.OccurredAt.UTC().Truncate(24*time.Hour).Equal(date.UTC().Truncate(24*time.Hour)) { count++ }
 	}
 	return count, nil
+}
+
+func (repository *gameTestRepository) GetProductActionRule(_ context.Context, actionType model.ActionType) (model.ProductActionRule, error) {
+	return model.ProductActionRule{ActionType: actionType, XPReward: 40}, nil
 }
 
 func (repository *gameTestRepository) CompleteAction(
@@ -601,6 +616,7 @@ func (repository *gameTestRepository) UpdateActivityScores(
 	repository.scores.TravelScore += delta.Travel
 	repository.scores.RealEstateScore += delta.RealEstate
 	repository.scores.ServicesScore += delta.Services
+	repository.scores.QualityScore += delta.Quality
 	repository.scores.UpdatedAt = now
 	return repository.scores, nil
 }
@@ -847,6 +863,222 @@ func TestEndToEndCompletesFirstRoom(t *testing.T) {
 	if repository.weekly.Score != 653 || repository.pet.GrowthXP != 303 || repository.daily.ActionsCount != 9 ||
 		repository.balances[DefaultRewardType].Balance != 90 {
 		t.Fatal("duplicate final action changed completed room state")
+	}
+}
+
+func TestHistoricalStoryCatchUpUnlocksAchievement(t *testing.T) {
+	userID := mustGameUUID("00000000-0000-0000-0000-000000000001")
+	repository := newGameTestRepository(userID)
+	txManager := &gameTestTxManager{}
+	service := NewGameService(GameServiceDependencies{
+		Repository: repository, TxManager: txManager, IDGenerator: uuid.New,
+	})
+	now := time.Date(2026, 8, 5, 9, 0, 0, 0, time.UTC)
+	furniture := "FURNITURE"
+
+	// The listing was created before the story reaches CREATE_FIRST_AD.
+	createdAt := now.Add(-time.Hour)
+	createdEvent := uuid.New()
+	repository.actions[uuid.New()] = model.UserAction{
+		ID: uuid.New(), UserID: userID, EventID: createdEvent,
+		ActionType: model.ActionTypeAdCreated, OccurredAt: createdAt,
+		ProcessedAt: &createdAt, Metadata: json.RawMessage(`{"source":"marketplace.publish"}`),
+	}
+
+	actions := []struct {
+		actionType model.ActionType
+		category   *string
+	}{
+		{model.ActionTypeAdViewed, &furniture},
+		{model.ActionTypeAdViewed, &furniture},
+		{model.ActionTypeAdViewed, &furniture},
+		{model.ActionTypeAdViewed, &furniture},
+		{model.ActionTypeAdViewed, &furniture},
+		{model.ActionTypeAdFavorited, &furniture},
+		{model.ActionTypeMessageSent, nil},
+	}
+
+	var result ProcessActionResult
+	for index, action := range actions {
+		result, _ = service.ProcessAction(context.Background(), ProcessActionCommand{
+			UserID: userID, EventID: uuid.New(), ActionType: action.actionType,
+			EntityID: gameStringPointer("historical-entity-" + string(rune('a'+index))), Category: action.category,
+			Metadata: json.RawMessage(`{}`), OccurredAt: now.Add(time.Duration(index) * time.Minute),
+			Now: now.Add(time.Duration(index) * time.Minute),
+		})
+	}
+
+	if repository.story.CurrentStage != 4 {
+		t.Fatalf("story stage = %d, want 4 after historical catch-up", repository.story.CurrentStage)
+	}
+	createTask := repository.tasksByStage[4]
+	if progress := repository.userTasks[createTask.ID]; progress.Status != model.TaskStatusRewarded {
+		t.Fatalf("CREATE_FIRST_AD progress = %+v, want rewarded", progress)
+	}
+	if _, ok := repository.roomItems["PLANT"]; !ok {
+		t.Fatal("PLANT was not unlocked by historical catch-up")
+	}
+	if _, ok := repository.achievements["FIRST_AD"]; !ok {
+		t.Fatal("FIRST_AD achievement was not unlocked by historical catch-up")
+	}
+	foundAchievementEvent := false
+	for _, event := range result.Events {
+		if event.Type != model.DomainEventAchievementUnlocked {
+			continue
+		}
+		var payload struct{ Code string `json:"code"` }
+		if err := json.Unmarshal(event.Payload, &payload); err == nil && payload.Code == "FIRST_AD" {
+			foundAchievementEvent = true
+		}
+	}
+	if !foundAchievementEvent {
+		t.Fatal("FIRST_AD achievement event was not emitted")
+	}
+}
+
+func TestMarketplacePublicationUnlocksFirstAdAchievementImmediately(t *testing.T) {
+	userID := mustGameUUID("00000000-0000-0000-0000-000000000002")
+	repository := newGameTestRepository(userID)
+	service := NewGameService(GameServiceDependencies{
+		Repository: repository, TxManager: &gameTestTxManager{}, IDGenerator: uuid.New,
+	})
+	now := time.Date(2026, 8, 5, 12, 0, 0, 0, time.UTC)
+
+	result, err := service.ProcessActionWithinTx(context.Background(), ProcessActionCommand{
+		UserID: userID, EventID: uuid.New(), ActionType: model.ActionTypeAdCreated,
+		EntityID: gameStringPointer("listing-1"), Metadata: json.RawMessage(`{"source":"marketplace.publish"}`),
+		OccurredAt: now, Now: now,
+	})
+	if err != nil {
+		t.Fatalf("trusted publication action error = %v", err)
+	}
+	if _, ok := repository.achievements["FIRST_AD"]; !ok {
+		t.Fatal("FIRST_AD was not unlocked at publication time")
+	}
+	found := false
+	for _, event := range result.Events {
+		if event.Type != model.DomainEventAchievementUnlocked {
+			continue
+		}
+		var payload struct{ Code string `json:"code"` }
+		if json.Unmarshal(event.Payload, &payload) == nil && payload.Code == "FIRST_AD" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("publication did not emit FIRST_AD achievement event")
+	}
+}
+
+func TestMarketplaceMessageUnlocksInTouchAchievementImmediately(t *testing.T) {
+	userID := uuid.New()
+	repository := newGameTestRepository(userID)
+	service := NewGameService(GameServiceDependencies{
+		Repository: repository, TxManager: &gameTestTxManager{}, IDGenerator: uuid.New,
+	})
+	now := time.Date(2026, 8, 5, 12, 0, 0, 0, time.UTC)
+
+	if _, err := service.ProcessActionWithinTx(context.Background(), ProcessActionCommand{
+		UserID: userID, EventID: uuid.New(), ActionType: model.ActionTypeMessageSent,
+		EntityID: gameStringPointer("listing-1"), Metadata: json.RawMessage(`{"source":"marketplace.message"}`),
+		OccurredAt: now, Now: now,
+	}); err != nil {
+		t.Fatalf("marketplace message action error = %v", err)
+	}
+	if _, ok := repository.achievements["IN_TOUCH"]; !ok {
+		t.Fatal("IN_TOUCH was not unlocked after first marketplace message")
+	}
+}
+
+func TestMarketplaceDistinctViewsUnlockExplorerAchievement(t *testing.T) {
+	userID := uuid.New()
+	repository := newGameTestRepository(userID)
+	service := NewGameService(GameServiceDependencies{
+		Repository: repository, TxManager: &gameTestTxManager{}, IDGenerator: uuid.New,
+	})
+	now := time.Date(2026, 8, 5, 12, 0, 0, 0, time.UTC)
+
+	entities := []string{"listing-1", "listing-2", "listing-3", "listing-1", "listing-4", "listing-5"}
+	for index, entity := range entities {
+		if _, err := service.ProcessActionWithinTx(context.Background(), ProcessActionCommand{
+			UserID: userID, EventID: uuid.New(), ActionType: model.ActionTypeAdViewed,
+			EntityID: &entity, Metadata: json.RawMessage(`{"source":"marketplace.view"}`),
+			OccurredAt: now.Add(time.Duration(index) * time.Minute),
+			Now:       now.Add(time.Duration(index) * time.Minute),
+		}); err != nil {
+			t.Fatalf("marketplace view %d error = %v", index+1, err)
+		}
+	}
+	if _, ok := repository.achievements["EXPLORER"]; !ok {
+		t.Fatal("EXPLORER was not unlocked after five distinct listing views")
+	}
+}
+
+func TestManualAdCreatedActionDoesNotUnlockFirstAdAchievement(t *testing.T) {
+	userID := mustGameUUID("00000000-0000-0000-0000-000000000003")
+	repository := newGameTestRepository(userID)
+	service := NewGameService(GameServiceDependencies{
+		Repository: repository, TxManager: &gameTestTxManager{}, IDGenerator: uuid.New,
+	})
+	now := time.Date(2026, 8, 5, 12, 0, 0, 0, time.UTC)
+
+	if _, err := service.ProcessAction(context.Background(), ProcessActionCommand{
+		UserID: userID, EventID: uuid.New(), ActionType: model.ActionTypeAdCreated,
+		EntityID: gameStringPointer("listing-1"), Metadata: json.RawMessage(`{"source":"marketplace.publish"}`),
+		OccurredAt: now, Now: now,
+	}); err != nil {
+		t.Fatalf("manual action error = %v", err)
+	}
+	if _, ok := repository.achievements["FIRST_AD"]; ok {
+		t.Fatal("untrusted action unlocked FIRST_AD")
+	}
+}
+
+func TestCharacterChangesFromExplorerToLeadingSellerOrQualityActivity(t *testing.T) {
+	tests := []struct {
+		name       string
+		actionType model.ActionType
+		want       model.PetCharacter
+	}{
+		{name: "seller", actionType: model.ActionTypeAdCreated, want: model.PetCharacterEntrepreneur},
+		{name: "quality", actionType: model.ActionTypeListingImproved, want: model.PetCharacterCraftsperson},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			userID := uuid.New()
+			repository := newGameTestRepository(userID)
+			service := NewGameService(GameServiceDependencies{
+				Repository: repository, TxManager: &gameTestTxManager{}, IDGenerator: uuid.New,
+			})
+			now := time.Date(2026, 8, 5, 12, 0, 0, 0, time.UTC)
+
+		for index := 0; index < CharacterUnlockTarget; index++ {
+			if _, err := service.ProcessAction(context.Background(), ProcessActionCommand{
+				UserID: userID, EventID: uuid.New(), ActionType: model.ActionTypeAdViewed,
+				OccurredAt: now.Add(time.Duration(index) * time.Minute),
+				Now:        now.Add(time.Duration(index) * time.Minute),
+			}); err != nil {
+				t.Fatalf("explorer action %d error = %v", index+1, err)
+			}
+		}
+		if repository.pet.Character == nil || *repository.pet.Character != model.PetCharacterExplorer {
+			t.Fatalf("initial character = %v, want EXPLORER", repository.pet.Character)
+		}
+
+		for index := 0; index < CharacterUnlockTarget+1; index++ {
+			if _, err := service.ProcessAction(context.Background(), ProcessActionCommand{
+				UserID: userID, EventID: uuid.New(), ActionType: tt.actionType,
+				OccurredAt: now.Add(time.Duration(CharacterUnlockTarget+index) * time.Minute),
+				Now:        now.Add(time.Duration(CharacterUnlockTarget+index) * time.Minute),
+			}); err != nil {
+				t.Fatalf("%s action %d error = %v", tt.name, index+1, err)
+			}
+		}
+		if repository.pet.Character == nil || *repository.pet.Character != tt.want {
+			t.Fatalf("final character = %v, want %s", repository.pet.Character, tt.want)
+		}
+	})
 	}
 }
 
