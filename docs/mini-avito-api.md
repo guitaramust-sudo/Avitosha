@@ -1,4 +1,4 @@
-# Mini-Avito API: этап 2
+# Mini-Avito API
 
 Публичными являются `GET /api/v1/listing-categories`, `GET /api/v1/listings` и `GET /api/v1/listings/{listing_id}`. Все операции, изменяющие данные или влияющие на игровой прогресс, требуют `Authorization: Bearer <token>`; в локальном demo/dev-режиме также поддерживается `X-User-ID`.
 
